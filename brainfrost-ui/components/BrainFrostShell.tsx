@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import GraphCanvas from "./GraphCanvas";
 import ReaderPanel from "./ReaderPanel";
@@ -8,7 +9,10 @@ import type { VaultSnapshot } from "@/lib/types";
 
 export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot }) {
   const { notes, graph, stats } = snapshot;
-  const [selected, setSelected] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const initialSlug = searchParams.get("camada");
+  const initialValid = initialSlug && notes.some((n) => n.slug === initialSlug) ? initialSlug : null;
+  const [selected, setSelected] = useState<string | null>(initialValid);
   const [query, setQuery] = useState("");
 
   const note = useMemo(() => notes.find((n) => n.slug === selected) ?? null, [notes, selected]);

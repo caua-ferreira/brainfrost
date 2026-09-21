@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import BrainFrostShell from "@/components/BrainFrostShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { readVault } from "@/lib/vault";
@@ -25,5 +26,11 @@ export default function Page() {
     );
   }
 
-  return <BrainFrostShell snapshot={snapshot} />;
+  return (
+    // Suspense é exigido pelo Next 15 sempre que um filho usa useSearchParams
+    // (o BrainFrostShell lê ?camada=<slug> pra abrir a nota vinda do /cofre).
+    <Suspense fallback={null}>
+      <BrainFrostShell snapshot={snapshot} />
+    </Suspense>
+  );
 }
