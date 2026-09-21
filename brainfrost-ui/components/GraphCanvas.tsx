@@ -72,8 +72,10 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
 
   useEffect(() => {
     if (!graphRef.current) return;
-    graphRef.current.d3Force("charge")?.strength(-190);
-    graphRef.current.d3Force("link")?.distance(78);
+    // Repulsão maior e links mais longos para o cofre com poucos nós não
+    // colapsar num nó único; nesta escala a leitura pede ar.
+    graphRef.current.d3Force("charge")?.strength(-520);
+    graphRef.current.d3Force("link")?.distance(140);
   }, [size.width]);
 
   useEffect(() => {
@@ -82,7 +84,9 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
     if (node?.x !== undefined) graphRef.current.centerAt(node.x, node.y, 600);
   }, [selected, graph.nodes]);
 
-  const radius = useCallback((node: GraphNode) => 4.5 + Math.sqrt(node.degree) * 2.9, []);
+  // Nós maiores e escala mais agressiva pelo grau: com 11 camadas, precisamos
+  // que o núcleo (index/padroes-*) se destaque à primeira vista.
+  const radius = useCallback((node: GraphNode) => 7 + Math.sqrt(node.degree) * 3.6, []);
 
   const paintNode = useCallback(
     (node: RenderNode, ctx: CanvasRenderingContext2D, scale: number) => {
@@ -111,13 +115,14 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       ctx.strokeStyle = `rgba(233, 246, 255, ${(isFocus ? 0.9 : 0.35) * alpha})`;
       ctx.stroke();
 
-      if (scale > 0.75 || isFocus) {
-        const fontSize = Math.max(10 / scale, 3.2);
+      // Rótulos visíveis mais cedo: sem eles em zoom padrão o grafo é ilegível.
+      if (scale > 0.4 || isFocus) {
+        const fontSize = Math.max(11 / scale, 3.6);
         ctx.font = `500 ${fontSize}px var(--font-plex-mono), monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = `rgba(233, 246, 255, ${(isFocus ? 0.95 : 0.6) * alpha})`;
-        ctx.fillText(node.title, node.x, node.y + r + 4 / scale);
+        ctx.fillStyle = `rgba(233, 246, 255, ${(isFocus ? 0.95 : 0.72) * alpha})`;
+        ctx.fillText(node.title, node.x, node.y + r + 5 / scale);
       }
     },
     [focus, neighbours, radius]
@@ -168,7 +173,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
           onNodeClick={(node: RenderNode) => onSelect(node.id)}
           onNodeHover={(node: RenderNode | null) => setHovered(node ? node.id : null)}
           onBackgroundClick={() => onSelect(null)}
-          onEngineStop={() => graphRef.current?.zoomToFit(500, 70)}
+          onEngineStop={() => graphRef.current?.zoomToFit(500, 120)}
         />
       )}
       <p className="pointer-events-none absolute bottom-3 left-4 font-mono text-[11px] text-mute/70">
