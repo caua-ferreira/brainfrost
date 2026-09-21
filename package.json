@@ -1,0 +1,14 @@
+{
+  "name": "brainfrost",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Segundo cerebro de contexto para IA: cofre em Markdown, grafo na web e injetor de contexto no terminal.",
+  "workspaces": ["brainfrost-ui", "brainfrost-cli"],
+  "scripts": {
+    "dev": "npm run dev --workspace brainfrost-ui",
+    "build": "npm run build --workspace brainfrost-ui",
+    "cli": "node brainfrost-cli/bin/brainfrost.js",
+    "vault": "npm run vault --workspace brainfrost-ui"
+  },
+  "license": "MIT"
+}

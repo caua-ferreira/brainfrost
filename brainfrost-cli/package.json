@@ -1,0 +1,22 @@
+{
+  "name": "brainfrost-cli",
+  "version": "0.2.0",
+  "description": "Injetor de contexto do BrainFrost: le o cofre .brainfrost, monta o prompt e conversa com o Git.",
+  "type": "module",
+  "bin": {
+    "brainfrost": "bin/brainfrost.js",
+    "bfrost": "bin/brainfrost.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "keywords": ["brainfrost", "context", "snowflake", "cortex", "markdown"]
+}

@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --abyss: #050e1a;
+  --deep: #0a1a2f;
+  --rift: #16324f;
+  --glow: #5ad8ff;
+  --aurora: #9bffe4;
+  --arctic: #e9f6ff;
+  --mute: #7e9bb8;
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--abyss);
+  /* Duas fontes de luz fracas: a superfície do gelo em cima, a fenda embaixo. */
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, rgba(90, 216, 255, 0.16), transparent 60%),
+    radial-gradient(90% 60% at 15% 110%, rgba(22, 50, 79, 0.55), transparent 65%);
+  background-attachment: fixed;
+  color: var(--arctic);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(90, 216, 255, 0.28);
+}
+
+.pane {
+  background: linear-gradient(160deg, rgba(16, 38, 63, 0.82), rgba(7, 19, 33, 0.9));
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(90, 216, 255, 0.16);
+}
+
+.hairline {
+  border-color: rgba(90, 216, 255, 0.12);
+}
+
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--glow);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.reader {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: rgba(233, 246, 255, 0.86);
+}
+.reader > * + * {
+  margin-top: 1rem;
+}
+.reader h1,
+.reader h2,
+.reader h3 {
+  font-weight: 600;
+  color: var(--arctic);
+  letter-spacing: -0.01em;
+}
+.reader h1 {
+  font-size: 1.35rem;
+}
+.reader h2 {
+  font-size: 1.1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(90, 216, 255, 0.12);
+}
+.reader h3 {
+  font-size: 1rem;
+  color: var(--glow);
+}
+.reader p,
+.reader li {
+  max-width: 68ch;
+}
+.reader ul,
+.reader ol {
+  padding-left: 1.15rem;
+}
+.reader ul {
+  list-style: none;
+}
+.reader ul li::before {
+  content: "❄";
+  color: rgba(90, 216, 255, 0.5);
+  font-size: 0.7em;
+  margin-left: -1.15rem;
+  margin-right: 0.55rem;
+  vertical-align: 0.15em;
+}
+.reader ol {
+  list-style: decimal;
+}
+.reader li + li {
+  margin-top: 0.4rem;
+}
+.reader code {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 0.85em;
+  background: rgba(90, 216, 255, 0.1);
+  border: 1px solid rgba(90, 216, 255, 0.14);
+  padding: 0.1em 0.38em;
+  border-radius: 4px;
+}
+.reader pre {
+  background: rgba(4, 11, 20, 0.85);
+  border: 1px solid rgba(90, 216, 255, 0.14);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+}
+.reader pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.reader blockquote {
+  border-left: 2px solid rgba(90, 216, 255, 0.4);
+  padding-left: 0.9rem;
+  color: var(--mute);
+}
+.reader table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.reader th,
+.reader td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(90, 216, 255, 0.12);
+}
+.reader th {
+  color: var(--glow);
+  font-weight: 500;
+}
+.reader hr {
+  border: 0;
+  border-top: 1px solid rgba(90, 216, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
