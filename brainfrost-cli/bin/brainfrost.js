@@ -2,6 +2,7 @@
 import { parseArgs, c, say, fail } from "../src/ui.js";
 import ask from "../src/commands/ask.js";
 import learn from "../src/commands/learn.js";
+import inject from "../src/commands/inject.js";
 import {
   listCmd,
   showCmd,
@@ -33,6 +34,11 @@ ${c.white("bfrost learn")} "título" "conteúdo"   grava o aprendizado e sobe pr
     --file nome               grava numa camada própria em vez do log
     --no-push                 só grava local
 
+${c.white("bfrost inject")}                  escreve o cofre no CLAUDE.md do repo atual
+    --only a,b                só essas camadas ou tags
+    --file <arquivo>          arquivo alvo (padrão CLAUDE.md)
+    --dry                     mostra o que seria escrito sem tocar no disco
+
 ${c.white("bfrost providers")}              lista as IAs configuradas e a que está ativa
 ${c.white("bfrost list")}                   mapa das camadas, conexões e órfãos
 ${c.white("bfrost show")} <slug>            imprime uma camada
@@ -52,6 +58,7 @@ const COMMANDS = {
   a: ask,
   learn,
   l: learn,
+  inject,
   list: listCmd,
   ls: listCmd,
   show: showCmd,

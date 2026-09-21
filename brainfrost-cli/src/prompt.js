@@ -6,10 +6,11 @@ restrições reais. Não proponha nada que contrarie esse bloco sem dizer explic
 contrariando e por quê.`;
 
 /**
- * Monta o prompt final. A ordem é proposital: instrução, contexto, pergunta.
- * O index vem primeiro porque costuma carregar as regras de resposta.
+ * Aplica o filtro --only (por slug ou tag) e devolve as camadas na ordem
+ * canônica: `index` primeiro, `core` antes de `growth`, alfabético dentro
+ * de cada grupo. É a ordem que o ask e o inject compartilham.
  */
-export function buildPrompt(notes, question, { only = null, header = null } = {}) {
+export function selectNotes(notes, only) {
   let selected = notes;
   if (only && only.length) {
     const wanted = new Set(only);
@@ -18,15 +19,21 @@ export function buildPrompt(notes, question, { only = null, header = null } = {}
       throw new Error(`Nenhuma camada corresponde a: ${only.join(", ")}`);
     }
   }
-
-  const ordered = [...selected].sort((a, b) => {
+  return [...selected].sort((a, b) => {
     if (a.slug === "index") return -1;
     if (b.slug === "index") return 1;
     if (a.layer !== b.layer) return a.layer === "core" ? -1 : 1;
     return a.slug.localeCompare(b.slug);
   });
+}
 
-  const context = ordered
+/**
+ * Serializa as camadas num bloco Markdown único, separadas por --- e com
+ * um comentário HTML por camada guardando slug e data. Usado tanto no
+ * prompt do ask quanto no CLAUDE.md do inject.
+ */
+export function formatContext(notes) {
+  return notes
     .map((note) =>
       [
         `### ${note.title}`,
@@ -36,6 +43,15 @@ export function buildPrompt(notes, question, { only = null, header = null } = {}
       ].join("\n")
     )
     .join("\n\n---\n\n");
+}
+
+/**
+ * Monta o prompt final. A ordem é proposital: instrução, contexto, pergunta.
+ * O index vem primeiro porque costuma carregar as regras de resposta.
+ */
+export function buildPrompt(notes, question, { only = null, header = null } = {}) {
+  const ordered = selectNotes(notes, only);
+  const context = formatContext(ordered);
 
   const prompt = [
     header ?? DEFAULT_HEADER,
