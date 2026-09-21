@@ -1,8 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { forceCollide } from "d3-force";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GraphData, GraphNode } from "@/lib/types";
+import { useGraphPrefs } from "@/lib/store";
+import { GraphControls } from "./GraphControls";
 
 // force-graph desenha em canvas e toca em `window`: só pode entrar no cliente.
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
@@ -29,12 +32,29 @@ interface RenderNode extends GraphNode {
 const GLOW = "90, 216, 255";
 const AURORA = "155, 255, 228";
 
+/**
+ * O slider vai de 0 (compacto) a 100 (aberto). Traduzimos aqui para as três
+ * forças que importam: repulsão entre nós, comprimento dos links e raio
+ * mínimo de colisão. Fazer o slider falar de "espaço" em vez de "charge"
+ * evita expor o jargão do d3 na UI.
+ */
+function forceParams(spacing: number) {
+  return {
+    charge: -120 - spacing * 8,
+    linkDistance: 60 + spacing * 1.6,
+    collisionPad: 4 + spacing * 0.08,
+  };
+}
+
 export default function GraphCanvas({ data, selected, onSelect }: Props) {
   const wrapper = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
+
+  const spacing = useGraphPrefs((s) => s.spacing);
+  const showLabels = useGraphPrefs((s) => s.showLabels);
 
   useEffect(() => {
     const element = wrapper.current;
@@ -70,13 +90,22 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
     return set;
   }, [focus, data.links]);
 
+  // Raio maior escala visualmente o peso dos nós no cofre atual (11 camadas).
+  const radius = useCallback((node: GraphNode) => 7 + Math.sqrt(node.degree) * 3.6, []);
+
+  // Aplica as três forças toda vez que o slider muda, mantendo o layout vivo.
   useEffect(() => {
     if (!graphRef.current) return;
-    // Repulsão maior e links mais longos para o cofre com poucos nós não
-    // colapsar num nó único; nesta escala a leitura pede ar.
-    graphRef.current.d3Force("charge")?.strength(-520);
-    graphRef.current.d3Force("link")?.distance(140);
-  }, [size.width]);
+    const { charge, linkDistance, collisionPad } = forceParams(spacing);
+    graphRef.current.d3Force("charge")?.strength(charge);
+    graphRef.current.d3Force("link")?.distance(linkDistance);
+    // forceCollide evita sobreposição — o parâmetro é o raio de exclusão do nó.
+    graphRef.current.d3Force(
+      "collide",
+      forceCollide<RenderNode>((node) => radius(node) + collisionPad)
+    );
+    graphRef.current.d3ReheatSimulation();
+  }, [spacing, radius, size.width]);
 
   useEffect(() => {
     if (!selected || !graphRef.current) return;
@@ -84,14 +113,12 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
     if (node?.x !== undefined) graphRef.current.centerAt(node.x, node.y, 600);
   }, [selected, graph.nodes]);
 
-  // Nós maiores e escala mais agressiva pelo grau: com 11 camadas, precisamos
-  // que o núcleo (index/padroes-*) se destaque à primeira vista.
-  const radius = useCallback((node: GraphNode) => 7 + Math.sqrt(node.degree) * 3.6, []);
+  const recenter = useCallback(() => {
+    graphRef.current?.zoomToFit(500, 80);
+  }, []);
 
   const paintNode = useCallback(
     (node: RenderNode, ctx: CanvasRenderingContext2D, scale: number) => {
-      // No primeiro tick o simulador ainda não posicionou os nós:
-      // desenhar com x/y NaN faz o createRadialGradient lançar e derrubar a página.
       if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
       const r = radius(node);
       const dimmed = neighbours ? !neighbours.has(node.id) : false;
@@ -115,17 +142,17 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       ctx.strokeStyle = `rgba(233, 246, 255, ${(isFocus ? 0.9 : 0.35) * alpha})`;
       ctx.stroke();
 
-      // Rótulos visíveis mais cedo: sem eles em zoom padrão o grafo é ilegível.
-      if (scale > 0.4 || isFocus) {
-        const fontSize = Math.max(11 / scale, 3.6);
+      // Rótulo aparece se o usuário forçou, se estamos em zoom razoável ou se é o foco.
+      if (showLabels || scale > 0.55 || isFocus) {
+        const fontSize = Math.max(11 / scale, 3.8);
         ctx.font = `500 ${fontSize}px var(--font-plex-mono), monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = `rgba(233, 246, 255, ${(isFocus ? 0.95 : 0.72) * alpha})`;
+        ctx.fillStyle = `rgba(233, 246, 255, ${(isFocus ? 0.95 : 0.78) * alpha})`;
         ctx.fillText(node.title, node.x, node.y + r + 5 / scale);
       }
     },
-    [focus, neighbours, radius]
+    [focus, neighbours, radius, showLabels]
   );
 
   const paintPointerArea = useCallback(
@@ -165,20 +192,35 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
           nodePointerAreaPaint={paintPointerArea}
           linkColor={linkColor}
           linkWidth={1}
-          cooldownTicks={90}
-          warmupTicks={40}
+          cooldownTicks={110}
+          warmupTicks={50}
           minZoom={0.4}
           maxZoom={6}
           enableNodeDrag
           onNodeClick={(node: RenderNode) => onSelect(node.id)}
           onNodeHover={(node: RenderNode | null) => setHovered(node ? node.id : null)}
           onBackgroundClick={() => onSelect(null)}
-          onEngineStop={() => graphRef.current?.zoomToFit(500, 120)}
+          onEngineStop={() => graphRef.current?.zoomToFit(500, 100)}
         />
       )}
-      <p className="pointer-events-none absolute bottom-3 left-4 font-mono text-[11px] text-mute/70">
-        arraste para mover · clique num nó para ler
-      </p>
+
+      <GraphControls onRecenter={recenter} />
+
+      {/* Legenda no canto inferior esquerdo — cor por camada, tamanho por conexões. */}
+      <div className="pointer-events-none absolute bottom-3 left-4 flex flex-col gap-1 font-mono text-[11px] text-mute/80">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-glow" />
+            core
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-aurora" />
+            growth
+          </span>
+          <span>· tamanho = conexões</span>
+        </div>
+        <span className="opacity-70">arraste para mover · clique num nó para ler</span>
+      </div>
     </div>
   );
 }
