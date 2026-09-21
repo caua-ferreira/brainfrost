@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-09-21T02:50:39.383Z",
+  "activeProvider": "print",
+  "model": null,
+  "header": null,
+  "autoPull": true,
+  "autoPush": true,
+  "providers": [
+    {
+      "name": "print",
+      "kind": "print",
+      "about": "imprime o prompt final no terminal",
+      "model": null,
+      "cmd": null,
+      "url": null,
+      "envVars": [],
+      "custom": false
+    },
+    {
+      "name": "clipboard",
+      "kind": "print",
+      "about": "copia o prompt para a área de transferência",
+      "model": null,
+      "cmd": null,
+      "url": null,
+      "envVars": [],
+      "custom": false
+    },
+    {
+      "name": "claude",
+      "kind": "cmd",
+      "about": "Claude Code em modo não interativo",
+      "model": null,
+      "cmd": "claude -p",
+      "url": null,
+      "envVars": [],
+      "custom": false
+    },
+    {
+      "name": "ollama",
+      "kind": "cmd",
+      "about": "modelo local via Ollama",
+      "model": null,
+      "cmd": "ollama run llama3.1",
+      "url": null,
+      "envVars": [],
+      "custom": false
+    },
+    {
+      "name": "llm",
+      "kind": "cmd",
+      "about": "CLI llm do Simon Willison",
+      "model": null,
+      "cmd": "llm",
+      "url": null,
+      "envVars": [],
+      "custom": false
+    },
+    {
+      "name": "anthropic",
+      "kind": "http",
+      "about": "API da Anthropic (precisa de ANTHROPIC_API_KEY)",
+      "model": "claude-sonnet-4-5",
+      "cmd": null,
+      "url": "https://api.anthropic.com/v1/messages",
+      "envVars": [
+        {
+          "name": "ANTHROPIC_API_KEY",
+          "present": false
+        }
+      ],
+      "custom": false
+    },
+    {
+      "name": "openai",
+      "kind": "http",
+      "about": "API da OpenAI (precisa de OPENAI_API_KEY)",
+      "model": "gpt-4o",
+      "cmd": null,
+      "url": "https://api.openai.com/v1/chat/completions",
+      "envVars": [
+        {
+          "name": "OPENAI_API_KEY",
+          "present": false
+        }
+      ],
+      "custom": false
+    },
+    {
+      "name": "openrouter",
+      "kind": "http",
+      "about": "qualquer modelo pelo OpenRouter",
+      "model": "anthropic/claude-sonnet-4.5",
+      "cmd": null,
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "envVars": [
+        {
+          "name": "OPENROUTER_API_KEY",
+          "present": false
+        }
+      ],
+      "custom": false
+    },
+    {
+      "name": "ollama-http",
+      "kind": "http",
+      "about": "Ollama pela API local, sem sair da máquina",
+      "model": "llama3.1",
+      "cmd": null,
+      "url": "http://localhost:11434/api/chat",
+      "envVars": [],
+      "custom": false
+    },
+    {
+      "name": "cortex",
+      "kind": "print",
+      "about": "SQL pronto para o worksheet do Snowflake Cortex",
+      "model": "claude-sonnet-4-5",
+      "cmd": null,
+      "url": null,
+      "envVars": [],
+      "custom": false
+    }
+  ]
+}

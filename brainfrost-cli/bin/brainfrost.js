@@ -9,6 +9,7 @@ import {
   initCmd,
   configCmd,
   providersCmd,
+  metaCmd,
 } from "../src/commands/vault-ops.js";
 
 const VERSION = "0.2.0";
@@ -35,9 +36,10 @@ ${c.white("bfrost learn")} "título" "conteúdo"   grava o aprendizado e sobe pr
 ${c.white("bfrost providers")}              lista as IAs configuradas e a que está ativa
 ${c.white("bfrost list")}                   mapa das camadas, conexões e órfãos
 ${c.white("bfrost show")} <slug>            imprime uma camada
-${c.white("bfrost sync")}                   pull + commit + push
+${c.white("bfrost sync")}                   pull + commit + push (regera _meta.json)
 ${c.white("bfrost init")}                   cria o cofre .brainfrost aqui
 ${c.white("bfrost config")}                 mostra ou muda cofre, provedor e modelo
+${c.white("bfrost meta")}                   regera .brainfrost/_meta.json (o /config da UI lê daqui)
 
 ${c.dim("Exemplos:")}
   ${c.dim("$")} bfrost ask "revisa esta modelagem" --provider claude
@@ -58,6 +60,7 @@ const COMMANDS = {
   init: initCmd,
   config: configCmd,
   providers: providersCmd,
+  meta: metaCmd,
 };
 
 async function main() {

@@ -9,6 +9,58 @@ import { c, say, flake, ok, warn } from "../ui.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SEED = path.resolve(here, "../../templates");
+const META_FILE = "_meta.json";
+
+/**
+ * Extrai as env vars referenciadas em headers/url de um provider HTTP
+ * (padrão `${NOME_DA_VAR}`). O dashboard usa isso para mostrar quais
+ * chaves cada provider precisa e se elas estão presentes no ambiente
+ * de quem rodou o `bfrost sync`.
+ */
+function envVarsOf(provider) {
+  const scan = JSON.stringify({ url: provider.url ?? "", headers: provider.headers ?? {} });
+  const names = new Set();
+  for (const match of scan.matchAll(/\$\{([A-Z0-9_]+)\}/g)) names.add(match[1]);
+  return [...names].map((name) => ({ name, present: Boolean(process.env[name]) }));
+}
+
+/**
+ * O meta é lido pela UI para a tela /config; nunca contém valor de
+ * chave (só o nome da variável e se estava setada no momento).
+ * Regenerado em todo `bfrost sync` e `bfrost config` — snapshot da
+ * config vigente naquela máquina.
+ */
+function writeMeta(config) {
+  const names = [...new Set([...Object.keys(PRESETS), ...Object.keys(config.providers || {})])];
+  const providers = names.map((name) => {
+    const provider = resolveProvider(name, config);
+    return {
+      name,
+      kind: provider.kind,
+      about: provider.about ?? null,
+      model: provider.model ?? null,
+      cmd: provider.cmd ?? null,
+      url: provider.url ?? null,
+      envVars: envVarsOf(provider),
+      custom: Boolean(config.providers?.[name]),
+    };
+  });
+
+  const meta = {
+    schema: 1,
+    updatedAt: new Date().toISOString(),
+    activeProvider: config.provider,
+    model: config.model ?? null,
+    header: config.header,
+    autoPull: config.autoPull,
+    autoPush: config.autoPush,
+    providers,
+  };
+
+  const target = path.join(config.vault, META_FILE);
+  fs.writeFileSync(target, JSON.stringify(meta, null, 2) + "\n", "utf8");
+  return target;
+}
 
 export function listCmd() {
   const config = loadConfig();
@@ -67,6 +119,10 @@ export function syncCmd() {
   else if (pulled.skipped) warn(`pull pulado: ${pulled.skipped}`);
   else warn(`pull falhou: ${pulled.error.split("\n")[0]}`);
 
+  // Snapshot da config vigente para o dashboard /config da UI ler no build.
+  writeMeta(config);
+  ok(`meta atualizado em ${config.vault}/${META_FILE}.`);
+
   const pushed = commitAndPush(config.repo, "❄️ Sincronização do BrainFrost");
   if (pushed.nothing) ok("nada pendente, já estava em dia.");
   else if (pushed.pushed) ok("enviado ao GitHub.");
@@ -104,6 +160,13 @@ export function initCmd(_positional, flags) {
   say(c.dim("   próximo passo: git init, git remote add origin ... e bfrost learn"));
 }
 
+export function metaCmd() {
+  const config = loadConfig();
+  const target = writeMeta(config);
+  flake(`meta regenerado em ${c.white(target)}`);
+  say(c.dim("   commite para o dashboard /config atualizar no próximo deploy."));
+}
+
 export function providersCmd() {
   const config = loadConfig();
   flake("provedores disponíveis");
@@ -131,6 +194,7 @@ export function configCmd(_positional, flags) {
     const saved = writeRc({ vault: resolved });
     ok(`cofre fixado em ${resolved}`);
     say(c.dim(`   gravado em ${saved.file}`));
+    writeMeta(loadConfig());
     return;
   }
   if (flags.provider && flags.provider !== true) {
@@ -139,12 +203,14 @@ export function configCmd(_positional, flags) {
     const saved = writeRc({ provider: String(flags.provider) });
     ok(`provedor padrão: ${flags.provider}`);
     say(c.dim(`   gravado em ${saved.file}`));
+    writeMeta(loadConfig());
     return;
   }
   if (flags.model && flags.model !== true) {
     const saved = writeRc({ model: String(flags.model) });
     ok(`modelo padrão: ${flags.model}`);
     say(c.dim(`   gravado em ${saved.file}`));
+    writeMeta(loadConfig());
     return;
   }
   const config = loadConfig();
