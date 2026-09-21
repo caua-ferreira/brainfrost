@@ -3,6 +3,7 @@ import { parseArgs, c, say, fail } from "../src/ui.js";
 import ask from "../src/commands/ask.js";
 import learn from "../src/commands/learn.js";
 import inject from "../src/commands/inject.js";
+import prune from "../src/commands/prune.js";
 import {
   listCmd,
   showCmd,
@@ -41,6 +42,8 @@ ${c.white("bfrost inject")}                  escreve o cofre no CLAUDE.md do rep
 
 ${c.white("bfrost providers")}              lista as IAs configuradas e a que está ativa
 ${c.white("bfrost list")}                   mapa das camadas, conexões e órfãos
+${c.white("bfrost prune")}                  aponta camadas para revisar (não apaga nada)
+    --json                    devolve o relatório em JSON
 ${c.white("bfrost show")} <slug>            imprime uma camada
 ${c.white("bfrost sync")}                   pull + commit + push (regera _meta.json)
 ${c.white("bfrost init")}                   cria o cofre .brainfrost aqui
@@ -59,6 +62,7 @@ const COMMANDS = {
   learn,
   l: learn,
   inject,
+  prune,
   list: listCmd,
   ls: listCmd,
   show: showCmd,
