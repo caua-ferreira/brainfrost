@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import GraphCanvas from "./GraphCanvas";
 import ReaderPanel from "./ReaderPanel";
@@ -10,10 +10,21 @@ import type { VaultSnapshot } from "@/lib/types";
 export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot }) {
   const { notes, graph, stats } = snapshot;
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const initialSlug = searchParams.get("camada");
   const initialValid = initialSlug && notes.some((n) => n.slug === initialSlug) ? initialSlug : null;
   const [selected, setSelected] = useState<string | null>(initialValid);
   const [query, setQuery] = useState("");
+
+  // Sincroniza a URL: aberta com camada = ?camada=<slug>; fechada = URL limpa.
+  // O `scroll: false` evita jump quando o painel abre em cima do grafo.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const target = selected ? `${pathname}?camada=${selected}` : pathname;
+    const current = window.location.pathname + window.location.search;
+    if (target !== current) router.replace(target, { scroll: false });
+  }, [selected, pathname, router]);
 
   const note = useMemo(() => notes.find((n) => n.slug === selected) ?? null, [notes, selected]);
 

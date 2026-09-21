@@ -7,3 +7,7 @@ out/
 *.log
 brainfrost-ui/content/
 .claude/
+
+# A raiz do repo não é projeto npm; se aparecer aqui é porque alguém rodou
+# npm no diretório errado. Os subprojetos gerenciam os seus.
+/package-lock.json
