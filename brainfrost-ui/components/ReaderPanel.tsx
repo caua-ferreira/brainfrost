@@ -11,8 +11,15 @@ interface Props {
   onClose: () => void;
 }
 
+// timeZone fixo em UTC pelo mesmo motivo do BrainFrostShell: sem isso,
+// server e cliente podem formatar dias distintos e a hidratação estoura.
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props) {

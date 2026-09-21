@@ -32,9 +32,12 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // timeZone fixo em UTC porque o server (iad1) e o cliente (fuso do leitor)
+  // podem cair em dias diferentes e travar a hidratação do React.
   const updated = new Date(stats.lastUpdate).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
+    timeZone: "UTC",
   });
 
   return (

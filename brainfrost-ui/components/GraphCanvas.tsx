@@ -86,6 +86,9 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
 
   const paintNode = useCallback(
     (node: RenderNode, ctx: CanvasRenderingContext2D, scale: number) => {
+      // No primeiro tick o simulador ainda não posicionou os nós:
+      // desenhar com x/y NaN faz o createRadialGradient lançar e derrubar a página.
+      if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
       const r = radius(node);
       const dimmed = neighbours ? !neighbours.has(node.id) : false;
       const isFocus = node.id === focus;
@@ -122,6 +125,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
 
   const paintPointerArea = useCallback(
     (node: RenderNode, color: string, ctx: CanvasRenderingContext2D) => {
+      if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius(node) + 4, 0, Math.PI * 2);
