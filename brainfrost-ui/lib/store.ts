@@ -11,6 +11,8 @@ interface GraphPrefs {
   spacing: number;
   /** Se true, rótulos aparecem em qualquer zoom. */
   showLabels: boolean;
+  /** Se true, camadas antigas ficam mais apagadas no grafo. */
+  dimByAge: boolean;
   set: (patch: Partial<Omit<GraphPrefs, "set" | "reset">>) => void;
   reset: () => void;
 }
@@ -18,6 +20,7 @@ interface GraphPrefs {
 const DEFAULTS = {
   spacing: 55,
   showLabels: true,
+  dimByAge: true,
 };
 
 export const useGraphPrefs = create<GraphPrefs>()(

@@ -55,6 +55,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
 
   const spacing = useGraphPrefs((s) => s.spacing);
   const showLabels = useGraphPrefs((s) => s.showLabels);
+  const dimByAge = useGraphPrefs((s) => s.dimByAge);
 
   useEffect(() => {
     const element = wrapper.current;
@@ -93,6 +94,19 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
   // Raio maior escala visualmente o peso dos nós no cofre atual (11 camadas).
   const radius = useCallback((node: GraphNode) => 7 + Math.sqrt(node.degree) * 3.6, []);
 
+  // Decay linear entre 7 e 120 dias: fresco brilha inteiro, velho cai a 35%.
+  // A curva é sutil de propósito — só quer sugerir "isto está esfriando", não esconder.
+  const ageFactor = useCallback(
+    (updatedAt: string) => {
+      if (!dimByAge) return 1;
+      const days = (Date.now() - new Date(updatedAt).getTime()) / 86_400_000;
+      if (!Number.isFinite(days) || days < 7) return 1;
+      if (days > 120) return 0.35;
+      return 1 - ((days - 7) / 113) * 0.65;
+    },
+    [dimByAge]
+  );
+
   // Aplica as três forças toda vez que o slider muda, mantendo o layout vivo.
   useEffect(() => {
     if (!graphRef.current) return;
@@ -124,7 +138,8 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       const dimmed = neighbours ? !neighbours.has(node.id) : false;
       const isFocus = node.id === focus;
       const tone = node.layer === "core" ? GLOW : AURORA;
-      const alpha = dimmed ? 0.18 : 1;
+      // Foco não sofre o decay temporal — quando você está lendo/hovering, brilha.
+      const alpha = (dimmed ? 0.18 : 1) * (isFocus ? 1 : ageFactor(node.updatedAt));
 
       const halo = ctx.createRadialGradient(node.x, node.y, r * 0.4, node.x, node.y, r * 3.1);
       halo.addColorStop(0, `rgba(${tone}, ${0.32 * alpha})`);
@@ -152,7 +167,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
         ctx.fillText(node.title, node.x, node.y + r + 5 / scale);
       }
     },
-    [focus, neighbours, radius, showLabels]
+    [focus, neighbours, radius, showLabels, ageFactor]
   );
 
   const paintPointerArea = useCallback(

@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function GraphControls({ onRecenter }: Props) {
-  const { spacing, showLabels, set, reset } = useGraphPrefs();
+  const { spacing, showLabels, dimByAge, set, reset } = useGraphPrefs();
 
   return (
     <div className="pane pointer-events-auto absolute right-4 top-4 z-10 w-64 rounded-xl p-4 text-arctic shadow-pane">
@@ -50,6 +50,15 @@ export function GraphControls({ onRecenter }: Props) {
             checked={showLabels}
             onCheckedChange={(v) => set({ showLabels: v })}
             aria-label="Sempre mostrar rótulos"
+          />
+        </label>
+
+        <label className="flex items-center justify-between text-[12px]">
+          <span>apagar camadas antigas</span>
+          <Switch
+            checked={dimByAge}
+            onCheckedChange={(v) => set({ dimByAge: v })}
+            aria-label="Apagar camadas antigas"
           />
         </label>
 
