@@ -91,6 +91,203 @@ está presente naquela máquina).
 
 ---
 
+## Como colocar seus contextos
+
+Uma **camada** é um arquivo `.md` dentro de `.brainfrost/`. Frontmatter é opcional mas
+recomendado:
+
+```markdown
+---
+title: Padrões de arquitetura
+tags: [snowflake, sql]
+layer: core          # core = azul no grafo · growth = verde-água
+---
+
+# Padrões de arquitetura
+
+MERGE sempre com chave explícita. Nunca use MATCHED ON com coluna nullable.
+Ver [[contexto_trabalho]] pro contexto de onde essa regra veio.
+```
+
+Campos:
+
+| Campo | Para que serve |
+| --- | --- |
+| `title` | Nome que aparece no grafo e no reader. Se omitido, o CLI usa o primeiro `#` do corpo, e depois o nome do arquivo. |
+| `tags` | Filtros. `bfrost ask --only snowflake` puxa toda camada com essa tag. Use poucas — 1 a 3 por camada. |
+| `layer` | `core` para regra/padrão estável; `growth` para aprendizado/experimento. Muda a cor no grafo e ajuda a separar "verdade" de "acontecendo agora". |
+
+**WikiLinks** conectam camadas: `[[slug]]` ou `[[slug|texto do link]]`. Acentos, maiúsculas,
+`_` e `-` são normalizados — `[[Padrões Arquitetura]]` e `[[padroes_arquitetura]]` caem no
+mesmo nó. Link para camada inexistente não quebra: aparece como pendência em `bfrost list`
+e no banner amarelo do `/cofre`.
+
+### Três formas de gravar
+
+Todas commitam e fazem push automaticamente (`--no-push` grava só local se quiser revisar
+antes):
+
+```bash
+# 1. Aprendizado curto — anexa ao log_aprendizados
+bfrost learn "MERGE sempre com chave explícita" "Nunca use MATCHED ON com coluna nullable."
+
+# 2. Aprendizado com tags e conexões
+bfrost learn "Chave do MERGE" "Sempre explícita." \
+  --tags snowflake,sql \
+  --links padroes_arquitetura,contexto_trabalho
+
+# 3. Camada nova em vez de append no log
+bfrost learn "Onboarding do time" "Comece por ~/setup.sh e leia..." --file onboarding_time
+```
+
+Também dá pra editar os `.md` na mão (VS Code, vim, o que preferir) e depois `bfrost sync`
+para pull + commit + push. O grafo reconstrói no próximo build.
+
+### O que já está no cofre (exemplo real)
+
+Rode `bfrost list` para ver a organização atual — camadas `core` são regras (padrões de
+código, arquitetura, glossário, contexto do trabalho) e `growth` são projetos e o log de
+aprendizados. É o formato testado; copie o padrão.
+
+---
+
+## Como gerar um contexto ideal
+
+Regras que se pagaram sozinhas nas primeiras semanas:
+
+**1. Uma camada = uma pergunta que ela responde.** Se o título precisa de "e", quebre em
+duas. `padroes_arquitetura` cabe; `padroes_arquitetura_e_convencoes_de_teste` pede duas
+camadas ligadas por WikiLink.
+
+**2. Escreva pensando em novo dev, não em você.** Se você fosse pedir esse contexto pra
+alguém que entra hoje, o que ele precisa saber? Regra > exemplo > exceção. Curto vence
+completo.
+
+**3. Cada camada com propósito claro no título.** Título ruim é `notas.md`. Título bom é
+`padrao_webapp.md`. O grafo mostra só o título — se ele não se explica, você vai clicar
+pra entender e o cofre perde valor.
+
+**4. Comprimento: 150–500 palavras é o sweet spot.** Menos que 100 e a camada raramente
+justifica um arquivo próprio; mais que 700 e você provavelmente misturou duas coisas.
+Divida.
+
+**5. Conecte com intenção, não por decoração.** `[[link]]` só quando o outro texto
+realmente completa esse. WikiLink para "eu falo desse assunto em outro lugar também" —
+não para "achei bonito citar". Camadas com muitos backlinks viram hubs; camadas órfãs
+gritam pra serem juntadas ou apagadas.
+
+**6. Tags como filtro por projeto ou tópico, não como hierarquia.** `tags: [snowflake, sql]`
+serve para `bfrost ask "pergunta" --only snowflake`. `tags: [nivel1, nivel2, nivel3]` não
+serve pra nada — tag hierárquica é sinal de que a organização certa seria mais camadas
+com WikiLinks.
+
+**7. Rode `bfrost list` toda semana.** Órfãos são candidatos a apagar ou reconectar. Links
+quebrados são erro. O banner do `/cofre` mostra os dois.
+
+**8. Refinar é gravar de novo.** Se você percebe que uma camada envelheceu, edite o `.md`
+e faça `bfrost sync`. Não deixe camada zumbi no cofre — ela vira ruído no prompt.
+
+**Sinal de camada boa:** você consegue copiar ela isolada e ainda faz sentido pra quem
+lê. Se pra fazer sentido precisa das outras 3, ou junte ou linke melhor.
+
+**Sinal de camada ruim que aparece cedo:** o `bfrost ask --only <camada>` gera prompt
+que a IA responde com "preciso de mais contexto". Se o teste falha, a camada não estava
+suficiente por si.
+
+---
+
+## Segurança: como não expor seus dados
+
+**Regra dourada.** Assuma duas coisas:
+
+1. O prompt inteiro vai para a IA — que pode logar, treinar ou vazar.
+2. Este repositório pode virar público a qualquer momento (por acidente ou opção).
+
+Se as duas hipóteses forem verdadeiras amanhã, o que está no cofre te queima? Se sim,
+tire agora.
+
+### O que vai, o que não vai
+
+| ✅ Pode entrar | ❌ Nunca entra |
+| --- | --- |
+| Regra, padrão, decisão | CPF, CNPJ, RG, número de contrato |
+| Padrão de código, arquitetura, glossário | Senha, token, chave de API, chave Pix |
+| "Como pensamos sobre X" | Email pessoal de outros, telefone |
+| Nome público de projeto ou tecnologia | Nome real de cliente, valor de contrato |
+| Exemplo genérico (`cliente Fulano Ltda`) | Dado real de negócio, número interno |
+| Estrutura de tabela sem dado | Dump de banco, export de planilha |
+
+Já houve uma omissão deliberada no cofre atual: a chave Pix do app de vendas ficou de
+fora e é referenciada como `<CHAVE_PIX_APP_VENDAS>` — o padrão pro que precisa aparecer
+sem ser verdadeiro.
+
+### Checagem antes de commitar
+
+O `bfrost learn` grava e faz `git push` na sequência — se algo sensível entrou, já foi.
+Duas defesas:
+
+```bash
+# 1. Grave sem push, revise, aí decide
+bfrost learn "..." "..." --no-push
+git diff --cached                 # olha o que vai commitar
+# se ok:
+git push
+# se não:
+git reset HEAD~1 --soft && edite o .md
+
+# 2. Grep de segurança antes de qualquer push manual
+git diff --cached | grep -iE "(cpf|cnpj|senha|password|token|secret|api[_-]?key|bearer|sk-)"
+```
+
+Bom hábito: um alias no shell (`git-safepush`) que roda o grep e só empurra se sair
+limpo.
+
+### Chaves de API
+
+Chave nunca no `~/.brainfrostrc`. O rc guarda o **nome** da env var (`${ANTHROPIC_API_KEY}`)
+e o CLI resolve na hora. Sem a env exportada, o comando falha e diz qual variável
+exportar — em vez de rodar com placeholder ou vazio.
+
+O `_meta.json` que alimenta o `/config` também **nunca** guarda valor de chave, só o
+nome da env var e se ela estava presente no ambiente no momento da geração. Você pode
+commitar o `_meta.json` num repo público sem risco.
+
+### Cofre público vs. cofre privado
+
+O cofre é um repositório Git — a visibilidade é decisão sua no GitHub.
+
+- **Cofre público** (como este): só regra, padrão e conhecimento genérico. Serve como
+  portfólio e ajuda outra gente a copiar o setup.
+- **Cofre privado paralelo:** se o seu trabalho tem contexto realmente sensível (nomes
+  de cliente, estratégia interna, dado de produção), crie **outro** repo privado com o
+  mesmo padrão e aponte via `bfrost config --vault ~/trabalho/cofre-privado/.brainfrost`
+  quando estiver dentro daquele projeto. O CLI aceita cofres diferentes por pasta — é
+  só o que ele acha subindo do CWD.
+
+Nunca misture os dois no mesmo repo. Não existe "camada privada" no mesmo cofre público:
+uma vez commitado em repo público, considere vazado.
+
+### Antes de tornar um repo do cofre público
+
+Auditoria manual, uma vez:
+
+```bash
+bfrost list                              # visão geral
+for slug in $(bfrost list ...); do       # ou olhe camada por camada
+  bfrost show $slug
+done
+```
+
+Depois, procure padrões que costumam denunciar dado real:
+
+```bash
+grep -rEn "(cpf|cnpj|@.*\.com|R\$ ?[0-9]|sk-[A-Za-z0-9]{20,})" .brainfrost/
+```
+
+Se voltar limpo, o repo pode virar público. Se algo sair, corrija antes.
+
+---
+
 ## Usando em outros projetos / novas sessões
 
 O CLI é global e neutro. Depois de instalado, você o chama de qualquer pasta.
@@ -138,24 +335,6 @@ Se você acaba pedindo o mesmo contexto no mesmo projeto todo dia, é sinal de q
 gravar isso como aprendizado no cofre (`bfrost learn`) — a próxima pergunta já leva
 automaticamente.
 
-### Grave o que aprender
-
-```bash
-# Aprendizado avulso (vai no log)
-bfrost learn "MERGE sempre com chave explícita" "Nunca use MATCHED ON com coluna nullable."
-
-# Marca com tags e faz ligações
-bfrost learn "Chave do MERGE" "Sempre explícita." \
-  --tags snowflake,sql \
-  --links padroes_arquitetura,contexto_trabalho
-
-# Cria uma camada nova em vez de acrescentar ao log
-bfrost learn "Onboarding do time" "..." --file onboarding_time
-```
-
-O `learn` grava o arquivo, commita (`❄️ Novo aprendizado no BrainFrost: <título>`) e faz push.
-A Vercel reconstrói o grafo. Em outra máquina, `bfrost sync` (ou `git pull`) recebe.
-
 ---
 
 ## Rodando o site localmente
@@ -175,28 +354,6 @@ Rotas:
 - `/cofre` — dashboard: stat cards, gráfico de conexões por camada, tabela ordenável.
 - `/config` — snapshot do `~/.brainfrostrc` gerado pelo `bfrost meta` (só-leitura).
 - `/camadas` — placeholder (planejado como lista filtrável).
-
----
-
-## O cofre
-
-Cada arquivo `.md` dentro de `.brainfrost` é uma camada. O frontmatter é opcional:
-
-```markdown
----
-title: Padrões de arquitetura
-tags: [snowflake, sql]
-layer: core        # core = azul no grafo, growth = verde-água
----
-
-# Padrões de arquitetura
-
-MERGE sempre com chave explícita. Ver [[contexto_trabalho]].
-```
-
-WikiLinks (`[[slug]]` ou `[[slug|rótulo]]`) viram arestas no grafo. Acentos, maiúsculas, `_` e `-`
-são normalizados: `[[padroes_arquitetura]]` e `[[Padrões Arquitetura]]` caem no mesmo nó.
-Link para camada inexistente não quebra — aparece como pendência em `bfrost list` e no `/cofre`.
 
 ---
 
@@ -225,6 +382,15 @@ Flags mais usadas do `ask`:
 | `--copy` | manda para a área de transferência |
 | `--out <arquivo>` | grava o resultado em arquivo |
 | `--no-pull` | não puxa do Git antes |
+
+Flags do `learn`:
+
+| Flag | Efeito |
+| --- | --- |
+| `--tags a,b` | tags da entrada |
+| `--links slug,slug` | cria os WikiLinks de relacionamento |
+| `--file nome` | grava numa camada própria em vez do log |
+| `--no-push` | só grava local, você revisa e empurra depois |
 
 Config completa em `~/.brainfrostrc`. `BRAINFROST_VAULT` ganha de tudo. O texto de
 instrução que abre o prompt também é configurável no campo `header`.
@@ -263,8 +429,6 @@ procura em `content/` também.
 - Next abaixo de `15.5.4` é barrado no build por CVE. Não baixe a versão.
 - Windows apaga o bit executável do `brainfrost-cli/bin/brainfrost.js` a cada edição. Antes
   de commitar, `git update-index --chmod=+x brainfrost-cli/bin/brainfrost.js`.
-- **Nunca coloque dado pessoal ou de cliente no cofre.** O prompt inteiro vai para a IA, e
-  o repositório pode virar público sem querer. Estrutura e regra, sim; CPF, chave e segredo, não.
 
 Contexto completo de decisões e estado atual em [`CONTEXTO.md`](./CONTEXTO.md).
 Plano de UI em [`brainfrost-ui/REDESIGN.md`](./brainfrost-ui/REDESIGN.md).
