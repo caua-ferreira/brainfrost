@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Duas camadas de tokens convivem:
+  - Cores hex nomeadas (`--abyss`, `--glow`...) são a paleta Frost em uso
+    pelas classes ad-hoc (.pane, .reader) e pelo canvas do force-graph.
+  - Variáveis HSL (`--background`, `--primary`...) alimentam o shadcn/ui e
+    são a única forma que os componentes shadcn temam suas cores. Ambos
+    apontam para as mesmas cores; mudar num lado exige mudar no outro.
+*/
 :root {
   --abyss: #050e1a;
   --deep: #0a1a2f;
@@ -10,6 +18,28 @@
   --aurora: #9bffe4;
   --arctic: #e9f6ff;
   --mute: #7e9bb8;
+
+  --background: 214 66% 6%;         /* abyss */
+  --foreground: 205 100% 96%;       /* arctic */
+  --card: 213 65% 11%;              /* deep */
+  --card-foreground: 205 100% 96%;
+  --popover: 213 65% 11%;
+  --popover-foreground: 205 100% 96%;
+  --primary: 195 100% 68%;          /* glow */
+  --primary-foreground: 214 66% 6%;
+  --secondary: 212 57% 20%;         /* rift */
+  --secondary-foreground: 205 100% 96%;
+  --muted: 212 57% 20%;
+  --muted-foreground: 207 30% 61%;  /* mute */
+  --accent: 162 100% 80%;           /* aurora */
+  --accent-foreground: 214 66% 6%;
+  --destructive: 356 79% 65%;
+  --destructive-foreground: 205 100% 96%;
+  --border: 195 100% 68% / 0.14;    /* glow @ 14% — combina com .hairline */
+  --input: 212 57% 20%;
+  --ring: 195 100% 68%;             /* glow */
+  --radius: 0.5rem;
+
   color-scheme: dark;
 }
 
