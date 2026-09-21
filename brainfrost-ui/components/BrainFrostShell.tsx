@@ -100,16 +100,13 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
         <GraphCanvas data={graph} selected={selected} onSelect={setSelected} />
       </main>
 
-      {note && (
-        <div className="absolute inset-x-0 bottom-0 top-auto z-20 h-[72%] md:inset-y-0 md:left-auto md:right-0 md:h-full md:w-[440px]">
-          <ReaderPanel
-            note={note}
-            notes={notes}
-            onNavigate={setSelected}
-            onClose={() => setSelected(null)}
-          />
-        </div>
-      )}
+      {/* Sheet cuida do posicionamento e do overlay — o painel abre quando `note` existe. */}
+      <ReaderPanel
+        note={note}
+        notes={notes}
+        onNavigate={setSelected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

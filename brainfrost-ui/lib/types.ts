@@ -7,6 +7,7 @@ export interface Note {
   tags: string[];
   layer: Layer;
   content: string;
+  raw: string;
   excerpt: string;
   links: string[];
   backlinks: string[];
