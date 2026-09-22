@@ -4,6 +4,7 @@ import ask from "../src/commands/ask.js";
 import learn from "../src/commands/learn.js";
 import inject from "../src/commands/inject.js";
 import prune from "../src/commands/prune.js";
+import open from "../src/commands/open.js";
 import {
   listCmd,
   showCmd,
@@ -48,6 +49,8 @@ ${c.white("bfrost list")}                   mapa das camadas, conexões e órfã
 ${c.white("bfrost prune")}                  aponta camadas para revisar (não apaga nada)
     --json                    devolve o relatório em JSON
 ${c.white("bfrost show")} <slug>            imprime uma camada
+${c.white("bfrost open")} <slug>            abre a camada no editor ($EDITOR, fallback code/codium/subl/cursor)
+    --editor <bin>            força um editor específico
 ${c.white("bfrost sync")}                   pull + commit + push (regera _meta.json)
 ${c.white("bfrost init")}                   cria o cofre .brainfrost aqui
 ${c.white("bfrost config")}                 mostra ou muda cofre, provedor e modelo
@@ -66,6 +69,7 @@ const COMMANDS = {
   l: learn,
   inject,
   prune,
+  open,
   list: listCmd,
   ls: listCmd,
   show: showCmd,
