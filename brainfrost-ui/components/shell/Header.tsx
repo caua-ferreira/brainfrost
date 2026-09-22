@@ -9,6 +9,7 @@ import { MobileNav } from "./MobileNav";
 
 const TITLE: Record<string, string> = {
   "/": "Grafo",
+  "/chat": "Chat",
   "/camadas": "Camadas",
   "/cofre": "Cofre",
   "/config": "Config",

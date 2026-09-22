@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Layers, Settings, Snowflake, Sparkles } from "lucide-react";
+import { LayoutDashboard, Layers, MessagesSquare, Settings, Snowflake, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Grafo", icon: LayoutDashboard, match: (p: string) => p === "/" },
+  { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p: string) => p.startsWith("/chat") },
   { href: "/camadas", label: "Camadas", icon: Layers, match: (p: string) => p.startsWith("/camadas") },
   { href: "/cofre", label: "Cofre", icon: Sparkles, match: (p: string) => p.startsWith("/cofre") },
   { href: "/config", label: "Config", icon: Settings, match: (p: string) => p.startsWith("/config") },
