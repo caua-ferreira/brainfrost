@@ -28,6 +28,9 @@ ${c.white("bfrost ask")} "pergunta"        injeta o cofre e manda para a IA esco
     --copy                    manda para a área de transferência
     --out <arquivo>           grava o resultado em arquivo
     --no-pull                 não puxa do Git antes
+    --continue                continua a última conversa (só provedores http)
+    --new                     apaga a conversa atual antes de perguntar
+    --history                 mostra a conversa em andamento
 
 ${c.white("bfrost learn")} "título" "conteúdo"   grava o aprendizado e sobe pro Git
     --tags a,b                tags da entrada

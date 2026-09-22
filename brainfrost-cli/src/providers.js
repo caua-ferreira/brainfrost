@@ -106,9 +106,8 @@ export function resolveProvider(name, config) {
   return { name, ...(preset ?? {}), ...(custom ?? {}) };
 }
 
-function buildBody(provider, prompt) {
+function buildBody(provider, messages) {
   const model = provider.model ?? "";
-  const messages = [{ role: "user", content: prompt }];
   if (provider.api === "anthropic") {
     return { model, max_tokens: provider.maxTokens ?? 4096, messages };
   }
@@ -128,7 +127,7 @@ function extractText(data) {
   return JSON.stringify(data, null, 2);
 }
 
-async function callHttp(provider, prompt) {
+async function callHttp(provider, messages) {
   const headers = { "content-type": "application/json" };
   for (const [key, value] of Object.entries(provider.headers ?? {})) {
     headers[key] = expandEnv(value);
@@ -137,7 +136,7 @@ async function callHttp(provider, prompt) {
   const response = await fetch(expandEnv(provider.url), {
     method: "POST",
     headers,
-    body: JSON.stringify(buildBody(provider, prompt)),
+    body: JSON.stringify(buildBody(provider, messages)),
   });
 
   const raw = await response.text();
@@ -168,9 +167,22 @@ function callCmd(provider, prompt) {
   });
 }
 
-/** Devolve o texto da resposta, ou null quando a saída já foi para o terminal. */
-export async function send(provider, prompt) {
-  if (provider.kind === "http") return callHttp(provider, prompt);
-  if (provider.kind === "cmd") return callCmd(provider, prompt);
-  return prompt;
+/**
+ * Aceita string (prompt one-shot, jeito clássico) ou array de mensagens
+ * (modo conversa). Providers cmd/print só suportam one-shot — se receberem
+ * array, usam apenas a última mensagem do usuário.
+ */
+export async function send(provider, promptOrMessages) {
+  const isArray = Array.isArray(promptOrMessages);
+  if (provider.kind === "http") {
+    const messages = isArray
+      ? promptOrMessages
+      : [{ role: "user", content: promptOrMessages }];
+    return callHttp(provider, messages);
+  }
+  const flat = isArray
+    ? [...promptOrMessages].reverse().find((m) => m.role === "user")?.content ?? ""
+    : promptOrMessages;
+  if (provider.kind === "cmd") return callCmd(provider, flat);
+  return flat;
 }
