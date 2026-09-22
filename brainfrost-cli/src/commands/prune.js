@@ -6,7 +6,7 @@ const SHORT_WORDS = 30;
 const STALE_DAYS = 180;
 const STALE_MAX_DEGREE = 1;
 
-const REASONS = {
+export const REASONS = {
   ORFAO: "nem cita, nem é citada — candidata a juntar ou apagar",
   SEM_ENTRADA: "cita outras, ninguém cita ela — ninguém sabe que existe",
   SEM_SAIDA: "só recebe citações, não conecta com nada — ilha final",
@@ -23,7 +23,7 @@ function daysAgo(iso) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 }
 
-function classify(note) {
+export function classify(note) {
   const findings = [];
   const words = wordCount(note.body);
   const backCount = note.backlinks.length;

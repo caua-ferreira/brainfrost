@@ -5,8 +5,8 @@ import { readVault, estimateTokens } from "../vault.js";
 import { selectNotes, formatContext } from "../prompt.js";
 import { c, say, flake, ok, list } from "../ui.js";
 
-const START = "<!-- brainfrost:inject-start -->";
-const END = "<!-- brainfrost:inject-end -->";
+export const START = "<!-- brainfrost:inject-start -->";
+export const END = "<!-- brainfrost:inject-end -->";
 
 const PREAMBLE = `## Contexto do BrainFrost
 
@@ -16,7 +16,7 @@ diga explicitamente o que está contrariando e por quê.
 
 Regerar este bloco: \`bfrost inject\` (opcionalmente \`--only <camadas>\`).`;
 
-function buildBlock(notes, listSummary) {
+export function buildBlock(notes, listSummary) {
   const context = formatContext(notes);
   return [
     START,
@@ -34,7 +34,7 @@ function buildBlock(notes, listSummary) {
  * existe sem marcadores, anexa no fim. Se não existe, cria com só o bloco.
  * Assim rodar `bfrost inject` várias vezes converge, nunca duplica.
  */
-function mergeIntoFile(target, block) {
+export function mergeIntoFile(target, block) {
   if (!fs.existsSync(target)) {
     fs.writeFileSync(target, block + "\n", "utf8");
     return "created";

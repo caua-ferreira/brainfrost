@@ -17,6 +17,9 @@
     "node": ">=18.17"
   },
   "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {},
   "keywords": ["brainfrost", "context", "snowflake", "cortex", "markdown"]
 }
