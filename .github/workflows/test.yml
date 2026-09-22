@@ -5,18 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # Roda manualmente pela aba Actions se quiser.
   workflow_dispatch: {}
 
-# Cancela runs pendentes do mesmo branch quando chega commit novo — evita fila
-# empilhando quando alguém pusha 3 commits seguidos.
+# Cancela runs pendentes do mesmo branch quando chega commit novo.
 concurrency:
   group: testes-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  cli:
-    name: CLI (node --test)
+  test:
+    name: Testes (CLI + UI)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,28 +23,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
-      # CLI é zero-dependência por decisão — não precisa npm install.
-      - name: Rodar testes do CLI
-        working-directory: brainfrost-cli
-        run: npm test
+      # Install determinístico usando o package-lock.json da raiz do workspace.
+      - name: Instalar dependências (workspace)
+        run: npm ci
 
-  ui:
-    name: UI (vitest)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      # Sem package-lock committed (decisão do dono), então npm install em vez de npm ci.
-      - name: Instalar deps da UI
-        working-directory: brainfrost-ui
-        run: npm install --no-audit --no-fund
-
-      - name: Rodar testes da UI
-        working-directory: brainfrost-ui
+      # Script "test" da raiz roda `npm test` em todo workspace que tiver.
+      - name: Rodar todos os testes
         run: npm test

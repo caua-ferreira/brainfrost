@@ -8,7 +8,8 @@
     "dev": "npm run dev --workspace brainfrost-ui",
     "build": "npm run build --workspace brainfrost-ui",
     "cli": "node brainfrost-cli/bin/brainfrost.js",
-    "vault": "npm run vault --workspace brainfrost-ui"
+    "vault": "npm run vault --workspace brainfrost-ui",
+    "test": "npm test --workspaces --if-present"
   },
   "license": "MIT"
 }
