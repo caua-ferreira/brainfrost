@@ -55,9 +55,18 @@ Tudo abaixo foi escrito, verificado rodando e deployado em produção
   com o dono).
 - **Design encaixa com o `permafrost-platform`** (referência de rigor) mas mantém a
   identidade Frost em vez de virar mais um dashboard `slate`.
-- **Mobile:** navegação por hamburger (Sheet lateral), controles do grafo por FAB +
-  Sheet bottom, dashboards e listas viram cards empilhados abaixo de `md`. Sem lista
-  lateral na home — a busca é via ⌘K/botão-lupa.
+- **Mobile v2 (app-like).** Bottom navigation com 5 tabs (Grafo/Chat/Camadas/Cofre/Config),
+  header com título 17px e busca em pílula, FAB grande dos controles do grafo respeitando
+  `env(safe-area-inset-bottom)`, chat com bubbles 15px e botão Send 56x56. Dashboards e
+  listas viram cards empilhados abaixo de `md`.
+- **Chat na UI (`/chat`).** BYOK browser-only — sem backend. Cards de conector (Claude via
+  OpenRouter, ChatGPT, Gemini, Snowflake Cortex, Claude direto, Ollama local, LM Studio,
+  Custom) com modal simplificado: só cola a chave. Chave persiste em `localStorage`, nunca
+  no repo, nunca passa pelo backend. Provedores CORS-hostis (Cortex, Anthropic direto)
+  ganham badge "pode falhar por CORS" e sugestão de fallback pro CLI. Plano completo em
+  `brainfrost-ui/CHAT.md`.
+- **Testes automatizados.** 72 casos passando (50 CLI + 22 UI), sem rede, sem chaves.
+  `npm test` em cada subprojeto. Detalhes na seção Testes abaixo.
 
 ### O que falta
 
@@ -188,7 +197,14 @@ variáveis HSL em `brainfrost-ui/app/globals.css` (que alimentam também o shadc
 ## Como validar antes de dizer que terminou
 
 ```bash
-cd brainfrost-ui && npm run build         # tem que passar limpo, 7 páginas static
+# Suítes automatizadas (rodam sem rede, sem chaves — segurança primeiro)
+cd brainfrost-cli && npm test             # 50 testes: unit + smoke E2E
+cd ../brainfrost-ui && npm test           # 22 testes: vault, chat-prompt, chat-client
+
+# Sanidade extra do site
+npm run build                             # 6 páginas static (/ /chat /camadas /cofre /config)
+
+# Sanidade do cofre
 cd .. && bfrost list                      # olhar órfãos e links quebrados
 bfrost ask "teste" --dry --only index     # prompt monta sem erro
 bfrost meta                               # _meta.json regrava sem erro
@@ -196,13 +212,46 @@ bfrost meta                               # _meta.json regrava sem erro
 
 Rotas a olhar:
 - `/` — grafo + reader panel
-- `/cofre` — dashboard
+- `/chat` — conector BYOK + histórico multiturno
+- `/camadas` — lista tabelada com busca full-text, filtros por layer e tag
+- `/cofre` — dashboard com stat cards, BarChart e tabela
 - `/config` — snapshot do `_meta.json`
-- `/camadas` — placeholder (Fase 4 do plano ainda não cobre esta rota; virou "lista de
-  camadas com filtros"; se implementar, atualize o `REDESIGN.md`)
 
 Se mexer no `learn` ou no `git.js`, teste num repositório descartável antes:
 `mkdir /tmp/t && cd /tmp/t && git init && bfrost init`.
+
+---
+
+## Testes
+
+Duas suítes, ambas sem rede, sem chaves, sem `npm link` — dá pra colar num CI sem preparo.
+
+**CLI (`brainfrost-cli/test/`, roda com `node --test` nativo, zero dependência):**
+
+| Arquivo | Testes | Cobre |
+| --- | --- | --- |
+| `vault.test.js` | 7 | slugify, frontmatter, WikiLinks, backlinks/degree, stats, tokens |
+| `prompt.test.js` | 7 | ordem canônica das camadas, filtros por slug/tag, header custom |
+| `commands/inject.test.js` | 5 | idempotência, criar/anexar/substituir, preservação |
+| `commands/prune.test.js` | 9 | 6 categorias de finding, acúmulo, camada saudável |
+| `commands/conversation.test.js` | 6 | load/save/append em `$HOME` temporário |
+| `smoke.test.js` | 16 | spawn do binário real em cofre temp — `init`, `list`, `show`, `learn --no-push`, `ask --dry`, `inject`, `inject --only`, `meta`, `prune`, `providers`, `--version`, erros de comando/slug |
+
+**UI (`brainfrost-ui/lib/*.test.ts`, roda com Vitest + fetch mockado):**
+
+| Arquivo | Testes | Cobre |
+| --- | --- | --- |
+| `vault.test.ts` | 4 | parser client-side, `linkifyWikiLinks`, `readVault` com cofre temp via `BRAINFROST_VAULT` |
+| `chat-prompt.test.ts` | 6 | `selectNotesForChat`, `formatContextForChat`, `buildChatOpener` |
+| `chat-client.test.ts` | 12 | headers e body por api (`openai`/`anthropic`/`gemini`/`ollama`/`cortex`), erros amigáveis (CORS, 401, `error.message`) |
+
+**Onde encaixar teste novo:** `test/**/*.test.js` no CLI, `lib/**/*.test.ts` ou
+`components/**/*.test.tsx` na UI. Cada runner descobre automaticamente.
+
+**Não coberto (limite deliberado):** componentes React (precisariam jsdom +
+testing-library — cabe em fase T5 se aparecer bug de UI; hoje o `next build` valida
+tipos), chamadas reais de LLM (mock de fetch já valida body/headers/parsing), `git.js`
+(smoke valida indireto com `--no-push`).
 
 ---
 
