@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Snowflake } from "lucide-react";
 import { CommandPalette, type PaletteNote } from "./CommandPalette";
+import { MobileNav } from "./MobileNav";
 
 const TITLE: Record<string, string> = {
   "/": "Grafo",
@@ -36,32 +37,37 @@ export function Header({ commit, notes }: Props) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card/40 px-4 backdrop-blur hairline md:px-6">
-        <div className="flex items-center gap-2 md:hidden">
-          <Snowflake className="h-4 w-4 text-glow" strokeWidth={1.8} />
-          <span className="text-sm font-semibold text-arctic">BrainFrost</span>
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card/40 px-3 backdrop-blur hairline md:gap-4 md:px-6">
+        <MobileNav />
+
+        <div className="flex flex-1 items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:hidden">
+            <Snowflake className="h-4 w-4 text-glow" strokeWidth={1.8} />
+            <span className="text-sm font-semibold text-arctic">BrainFrost</span>
+          </div>
+
+          <h1 className="hidden text-[15px] font-semibold tracking-tight text-arctic md:block">
+            {titleFor(pathname)}
+          </h1>
         </div>
 
-        <h1 className="hidden text-[15px] font-semibold tracking-tight text-arctic md:block">
-          {titleFor(pathname)}
-        </h1>
-
-        <div className="flex items-center gap-3 font-mono text-[11px] text-mute">
+        <div className="flex items-center gap-2 font-mono text-[11px] text-mute md:gap-3">
           {notes.length > 0 && (
             <button
               onClick={() => setPaletteOpen(true)}
-              className="hidden items-center gap-1.5 rounded-md border border-glow/15 bg-rift/30 px-2 py-1 tracking-widest text-mute transition-colors hover:border-glow/50 hover:text-arctic sm:inline-flex"
+              className="flex items-center gap-1.5 rounded-md border border-glow/15 bg-rift/30 p-1.5 text-mute transition-colors hover:border-glow/50 hover:text-arctic sm:px-2 sm:py-1"
               title="Buscar camada (Ctrl/Cmd+K)"
+              aria-label="Buscar camada"
             >
-              <Search className="h-3 w-3" />
-              ⌘K
+              <Search className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+              <span className="hidden tracking-widest sm:inline">⌘K</span>
             </button>
           )}
           <Link
             href={`https://github.com/caua-ferreira/brainfrost/commit/${commit}`}
             target="_blank"
             rel="noreferrer"
-            className="text-mute transition-colors hover:text-arctic"
+            className="hidden text-mute transition-colors hover:text-arctic sm:inline"
           >
             {commit === "local" ? "local" : commit.slice(0, 7)}
           </Link>
