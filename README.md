@@ -453,6 +453,44 @@ procura em `content/` também.
 
 ---
 
+## Testes
+
+Duas suítes rodam sem rede, sem credenciais e sem `npm link`:
+
+```bash
+# CLI — node test runner nativo, zero dependência
+cd brainfrost-cli
+npm test                # roda unit + smoke E2E
+
+# UI — vitest
+cd brainfrost-ui
+npm install             # se ainda não instalou
+npm test                # roda unit tests dos módulos lib/
+```
+
+**CLI (50 testes):**
+- `test/vault.test.js` — parsing (slugify, frontmatter, WikiLinks), backlinks, stats.
+- `test/prompt.test.js` — ordem canônica das camadas, filtros, montagem do prompt.
+- `test/commands/inject.test.js` — bloco idempotente, criar/anexar/substituir.
+- `test/commands/prune.test.js` — 6 categorias de finding, acúmulo.
+- `test/commands/conversation.test.js` — load/save/append usando `$HOME` temporário.
+- `test/smoke.test.js` — spawn do binário real: `init`, `list`, `show`, `learn --no-push`,
+  `ask --dry`, `inject`, `inject --only`, `meta`, `prune`, `providers`, `--version`,
+  erros de comando/slug inexistente.
+
+**UI (22 testes):**
+- `lib/vault.test.ts` — parser client-side, `linkifyWikiLinks`, `readVault` com cofre
+  temporário via `BRAINFROST_VAULT`.
+- `lib/chat-prompt.test.ts` — `selectNotesForChat`, `formatContextForChat`,
+  `buildChatOpener`.
+- `lib/chat-client.test.ts` — headers e body por api (`openai`, `anthropic`, `gemini`,
+  `ollama`, `cortex`), erros amigáveis (CORS/rede/401), fetch mockado.
+
+Adicionar teste novo: coloque em `test/**/*.test.js` (CLI) ou `lib/**/*.test.ts` /
+`components/**/*.test.tsx` (UI). Cada runner descobre automaticamente.
+
+---
+
 ## Armadilhas já mapeadas
 
 - O conteúdo é lido **no build**, não em runtime. Editar `.md` sem dar push significa grafo
