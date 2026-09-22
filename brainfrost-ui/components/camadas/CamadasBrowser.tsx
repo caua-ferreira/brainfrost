@@ -120,22 +120,26 @@ export default function CamadasBrowser({ notes }: Props) {
             </div>
 
             {allTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="mr-1 font-mono text-[10px] uppercase tracking-widest text-mute/80">
+              <div>
+                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-mute/80">
                   tag
                 </p>
-                <Chip active={tagFilter === null} onClick={() => setTagFilter(null)}>
-                  todas
-                </Chip>
-                {allTags.map((tag) => (
-                  <Chip
-                    key={tag}
-                    active={tagFilter === tag}
-                    onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
-                  >
-                    {tag}
+                {/* Scroll horizontal quando as tags não cabem — no telefone o wrap
+                    empurra os filtros pra baixo demais. */}
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
+                  <Chip active={tagFilter === null} onClick={() => setTagFilter(null)}>
+                    todas
                   </Chip>
-                ))}
+                  {allTags.map((tag) => (
+                    <Chip
+                      key={tag}
+                      active={tagFilter === tag}
+                      onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+                    >
+                      {tag}
+                    </Chip>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -169,7 +173,53 @@ export default function CamadasBrowser({ notes }: Props) {
                 .
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                {/* Mobile: cards empilhados */}
+                <ul className="divide-y hairline md:hidden">
+                  {rows.map((row) => (
+                    <li key={row.slug} className="p-4">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "h-1.5 w-1.5 shrink-0 rounded-full",
+                              row.layer === "core" ? "bg-glow" : "bg-aurora"
+                            )}
+                          />
+                          <Link
+                            href={`/?camada=${row.slug}`}
+                            className="truncate text-sm text-arctic/90 hover:underline"
+                          >
+                            {row.title}
+                          </Link>
+                        </div>
+                        <span className="shrink-0 font-mono text-xs text-glow">{row.degree}</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-mute">
+                        <span>{row.words.toLocaleString("pt-BR")} palavras</span>
+                        <span>· {formatDate(row.updatedAt)}</span>
+                      </div>
+                      {row.tags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {row.tags.map((tag) => (
+                            <button
+                              key={tag}
+                              onClick={() => setTagFilter(tag)}
+                              className="rounded-md border border-glow/15 bg-glow/5 px-1.5 py-0.5 font-mono text-[10px] text-mute transition-colors hover:border-glow/40 hover:text-arctic"
+                              title={`filtrar por ${tag}`}
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Desktop: tabela com sort */}
+                <div className="hidden overflow-x-auto md:block">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b text-left font-mono text-[11px] uppercase tracking-widest text-mute hairline">
@@ -252,7 +302,8 @@ export default function CamadasBrowser({ notes }: Props) {
                     ))}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

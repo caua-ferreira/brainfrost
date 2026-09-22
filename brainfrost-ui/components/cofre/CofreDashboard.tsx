@@ -124,16 +124,16 @@ export default function CofreDashboard({ notes, stats }: Props) {
             <CardTitle className="text-sm font-semibold text-arctic">Conexões por camada</CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
-            <div className="h-64 w-full">
+            <div className="h-56 w-full sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 4, right: 8, bottom: 24, left: -20 }}>
                   <XAxis
                     dataKey="name"
-                    tick={{ fill: "#7E9BB8", fontSize: 11, fontFamily: "var(--font-plex-mono)" }}
+                    tick={{ fill: "#7E9BB8", fontSize: 10, fontFamily: "var(--font-plex-mono)" }}
                     interval={0}
-                    angle={-30}
+                    angle={-45}
                     textAnchor="end"
-                    height={60}
+                    height={80}
                     stroke="rgba(90, 216, 255, 0.15)"
                   />
                   <YAxis
@@ -168,7 +168,51 @@ export default function CofreDashboard({ notes, stats }: Props) {
             <CardTitle className="text-sm font-semibold text-arctic">Camadas</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Mobile: cards empilhados. Tabela larga estraga a leitura no telefone. */}
+            <ul className="divide-y hairline md:hidden">
+              {rows.map((row) => (
+                <li key={row.slug} className="p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "h-1.5 w-1.5 shrink-0 rounded-full",
+                          row.layer === "core" ? "bg-glow" : "bg-aurora"
+                        )}
+                      />
+                      <Link
+                        href={`/?camada=${row.slug}`}
+                        className="truncate text-sm text-arctic/90 hover:underline"
+                      >
+                        {row.title}
+                      </Link>
+                    </div>
+                    <span className="shrink-0 font-mono text-xs text-glow">{row.degree}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-mute">
+                    <span>{row.words.toLocaleString("pt-BR")} palavras</span>
+                    <span>· {formatDate(row.updatedAt)}</span>
+                    {row.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {row.tags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className="border-glow/15 bg-glow/5 font-mono text-[10px] text-mute"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: tabela clássica com sort */}
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b text-left font-mono text-[11px] uppercase tracking-widest text-mute hairline">
