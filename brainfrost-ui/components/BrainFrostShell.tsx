@@ -58,7 +58,9 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden md:flex-row">
-      <nav className="order-2 flex max-h-[42%] shrink-0 flex-col border-t bg-card/40 hairline md:order-1 md:max-h-none md:w-64 md:border-r md:border-t-0">
+      {/* No mobile a lista lateral some — o grafo ganha a tela inteira e o
+          ⌘K/Header ou a paleta ficam com a busca. */}
+      <nav className="order-2 hidden max-h-[42%] shrink-0 flex-col border-t bg-card/40 hairline md:order-1 md:flex md:max-h-none md:w-64 md:border-r md:border-t-0">
         <div className="space-y-3 border-b p-3 hairline">
           <Input
             value={query}
