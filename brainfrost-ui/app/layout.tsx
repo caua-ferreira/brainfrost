@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { Header } from "@/components/shell/Header";
+import { BottomNav } from "@/components/shell/BottomNav";
 import type { PaletteNote } from "@/components/shell/CommandPalette";
 import { readVault } from "@/lib/vault";
 
@@ -32,14 +33,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-// Vercel injeta essa env no build; localmente vira "local" e o header sabe lidar.
 const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
-/**
- * Lista compacta pra alimentar o ⌘K global. Se o cofre não puder ser lido no
- * build (rota chamada fora do repo, por exemplo), o header omite o hint em
- * vez de crashar.
- */
 function paletteNotes(): PaletteNote[] {
   try {
     return readVault().notes.map((n) => ({
@@ -62,9 +57,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <Header commit={commit} notes={notes} />
-            <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
+            {/*
+              Padding-bottom no mobile reserva o espaço do BottomNav fixo.
+              A altura (~56px) + safe-area do iOS soma via env().
+            */}
+            <main className="min-h-0 flex-1 overflow-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
+              {children}
+            </main>
           </div>
         </div>
+        <BottomNav />
       </body>
     </html>
   );

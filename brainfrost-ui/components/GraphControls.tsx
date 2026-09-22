@@ -25,13 +25,14 @@ export function GraphControls({ onRecenter }: Props) {
         <ControlsBody onRecenter={onRecenter} />
       </div>
 
-      {/* Mobile: FAB no canto inferior direito abre um Sheet bottom */}
+      {/* Mobile: FAB grande no canto inferior direito, acima do BottomNav */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Controles do grafo"
-        className="pane pointer-events-auto absolute bottom-4 right-4 z-10 flex h-11 w-11 items-center justify-center rounded-full text-arctic shadow-pane md:hidden"
+        className="pane pointer-events-auto absolute right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full text-arctic shadow-pane md:hidden"
+        style={{ bottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
-        <Sliders className="h-4 w-4" />
+        <Sliders className="h-5 w-5" />
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>

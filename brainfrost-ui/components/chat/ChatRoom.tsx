@@ -157,7 +157,7 @@ export default function ChatRoom({ notes }: Props) {
         </div>
       </div>
 
-      <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-6 md:px-6">
+      <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6">
         <div className="mx-auto max-w-3xl space-y-4">
           {!session || session.messages.length === 0 ? (
             <div className="pt-16">
@@ -185,7 +185,7 @@ export default function ChatRoom({ notes }: Props) {
         </div>
       </div>
 
-      <div className="shrink-0 border-t bg-card/40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] hairline md:px-6 md:py-4">
+      <div className="shrink-0 border-t bg-card/40 p-3 hairline md:px-6 md:py-4">
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           <textarea
             value={input}
@@ -193,19 +193,19 @@ export default function ChatRoom({ notes }: Props) {
             onKeyDown={handleKey}
             placeholder={
               session && session.messages.length > 0
-                ? "continue a conversa (Enter envia, Shift+Enter quebra linha)"
+                ? "continue a conversa"
                 : "primeira pergunta (o cofre inteiro entra no contexto)"
             }
             rows={2}
-            className="flex-1 resize-none rounded-lg border border-glow/20 bg-abyss/60 px-3 py-2 text-sm text-arctic placeholder:text-mute/60 focus:border-glow/50 focus:outline-none"
+            className="flex-1 resize-none rounded-xl border border-glow/20 bg-abyss/60 px-4 py-3 text-[15px] text-arctic placeholder:text-mute/60 focus:border-glow/50 focus:outline-none md:rounded-lg md:px-3 md:py-2 md:text-sm"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-glow/40 bg-glow/10 text-arctic transition-colors hover:border-glow/70 disabled:opacity-40"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-glow/40 bg-glow/10 text-arctic transition-colors active:bg-glow/25 disabled:opacity-40 md:h-11 md:w-11 md:rounded-lg md:hover:border-glow/70"
             aria-label="Enviar"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sending ? <Loader2 className="h-5 w-5 animate-spin md:h-4 md:w-4" /> : <Send className="h-5 w-5 md:h-4 md:w-4" />}
           </button>
         </div>
       </div>
@@ -233,7 +233,7 @@ function Message({ msg, first }: { msg: ChatMessage; first: boolean }) {
       </div>
       <div
         className={cn(
-          "reader max-w-[85%] rounded-lg px-4 py-3 text-sm",
+          "reader max-w-[85%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed md:rounded-lg md:text-sm",
           isUser ? "bg-rift/40 text-arctic" : "border border-glow/15 bg-card/60"
         )}
       >
