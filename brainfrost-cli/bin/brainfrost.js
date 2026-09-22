@@ -85,12 +85,13 @@ async function main() {
   const { flags, positional } = parseArgs(process.argv.slice(2));
   const [name, ...rest] = positional;
 
-  if (!name || flags.help || name === "help") {
-    say(HELP);
-    return;
-  }
+  // Version antes do help pra que `bfrost --version` funcione sem comando.
   if (flags.version || name === "version") {
     say(`brainfrost ${VERSION}`);
+    return;
+  }
+  if (!name || flags.help || name === "help") {
+    say(HELP);
     return;
   }
 
