@@ -1,66 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { CHAT_PRESETS, sendChat, type ChatApi, type ChatConfig } from "@/lib/chat-client";
+import { sendChat, type ChatConfig, type ProviderPreset } from "@/lib/chat-client";
 import { useChatStore } from "@/lib/chat-store";
 import { cn } from "@/lib/utils";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Config existente para editar; null pra criar nova. */
-  editing?: ChatConfig | null;
+  preset: ProviderPreset | null;
 }
 
-type Status = { kind: "idle" } | { kind: "testing" } | { kind: "ok" } | { kind: "error"; message: string };
+type Status =
+  | { kind: "idle" }
+  | { kind: "testing" }
+  | { kind: "ok" }
+  | { kind: "error"; message: string };
 
-export function ConfigDrawer({ open, onOpenChange, editing }: Props) {
+/**
+ * Modal de conectar — versão simplificada. Só aparece depois que o usuário
+ * escolheu um provedor no picker. Renderiza apenas os campos que o preset
+ * declara em `needs`; todo o resto (api, url padrão, headers) já vem
+ * preenchido do preset.
+ */
+export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
   const saveConfig = useChatStore((s) => s.saveConfig);
   const setActive = useChatStore((s) => s.setActiveConfig);
 
-  const [presetKey, setPresetKey] = useState<string>(editing ? "custom" : "openrouter");
-  const [label, setLabel] = useState(editing?.label ?? "");
-  const [api, setApi] = useState<ChatApi>(editing?.api ?? "openai");
-  const [url, setUrl] = useState(editing?.url ?? "");
-  const [model, setModel] = useState(editing?.model ?? "");
-  const [apiKey, setApiKey] = useState(editing?.apiKey ?? "");
+  const [values, setValues] = useState<Record<string, string>>({});
   const [showKey, setShowKey] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
-  function applyPreset(key: string) {
-    setPresetKey(key);
-    const preset = CHAT_PRESETS.find((p) => p.key === key);
-    if (!preset) return;
-    setApi(preset.api);
-    setUrl(preset.url);
-    setModel(preset.model);
-    if (!label) setLabel(preset.label);
-  }
+  useEffect(() => {
+    if (open && preset) {
+      // Pré-preenche com os defaults do preset (útil pro campo model).
+      setValues({
+        url: preset.url,
+        model: preset.model,
+        apiKey: "",
+        extraKey: "",
+      });
+      setStatus({ kind: "idle" });
+      setShowKey(false);
+    }
+  }, [open, preset]);
+
+  if (!preset) return null;
 
   async function testAndSave() {
-    if (!label.trim() || !url.trim() || !model.trim()) {
-      setStatus({ kind: "error", message: "Preencha nome, URL e modelo." });
-      return;
-    }
-    const preset = CHAT_PRESETS.find((p) => p.key === presetKey);
-    const config: ChatConfig = {
-      label: label.trim(),
-      api,
-      url: url.trim(),
-      model: model.trim(),
-      apiKey: apiKey.trim(),
-      headers: preset?.headers,
-      dangerouslyAllowBrowser: preset?.dangerouslyAllowBrowser,
+    if (!preset) return;
+    const cfg: ChatConfig = {
+      label: preset.label,
+      api: preset.api,
+      url: values.url || preset.url,
+      model: values.model || preset.model,
+      apiKey: values.apiKey ?? "",
+      extraKey: values.extraKey || undefined,
+      headers: preset.headers,
+      dangerouslyAllowBrowser: preset.dangerouslyAllowBrowser,
     };
+    for (const field of preset.needs) {
+      const v = (values[field.key] ?? "").trim();
+      if (!v) {
+        setStatus({ kind: "error", message: `Preencha "${field.label}".` });
+        return;
+      }
+    }
     setStatus({ kind: "testing" });
     try {
-      await sendChat(config, [{ role: "user", content: "ping" }]);
+      await sendChat(cfg, [{ role: "user", content: "ping" }]);
       setStatus({ kind: "ok" });
-      saveConfig(config);
-      setActive(config.label);
+      saveConfig(cfg);
+      setActive(cfg.label);
       setTimeout(() => {
         onOpenChange(false);
         setStatus({ kind: "idle" });
@@ -73,112 +87,67 @@ export function ConfigDrawer({ open, onOpenChange, editing }: Props) {
     }
   }
 
-  const currentPreset = CHAT_PRESETS.find((p) => p.key === presetKey);
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-glow/20 bg-card text-arctic">
+      <DialogContent className="max-w-md border-glow/20 bg-card text-arctic">
         <DialogHeader>
-          <DialogTitle className="text-arctic">Conectar uma LLM</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-arctic">
+            <span aria-hidden className="text-2xl">{preset.glyph}</span>
+            Conectar {preset.label}
+          </DialogTitle>
+          <p className="text-[13px] text-mute">{preset.tagline}</p>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-start gap-2 rounded-md border border-aurora/40 bg-aurora/5 p-3 text-[12px]">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-aurora" />
-            <p className="text-arctic/85">
-              Sua chave fica <strong>só no localStorage deste navegador</strong>. Nada é
-              enviado pro backend do BrainFrost — o browser fala direto com o provedor.
-              Não use em máquina compartilhada.
-            </p>
-          </div>
-
-          <label className="block">
-            <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-mute">
-              preset
-            </span>
-            <select
-              value={presetKey}
-              onChange={(e) => applyPreset(e.target.value)}
-              className="h-9 w-full rounded-md border border-glow/20 bg-abyss/60 px-2 text-sm text-arctic focus:border-glow/50 focus:outline-none"
-            >
-              {CHAT_PRESETS.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            {currentPreset && (
-              <p
-                className={cn(
-                  "mt-1.5 text-[11px]",
-                  currentPreset.browserFriendly ? "text-mute" : "text-aurora/85"
+          {preset.needs.map((field) => {
+            const isSecret = field.type === "password";
+            return (
+              <label key={field.key} className="block">
+                <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-mute">
+                  {field.label}
+                </span>
+                <div className="relative">
+                  <Input
+                    type={isSecret && !showKey ? "password" : "text"}
+                    value={values[field.key] ?? ""}
+                    onChange={(e) =>
+                      setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                    }
+                    placeholder={field.placeholder}
+                    className={cn(
+                      "h-10 border-glow/20 bg-abyss/60 text-sm text-arctic placeholder:text-mute/50 focus:border-glow/50",
+                      isSecret && "pr-10 font-mono text-xs"
+                    )}
+                  />
+                  {isSecret && (
+                    <button
+                      type="button"
+                      onClick={() => setShowKey((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-mute transition-colors hover:text-arctic"
+                      aria-label={showKey ? "Esconder" : "Mostrar"}
+                    >
+                      {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  )}
+                </div>
+                {field.hint && (
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-mute/85">{field.hint}</p>
                 )}
-              >
-                {currentPreset.hint}
-              </p>
-            )}
-          </label>
+              </label>
+            );
+          })}
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="nome (label)">
-              <Input
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder="OpenRouter Claude"
-                className="h-9 border-glow/20 bg-abyss/60 text-sm"
-              />
-            </Field>
-            <Field label="api">
-              <select
-                value={api}
-                onChange={(e) => setApi(e.target.value as ChatApi)}
-                className="h-9 w-full rounded-md border border-glow/20 bg-abyss/60 px-2 text-sm text-arctic focus:border-glow/50 focus:outline-none"
-              >
-                <option value="openai">openai</option>
-                <option value="anthropic">anthropic</option>
-                <option value="ollama">ollama</option>
-                <option value="openrouter">openrouter</option>
-              </select>
-            </Field>
-          </div>
-
-          <Field label="url">
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://openrouter.ai/api/v1/chat/completions"
-              className="h-9 border-glow/20 bg-abyss/60 font-mono text-xs"
-            />
-          </Field>
-
-          <Field label="modelo">
-            <Input
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="anthropic/claude-sonnet-4.5"
-              className="h-9 border-glow/20 bg-abyss/60 font-mono text-xs"
-            />
-          </Field>
-
-          <Field label="chave (fica só no browser)">
-            <div className="relative">
-              <Input
-                type={showKey ? "text" : "password"}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-or-..."
-                className="h-9 border-glow/20 bg-abyss/60 pr-9 font-mono text-xs"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-mute transition-colors hover:text-arctic"
-                aria-label={showKey ? "Esconder chave" : "Mostrar chave"}
-              >
-                {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </button>
+          {preset.warning && (
+            <div className="flex items-start gap-2 rounded-md border border-aurora/40 bg-aurora/5 p-3 text-[12px]">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-aurora" />
+              <p className="text-arctic/85">{preset.warning}</p>
             </div>
-          </Field>
+          )}
+
+          <p className="text-[11px] text-mute">
+            Chave fica <strong>só no localStorage deste navegador</strong>. Nada é enviado
+            pro backend do BrainFrost — o browser fala direto com o provedor.
+          </p>
 
           {status.kind === "error" && (
             <p className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-[12px] text-red-200">
@@ -186,7 +155,7 @@ export function ConfigDrawer({ open, onOpenChange, editing }: Props) {
             </p>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               onClick={() => onOpenChange(false)}
               className="rounded-md px-3 py-2 text-xs text-mute transition-colors hover:text-arctic"
@@ -196,7 +165,7 @@ export function ConfigDrawer({ open, onOpenChange, editing }: Props) {
             <button
               onClick={testAndSave}
               disabled={status.kind === "testing"}
-              className="flex items-center gap-2 rounded-md border border-glow/40 bg-glow/10 px-3 py-2 text-xs text-arctic transition-colors hover:border-glow/70 disabled:opacity-60"
+              className="flex h-10 items-center gap-2 rounded-md border border-glow/40 bg-glow/10 px-4 text-sm text-arctic transition-colors hover:border-glow/70 disabled:opacity-60"
             >
               {status.kind === "testing" ? (
                 <>
@@ -204,26 +173,15 @@ export function ConfigDrawer({ open, onOpenChange, editing }: Props) {
                 </>
               ) : status.kind === "ok" ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-glow" /> salvo
+                  <Check className="h-3.5 w-3.5 text-glow" /> conectado
                 </>
               ) : (
-                "testar e salvar"
+                "conectar"
               )}
             </button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-mute">
-        {label}
-      </span>
-      {children}
-    </label>
   );
 }

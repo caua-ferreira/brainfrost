@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Bot, Cog, Loader2, MessagesSquare, Plus, Send, User } from "lucide-react";
+import { Bot, Loader2, MessagesSquare, Plus, Send, Sparkles, User } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfigDrawer } from "./ConfigDrawer";
-import { sendChat, type ChatMessage } from "@/lib/chat-client";
+import { ProviderPicker } from "./ProviderPicker";
+import { sendChat, type ChatMessage, type ProviderPreset } from "@/lib/chat-client";
 import { useChatStore } from "@/lib/chat-store";
 import { buildChatOpener } from "@/lib/chat-prompt";
 import type { Note } from "@/lib/types";
@@ -35,13 +36,13 @@ export default function ChatRoom({ notes }: Props) {
     [sessions, activeSessionId]
   );
 
-  const [configOpen, setConfigOpen] = useState(false);
+  const [drawerPreset, setDrawerPreset] = useState<ProviderPreset | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
-  // Segue o histórico rolando ao acrescentar mensagem.
   useEffect(() => {
     if (scroller.current) {
       scroller.current.scrollTop = scroller.current.scrollHeight;
@@ -56,7 +57,6 @@ export default function ChatRoom({ notes }: Props) {
     setSending(true);
 
     let currentSession = session;
-    // Nova sessão on-demand na primeira mensagem — a primeira user leva o CONTEXTO.
     if (!currentSession) {
       const id = newSession(activeConfig.label, null);
       currentSession = {
@@ -91,38 +91,43 @@ export default function ChatRoom({ notes }: Props) {
     }
   }
 
-  // Sem config alguma: onboarding.
+  // Onboarding: nenhuma config → picker grande no meio da tela.
   if (configs.length === 0) {
     return (
       <>
-        <div className="h-full overflow-auto p-6">
-          <EmptyState
-            title="Conecte sua LLM"
-            description="Sua chave fica só no browser deste dispositivo — nada passa pelo backend do BrainFrost. OpenRouter é a opção mais simples: uma chave só e você fala com Claude, GPT ou Llama por dentro do site."
-            action={
-              <button
-                onClick={() => setConfigOpen(true)}
-                className="rounded-md border border-glow/40 bg-glow/10 px-3 py-2 text-xs text-arctic transition-colors hover:border-glow/70"
-              >
-                conectar sua LLM
-              </button>
-            }
-          />
+        <div className="h-full overflow-y-auto">
+          <div className="mx-auto max-w-4xl space-y-6 p-5 md:p-8">
+            <div className="space-y-2 text-center">
+              <div aria-hidden className="text-5xl text-glow">❄</div>
+              <h2 className="text-2xl font-semibold text-arctic md:text-xl">
+                Conecte uma IA
+              </h2>
+              <p className="mx-auto max-w-md text-[15px] text-mute md:text-sm">
+                Escolha um provedor abaixo e cole sua chave. Ela fica só no
+                seu navegador — o BrainFrost nunca vê.
+              </p>
+            </div>
+            <ProviderPicker onPick={setDrawerPreset} />
+          </div>
         </div>
-        <ConfigDrawer open={configOpen} onOpenChange={setConfigOpen} />
+        <ConfigDrawer
+          open={drawerPreset !== null}
+          onOpenChange={(o) => !o && setDrawerPreset(null)}
+          preset={drawerPreset}
+        />
       </>
     );
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b bg-card/40 px-4 py-2 hairline md:px-6">
-        <div className="flex items-center gap-2 text-sm">
-          <MessagesSquare className="h-4 w-4 text-glow" />
+      <div className="flex shrink-0 items-center justify-between border-b bg-card/40 px-4 py-2.5 hairline md:px-6">
+        <div className="flex min-w-0 items-center gap-2 text-sm">
+          <MessagesSquare className="h-4 w-4 shrink-0 text-glow" />
           <select
             value={activeConfigLabel ?? ""}
             onChange={(e) => setActiveConfig(e.target.value || null)}
-            className="rounded-md border border-glow/15 bg-abyss/60 px-2 py-1 text-xs text-arctic focus:border-glow/50 focus:outline-none"
+            className="min-w-0 rounded-md border border-glow/15 bg-abyss/60 px-2 py-1.5 text-[13px] text-arctic focus:border-glow/50 focus:outline-none"
           >
             {configs.map((c) => (
               <option key={c.label} value={c.label}>
@@ -131,28 +136,27 @@ export default function ChatRoom({ notes }: Props) {
             ))}
           </select>
           {activeConfig && (
-            <span className="hidden font-mono text-[11px] text-mute sm:inline">
+            <span className="hidden truncate font-mono text-[11px] text-mute sm:inline">
               {activeConfig.model}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {session && session.messages.length > 0 && (
             <button
               onClick={() => setActiveSession(null)}
-              className="flex items-center gap-1.5 rounded-md border border-glow/20 px-2 py-1 font-mono text-[11px] text-mute transition-colors hover:border-glow/50 hover:text-arctic"
+              className="flex h-9 items-center gap-1.5 rounded-full border border-glow/20 px-3 font-mono text-[11px] text-mute transition-colors active:bg-rift/50 active:text-arctic md:h-7 md:rounded-md md:px-2 md:hover:border-glow/50 md:hover:text-arctic"
               title="Nova conversa (a atual fica no histórico)"
             >
-              <Plus className="h-3 w-3" /> nova
+              <Plus className="h-3.5 w-3.5 md:h-3 md:w-3" /> nova
             </button>
           )}
           <button
-            onClick={() => setConfigOpen(true)}
-            className="rounded-md p-1.5 text-mute transition-colors hover:text-arctic"
-            aria-label="Configurações"
-            title="Configurações"
+            onClick={() => setPickerOpen(true)}
+            className="flex h-9 items-center gap-1.5 rounded-full border border-glow/20 px-3 font-mono text-[11px] text-mute transition-colors active:bg-rift/50 active:text-arctic md:h-7 md:rounded-md md:px-2 md:hover:border-glow/50 md:hover:text-arctic"
+            title="Conectar outra IA"
           >
-            <Cog className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5 md:h-3 md:w-3" /> conectar
           </button>
         </div>
       </div>
@@ -163,7 +167,7 @@ export default function ChatRoom({ notes }: Props) {
             <div className="pt-16">
               <EmptyState
                 title="Faça sua primeira pergunta"
-                description="A primeira mensagem leva o cofre inteiro como contexto. As seguintes só levam a pergunta + histórico — sua conversa continua sem re-enviar tudo."
+                description="A primeira mensagem leva o cofre inteiro como contexto. As seguintes só mandam a pergunta + histórico."
               />
             </div>
           ) : (
@@ -210,15 +214,46 @@ export default function ChatRoom({ notes }: Props) {
         </div>
       </div>
 
-      <ConfigDrawer open={configOpen} onOpenChange={setConfigOpen} />
+      {/* Modal "conectar outra IA" com o picker inteiro */}
+      {pickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-abyss/80 backdrop-blur md:items-center"
+          onClick={() => setPickerOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border border-glow/20 bg-card p-5 md:max-w-3xl md:rounded-xl md:p-6"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-arctic">Conectar uma IA</h3>
+              <button
+                onClick={() => setPickerOpen(false)}
+                className="rounded-md px-2 py-1 text-xs text-mute hover:text-arctic"
+              >
+                fechar
+              </button>
+            </div>
+            <ProviderPicker
+              onPick={(preset) => {
+                setPickerOpen(false);
+                setDrawerPreset(preset);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <ConfigDrawer
+        open={drawerPreset !== null}
+        onOpenChange={(o) => !o && setDrawerPreset(null)}
+        preset={drawerPreset}
+      />
     </div>
   );
 }
 
 function Message({ msg, first }: { msg: ChatMessage; first: boolean }) {
   const isUser = msg.role === "user";
-  // A primeira mensagem do usuário carrega o CONTEXTO inteiro — mostrar tudo
-  // polui a UI. Se detectarmos o cabeçalho conhecido, mostramos só a pergunta.
   const display = isUser && first ? extractQuestion(msg.content) : msg.content;
 
   return (
