@@ -29,15 +29,18 @@ Uso hoje é pessoal. Vira produto depois, então nada de decisão que só funcio
 Tudo abaixo foi escrito, verificado rodando e deployado em produção
 (`brainfrost.vercel.app`):
 
-- **CLI completo.** `ask`, `learn`, `list`, `show`, `sync`, `init`, `config`, `providers`, `meta`.
-  `bfrost` está global via `npm link` e é usado no dia a dia. O `bfrost sync` regrava
-  `.brainfrost/_meta.json` (snapshot da config vigente) e o `bfrost meta` faz isso sem
-  side-effect no git.
+- **CLI completo.** `ask`, `learn`, `inject`, `list`, `show`, `open`, `sync`, `init`, `config`,
+  `providers`, `meta`, `prune`. `bfrost` está global via `npm link` e é usado no dia a dia.
+  O `bfrost sync` regrava `.brainfrost/_meta.json` (snapshot da config vigente) e o
+  `bfrost meta` faz isso sem side-effect no git. O `ask` aceita `--continue/--new/--history`
+  para modo conversa (só provedores http — o histórico vive em
+  `~/.brainfrost/conversation.json`, fora do cofre).
 - **UI redesenhada em 6 fases** (plano completo em `brainfrost-ui/REDESIGN.md`). Todas
   aplicadas e deployadas:
   1. Fundação shadcn/ui sobre a paleta Frost em variáveis HSL.
   2. Shell global — sidebar `Grafo / Camadas / Cofre / Config` + header slim.
-  3. Grafo controlável — slider de espaço, switch de rótulos, recentralizar, `forceCollide`,
+  3. Grafo controlável — slider de espaço, switch de rótulos, toggle "apagar camadas
+     antigas" (decay linear entre 7 e 120 dias), recentralizar, `forceCollide`,
      preferências persistidas em `localStorage` via Zustand.
   4. Reader como `Sheet` com abas `Texto / Ligações / Fonte`, ação **copiar prompt** e
      link direto para o `.md` no GitHub.
@@ -202,12 +205,12 @@ Se mexer no `learn` ou no `git.js`, teste num repositório descartável antes:
 
 ## Fila de ideias (não comece sem combinar)
 
-- **`bfrost inject`** — grava um bloco de contexto (camadas escolhidas) no `CLAUDE.md` do
-  repo-alvo, para o Claude Code de outros projetos puxar automaticamente sem `bfrost ask`.
-  Provavelmente o próximo salto de utilidade real.
-- Modo conversa: `bfrost ask` mantendo histórico entre perguntas.
-- Visão temporal no grafo: camada recente mais brilhante, antiga opaca.
-- `bfrost prune` apontando camadas que ninguém cita há meses.
-- Cofre de equipe, com camada pública e privada.
-- Tela `/camadas` de verdade (tabela filtrável por tag + camada + busca full-text no corpo).
-- Comando `⌘K` global na UI (o header já reserva o hint decorativo).
+Muita coisa que estava aqui virou realidade nos últimos dias — `bfrost inject`, modo conversa,
+visão temporal, `bfrost prune`, tela `/camadas`, `⌘K` global. O que sobra na fila:
+
+- **Interface mobile pensada de propósito.** Hoje o layout responde mas foi desenhado
+  desktop-first; sidebar colapsa, grafo fica apertado. Precisa de plano próprio.
+- **Cofre de equipe, com camada pública e privada.** Grande. Adiar até haver caso real.
+- **Autocompletion de shell (bash/zsh)** para slugs, provedores e flags do CLI.
+- **`bfrost search "termo"`** — grep semântico ou textual estruturado no cofre.
+- **`bfrost inject --watch`** — regenera o CLAUDE.md do repo-alvo quando o cofre muda.

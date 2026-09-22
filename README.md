@@ -318,7 +318,7 @@ em três camadas, `--only snowflake` puxa as três.
 
 ### Numa sessão do Claude Code (ou outra IA de chat)
 
-Duas rotinas testadas:
+Três rotinas testadas, do menos ao mais automático:
 
 1. **Cola manual, uma vez no início da sessão:**
    ```bash
@@ -327,13 +327,39 @@ Duas rotinas testadas:
    Cola no chat como primeira mensagem. A sessão inteira herda esse contexto.
 
 2. **Consulta rápida no site:**
-   Abra [brainfrost.vercel.app](https://brainfrost.vercel.app), clique na camada, use o
-   botão **copiar prompt** do reader. Vem formatado com título + tags + corpo, pronto para
-   colar em qualquer chat.
+   Abra [brainfrost.vercel.app](https://brainfrost.vercel.app), use `⌘K` para achar a
+   camada, e o botão **copiar prompt** do reader. Vem formatado com título + tags + corpo,
+   pronto para colar em qualquer chat.
+
+3. **`bfrost inject` — automático, uma vez por projeto:**
+   ```bash
+   cd ~/projetos/app-de-vendas
+   bfrost inject --only index,padroes_codigo,contexto_trabalho
+   ```
+   Grava um bloco entre marcadores no `CLAUDE.md` do repo. O Claude Code puxa
+   automaticamente na próxima mensagem — não precisa mais colar nada. Rodar de novo
+   substitui o bloco (idempotente); preserva o que já estava no arquivo.
 
 Se você acaba pedindo o mesmo contexto no mesmo projeto todo dia, é sinal de que vale
 gravar isso como aprendizado no cofre (`bfrost learn`) — a próxima pergunta já leva
 automaticamente.
+
+### Modo conversa
+
+Para uma sessão longa numa API HTTP (Anthropic, OpenAI, OpenRouter, Ollama):
+
+```bash
+bfrost ask "esboça a arquitetura X"           --provider anthropic --continue
+bfrost ask "detalha o passo 2"                --provider anthropic --continue
+bfrost ask "e o custo de armazenar em Glacier?" --provider anthropic --continue
+
+bfrost ask --history         # ver a conversa
+bfrost ask "outra dúvida" --new  # apagar e começar do zero
+```
+
+O cofre entra só na primeira mensagem — as próximas mandam pergunta + histórico. Estado
+mora em `~/.brainfrost/conversation.json`. Provedores `cmd` e `print` recusam `--continue`
+com erro claro (não faz sentido histórico num prompt one-shot).
 
 ---
 
@@ -350,10 +376,14 @@ npm run dev            # http://localhost:3000
 
 Rotas:
 
-- `/` — grafo + reader panel. Slider de espaço e switch de rótulos persistem no browser.
+- `/` — grafo + reader panel. Slider de espaço, switch de rótulos e toggle "apagar camadas
+  antigas" persistem no browser. Camadas atualizadas nos últimos 7 dias brilham inteiro;
+  as com mais de 120 dias caem a 35% do brilho.
+- `/camadas` — lista tabelada com busca full-text, filtros por layer e tag, ordenação.
 - `/cofre` — dashboard: stat cards, gráfico de conexões por camada, tabela ordenável.
 - `/config` — snapshot do `~/.brainfrostrc` gerado pelo `bfrost meta` (só-leitura).
-- `/camadas` — placeholder (planejado como lista filtrável).
+
+`⌘K` em qualquer rota abre um command palette pra achar e abrir camada por título/tag/slug.
 
 ---
 
@@ -363,8 +393,11 @@ Rotas:
 | --- | --- |
 | `bfrost ask "pergunta"` | injeta o cofre e manda para a IA escolhida |
 | `bfrost learn "título" "conteúdo"` | grava aprendizado, commita e faz push |
+| `bfrost inject` | escreve o cofre no `CLAUDE.md` do repo atual |
 | `bfrost list` | camadas, conexões, órfãos e links quebrados |
 | `bfrost show <slug>` | imprime uma camada no terminal |
+| `bfrost open <slug>` | abre a camada no editor ($EDITOR ou fallback code/codium/…) |
+| `bfrost prune` | aponta camadas para revisar (órfãs, curtas, quebradas, esquecidas) |
 | `bfrost providers` | lista as IAs configuradas, mostra a ativa |
 | `bfrost sync` | pull + commit + push (regenera `_meta.json`) |
 | `bfrost meta` | regera `.brainfrost/_meta.json` sem tocar em git |
@@ -382,6 +415,9 @@ Flags mais usadas do `ask`:
 | `--copy` | manda para a área de transferência |
 | `--out <arquivo>` | grava o resultado em arquivo |
 | `--no-pull` | não puxa do Git antes |
+| `--continue` | continua a última conversa (só provedores http) |
+| `--new` | apaga a conversa atual antes de perguntar |
+| `--history` | mostra a conversa em andamento |
 
 Flags do `learn`:
 
