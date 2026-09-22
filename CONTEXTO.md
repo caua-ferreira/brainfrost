@@ -55,6 +55,9 @@ Tudo abaixo foi escrito, verificado rodando e deployado em produção
   com o dono).
 - **Design encaixa com o `permafrost-platform`** (referência de rigor) mas mantém a
   identidade Frost em vez de virar mais um dashboard `slate`.
+- **Mobile:** navegação por hamburger (Sheet lateral), controles do grafo por FAB +
+  Sheet bottom, dashboards e listas viram cards empilhados abaixo de `md`. Sem lista
+  lateral na home — a busca é via ⌘K/botão-lupa.
 
 ### O que falta
 
@@ -208,8 +211,6 @@ Se mexer no `learn` ou no `git.js`, teste num repositório descartável antes:
 Muita coisa que estava aqui virou realidade nos últimos dias — `bfrost inject`, modo conversa,
 visão temporal, `bfrost prune`, tela `/camadas`, `⌘K` global. O que sobra na fila:
 
-- **Interface mobile pensada de propósito.** Hoje o layout responde mas foi desenhado
-  desktop-first; sidebar colapsa, grafo fica apertado. Precisa de plano próprio.
 - **Cofre de equipe, com camada pública e privada.** Grande. Adiar até haver caso real.
 - **Autocompletion de shell (bash/zsh)** para slugs, provedores e flags do CLI.
 - **`bfrost search "termo"`** — grep semântico ou textual estruturado no cofre.
