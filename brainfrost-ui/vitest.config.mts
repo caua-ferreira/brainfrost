@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
+// `.mts` é ESM puro — import.meta.dirname substitui o __dirname CommonJS.
 export default defineConfig({
   test: {
     // Um único ambiente serve pra tudo — o que testamos é lógica pura ou
@@ -10,7 +11,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "."),
+      "@": path.resolve(import.meta.dirname, "."),
     },
   },
 });
