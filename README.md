@@ -491,6 +491,30 @@ Adicionar teste novo: coloque em `test/**/*.test.js` (CLI) ou `lib/**/*.test.ts`
 
 ---
 
+## Fluxo de PR
+
+Push direto na `main` está bloqueado por ruleset do GitHub — o job **Testes (CLI + UI)**
+precisa estar verde. Toda mudança entra via PR.
+
+```bash
+git checkout -b fix/algo             # branch descritiva (fix/, docs/, chore/, feat/)
+# editar, testar local
+git push -u origin HEAD
+gh pr create --fill                  # abre PR usando último commit como corpo
+gh pr merge --squash --delete-branch --auto   # mergeia automático quando CI passar
+```
+
+Cadência:
+
+- **Crítico** (bug de produção, deploy quebrado, config de CI/segurança) → PR imediato, um
+  commit, merge assim que o CI passar.
+- **Não crítico** (docs, refactor trivial, polish, feature pequena) → acumula 3–5 commits
+  relacionados numa branch `chore/*` ou `docs/*` e agrupa num PR único.
+
+Antes de abrir PR: `npm test` local; se mexeu no cofre, `bfrost list` e `bfrost prune`.
+
+---
+
 ## Armadilhas já mapeadas
 
 - O conteúdo é lido **no build**, não em runtime. Editar `.md` sem dar push significa grafo
