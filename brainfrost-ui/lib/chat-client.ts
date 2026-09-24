@@ -116,8 +116,8 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     tagline: "Google — API direta",
     glyph: "✦",
     api: "gemini",
-    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-    model: "gemini-2.0-flash",
+    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+    model: "gemini-3.6-flash",
     browserFriendly: true,
     needs: [
       {
