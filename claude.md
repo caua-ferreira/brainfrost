@@ -1,0 +1,1 @@
+CRITICAL RULE: Escreva código limpo e autoexplicativo. NUNCA adicione comentários óbvios explicando o que o código faz (ex: // inicializa a variável, // faz um loop na array). Adicione comentários APENAS para regras de negócio complexas, débitos técnicos ou edge cases. Quando alterar código, nunca deixe rastros ou comentários verbosos como // código novo começa aqui.

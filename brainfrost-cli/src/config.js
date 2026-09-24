@@ -81,4 +81,4 @@ export function loadConfig() {
   };
 }
 
-export { RC_FILE, VAULT_DIR, DEFAULTS };
+export { VAULT_DIR };

@@ -24,6 +24,15 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "BrainFrost",
   description: "O cofre de contexto do Cauã: camadas de conhecimento e as conexões entre elas.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "BrainFrost",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {

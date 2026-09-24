@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const WIKILINK = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
+const WIKILINK = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
 
 export function slugify(input) {
   return String(input)

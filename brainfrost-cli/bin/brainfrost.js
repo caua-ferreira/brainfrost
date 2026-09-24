@@ -5,6 +5,7 @@ import learn from "../src/commands/learn.js";
 import inject from "../src/commands/inject.js";
 import prune from "../src/commands/prune.js";
 import open from "../src/commands/open.js";
+import search from "../src/commands/search.js";
 import {
   listCmd,
   showCmd,
@@ -48,6 +49,8 @@ ${c.white("bfrost providers")}              lista as IAs configuradas e a que es
 ${c.white("bfrost list")}                   mapa das camadas, conexões e órfãos
 ${c.white("bfrost prune")}                  aponta camadas para revisar (não apaga nada)
     --json                    devolve o relatório em JSON
+${c.white("bfrost search")} "termo"          grep textual em título, tag e corpo
+    --json                    devolve os matches em JSON
 ${c.white("bfrost show")} <slug>            imprime uma camada
 ${c.white("bfrost open")} <slug>            abre a camada no editor ($EDITOR, fallback code/codium/subl/cursor)
     --editor <bin>            força um editor específico
@@ -70,6 +73,8 @@ const COMMANDS = {
   inject,
   prune,
   open,
+  search,
+  find: search,
   list: listCmd,
   ls: listCmd,
   show: showCmd,

@@ -95,7 +95,7 @@ function toMessagesJson(prompt, model) {
   );
 }
 
-export const FORMATTERS = {
+const FORMATTERS = {
   plain: (prompt) => prompt,
   json: toMessagesJson,
   sql: toCortexSql,
@@ -106,4 +106,3 @@ export function formatPrompt(prompt, format, model) {
   return formatter(prompt, model);
 }
 
-export { DEFAULT_HEADER };
