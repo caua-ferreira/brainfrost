@@ -196,6 +196,11 @@ variáveis HSL em `brainfrost-ui/app/globals.css` (que alimentam também o shadc
 
 ## Como validar antes de dizer que terminou
 
+> **Push direto na `main` está bloqueado.** Ruleset do GitHub exige que o job
+> `Testes (CLI + UI)` esteja verde no SHA. Fluxo real é PR: `git checkout -b
+> nome && ... && git push -u origin HEAD && gh pr create --fill`. Merge só
+> depois do CI passar. Force push e delete de `main` também bloqueados.
+
 ```bash
 # Suítes automatizadas (rodam sem rede, sem chaves — segurança primeiro)
 cd brainfrost-cli && npm test             # 50 testes: unit + smoke E2E
