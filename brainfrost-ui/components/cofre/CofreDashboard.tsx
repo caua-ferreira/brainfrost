@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   Bar,
@@ -11,9 +11,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SortableTh, useSort } from "@/components/shared/SortableTh";
 import { cn } from "@/lib/utils";
 import type { Note, VaultStats } from "@/lib/types";
 
@@ -38,13 +39,9 @@ function tokenize(words: number) {
 }
 
 type SortKey = "title" | "words" | "degree" | "updatedAt";
-type SortDir = "asc" | "desc";
 
 export default function CofreDashboard({ notes, stats }: Props) {
-  const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
-    key: "degree",
-    dir: "desc",
-  });
+  const { sort, toggleSort } = useSort<SortKey>("degree");
 
   const totalTokens = tokenize(stats.words);
   const brokenCount = stats.broken.length;
@@ -74,14 +71,6 @@ export default function CofreDashboard({ notes, stats }: Props) {
       return ((a[sort.key] as number) - (b[sort.key] as number)) * dir;
     });
   }, [notes, sort]);
-
-  function toggleSort(key: SortKey) {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: key === "title" ? "asc" : "desc" }
-    );
-  }
 
   return (
     <div className="h-full overflow-y-auto">
@@ -216,11 +205,11 @@ export default function CofreDashboard({ notes, stats }: Props) {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b text-left font-mono text-[11px] uppercase tracking-widest text-mute hairline">
-                    <Th label="Título" sortKey="title" sort={sort} onSort={toggleSort} />
+                    <SortableTh label="Título" sortKey="title" sort={sort} onSort={toggleSort} />
                     <th className="px-4 py-3">Tags</th>
-                    <Th label="Palavras" sortKey="words" sort={sort} onSort={toggleSort} align="right" />
-                    <Th label="Conexões" sortKey="degree" sort={sort} onSort={toggleSort} align="right" />
-                    <Th label="Atualizado" sortKey="updatedAt" sort={sort} onSort={toggleSort} align="right" />
+                    <SortableTh label="Palavras" sortKey="words" sort={sort} onSort={toggleSort} align="right" />
+                    <SortableTh label="Conexões" sortKey="degree" sort={sort} onSort={toggleSort} align="right" />
+                    <SortableTh label="Atualizado" sortKey="updatedAt" sort={sort} onSort={toggleSort} align="right" />
                   </tr>
                 </thead>
                 <tbody>
@@ -310,33 +299,3 @@ function StatCard({
   );
 }
 
-function Th({
-  label,
-  sortKey,
-  sort,
-  onSort,
-  align,
-}: {
-  label: string;
-  sortKey: SortKey;
-  sort: { key: SortKey; dir: SortDir };
-  onSort: (k: SortKey) => void;
-  align?: "right";
-}) {
-  const active = sort.key === sortKey;
-  const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
-  return (
-    <th className={cn("px-4 py-3", align === "right" && "text-right")}>
-      <button
-        onClick={() => onSort(sortKey)}
-        className={cn(
-          "inline-flex items-center gap-1.5 uppercase tracking-widest transition-colors",
-          active ? "text-arctic" : "hover:text-arctic"
-        )}
-      >
-        {label}
-        <Icon className="h-3 w-3" />
-      </button>
-    </th>
-  );
-}

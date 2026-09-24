@@ -19,7 +19,7 @@ export function isRepo(cwd) {
   return fs.existsSync(path.join(cwd, ".git")) && run(["rev-parse", "--git-dir"], cwd).ok;
 }
 
-export function hasRemote(cwd) {
+function hasRemote(cwd) {
   const remote = run(["remote"], cwd);
   return remote.ok && remote.out.length > 0;
 }
