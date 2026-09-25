@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabase } from "@/lib/supabase/client";
@@ -23,10 +23,16 @@ const PROVIDERS: {
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useSearchParams();
   const { session } = useSession();
-  const [error, setError] = useState<string | null>(params.get("error"));
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<OAuthProvider | "anon" | null>(null);
+
+  useEffect(() => {
+    // Lê ?error direto da URL, evita useSearchParams (que força prerender bailout).
+    const params = new URLSearchParams(window.location.search);
+    const errParam = params.get("error");
+    if (errParam) setError(errParam);
+  }, []);
 
   useEffect(() => {
     if (session) router.replace("/painel");
