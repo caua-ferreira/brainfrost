@@ -7,3 +7,11 @@ out/
 *.log
 brainfrost-ui/content/
 .claude/
+
+# Screenshots de teste (playwright + local)
+.playwright-mcp/
+*.png
+!brainfrost-ui/public/**/*.png
+
+# Repo irmão clonado em paralelo — não faz parte deste projeto
+permafrost-platform/

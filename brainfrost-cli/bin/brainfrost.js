@@ -6,6 +6,8 @@ import inject from "../src/commands/inject.js";
 import prune from "../src/commands/prune.js";
 import open from "../src/commands/open.js";
 import search from "../src/commands/search.js";
+import login from "../src/commands/login.js";
+import pull from "../src/commands/pull.js";
 import {
   listCmd,
   showCmd,
@@ -45,6 +47,12 @@ ${c.white("bfrost inject")}                  escreve o cofre no CLAUDE.md do rep
     --file <arquivo>          arquivo alvo (padrão CLAUDE.md)
     --dry                     mostra o que seria escrito sem tocar no disco
 
+${c.white("bfrost login")}                   conecta ao cofre online (blob copiado da UI /config)
+    --token <json>            passa o blob direto
+    --file <arquivo>          lê o blob de um arquivo
+    (sem flag)                lê o blob de stdin (echo '<json>' | bfrost login)
+${c.white("bfrost pull")}                    baixa as camadas do cofre online para .brainfrost/
+
 ${c.white("bfrost providers")}              lista as IAs configuradas e a que está ativa
 ${c.white("bfrost list")}                   mapa das camadas, conexões e órfãos
 ${c.white("bfrost prune")}                  aponta camadas para revisar (não apaga nada)
@@ -75,6 +83,8 @@ const COMMANDS = {
   open,
   search,
   find: search,
+  login,
+  pull,
   list: listCmd,
   ls: listCmd,
   show: showCmd,
