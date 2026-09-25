@@ -40,12 +40,28 @@ export default function CuradoriaPage() {
         body,
         category,
       })
-      .select("id")
+      .select("id, slug")
       .single();
 
     if (noteErr || !note) {
       alert(noteErr?.message ?? "Erro ao criar camada.");
       return;
+    }
+
+    // Conecta a nova camada com as outras da mesma categoria — evita cofre virar
+    // um monte de nós soltos no grafo. Limita a 8 pra não gerar hairball.
+    const { data: siblings } = await supabase
+      .from("vault_notes")
+      .select("slug")
+      .eq("category", category)
+      .neq("id", note.id)
+      .order("updated_at", { ascending: false })
+      .limit(8);
+
+    if (siblings && siblings.length > 0) {
+      await supabase.from("vault_links").insert(
+        siblings.map((sib) => ({ from_note_id: note.id, to_slug: sib.slug }))
+      );
     }
 
     await supabase
