@@ -27,8 +27,23 @@ export default function PainelPage() {
   const pending = suggestions.length;
   const vaultLayers = notes.length;
 
-  const meta = (session?.user.user_metadata ?? {}) as { display_name?: string };
-  const firstName = (meta.display_name ?? "Você").split(" ")[0];
+  const meta = (session?.user.user_metadata ?? {}) as {
+    display_name?: string;
+    full_name?: string;
+    name?: string;
+  };
+  const identity = session?.user.identities?.[0]?.identity_data as
+    | { full_name?: string; name?: string }
+    | undefined;
+  const fullName =
+    meta.display_name ??
+    meta.full_name ??
+    meta.name ??
+    identity?.full_name ??
+    identity?.name ??
+    session?.user.email ??
+    "Você";
+  const firstName = fullName.split(/\s+/)[0];
 
   return (
     <div className="relative h-full overflow-y-auto overflow-x-hidden" style={{ background: c.bg }}>
