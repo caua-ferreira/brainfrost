@@ -35,19 +35,24 @@ function extractDisplay(user: {
   const meta = user.user_metadata ?? {};
   const appMeta = user.app_metadata ?? {};
 
-  // app_metadata.provider é o do último login. Se o Supabase linkou contas por
-  // email (Google + GitHub), identities[0] pode não refletir a autenticação atual.
+  // Supabase seta app_metadata.provider quando o user é CRIADO e não atualiza
+  // depois. Se o mesmo email logou com Google e depois GitHub, o "provider"
+  // primário continua sendo o Google. Ordena por last_sign_in_at pra achar o
+  // provider ATUAL (o do login mais recente).
+  const identities = user.identities ?? [];
+  const mostRecent = [...identities].sort((a, b) => {
+    const ta = new Date(a.last_sign_in_at ?? 0).getTime();
+    const tb = new Date(b.last_sign_in_at ?? 0).getTime();
+    return tb - ta;
+  })[0];
+
   const currentProvider =
     (meta.mock_provider as string | undefined) ??
+    mostRecent?.provider ??
     (appMeta.provider as string | undefined) ??
-    user.identities?.[0]?.provider ??
     "anônimo";
 
-  // Casa a identity pelo provider atual (fallback pra primeira).
-  const identity =
-    user.identities?.find((i) => i.provider === currentProvider)?.identity_data ??
-    user.identities?.[0]?.identity_data ??
-    {};
+  const identity = mostRecent?.identity_data ?? identities[0]?.identity_data ?? {};
 
   const name =
     (meta.display_name as string | undefined) ??
