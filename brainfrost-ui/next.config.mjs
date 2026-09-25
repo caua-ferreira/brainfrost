@@ -6,8 +6,14 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // O cofre vive fora da pasta do app: o rastreamento do build precisa enxergar a raiz do repositório.
   outputFileTracingRoot: path.join(here, ".."),
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "graph.microsoft.com" },
+    ],
+  },
 };
 
 export default nextConfig;
