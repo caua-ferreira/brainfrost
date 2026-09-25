@@ -7,9 +7,10 @@ import { useSession } from "@/components/saas/SessionProvider";
 import { palette } from "@/lib/saas-theme";
 import type { LlmProvider } from "@/lib/saas-types";
 
-const PROVIDERS: { id: LlmProvider; label: string; hint: string; placeholder: string }[] = [
+const PROVIDERS: { id: LlmProvider; label: string; hint: string; placeholder: string; local?: boolean }[] = [
   { id: "claude", label: "Anthropic Claude", hint: "modelos Opus, Sonnet, Haiku", placeholder: "sk-ant-…" },
   { id: "gemini", label: "Google Gemini",    hint: "modelos 3.6 Pro, Flash, Nano", placeholder: "AIza…" },
+  { id: "webllm", label: "Local (Llama 3.2)", hint: "roda no navegador — sem chave, sem custo", placeholder: "—", local: true },
 ];
 
 const SANITIZED = [
@@ -139,7 +140,7 @@ export default function ConfigPage() {
               </p>
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-1 gap-2 md:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-2 md:grid-cols-3">
             {PROVIDERS.map((p) => {
               const active = config.llmProvider === p.id;
               const has = isStored(p.id);
@@ -160,11 +161,15 @@ export default function ConfigPage() {
                     <span
                       className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest"
                       style={{
-                        background: has ? `${c.aurora}20` : `${c.dim}20`,
-                        color: has ? c.aurora : c.dim,
+                        background: p.local
+                          ? `${c.accent}20`
+                          : has
+                            ? `${c.aurora}20`
+                            : `${c.dim}20`,
+                        color: p.local ? c.accent : has ? c.aurora : c.dim,
                       }}
                     >
-                      {has ? "chave salva" : "sem chave"}
+                      {p.local ? "sem chave" : has ? "chave salva" : "sem chave"}
                     </span>
                   </div>
                   <div className="mt-1 font-mono text-[10px]" style={{ color: c.dim }}>
@@ -176,7 +181,8 @@ export default function ConfigPage() {
           </div>
         </section>
 
-        {/* Chave */}
+        {/* Chave — só pra provedores que precisam */}
+        {config.llmProvider !== "webllm" && (
         <section className="mt-12 border-t pt-8" style={{ borderColor: c.borderSoft }}>
           <div className="flex items-baseline justify-between">
             <div>
@@ -247,6 +253,33 @@ export default function ConfigPage() {
             </button>
           </div>
         </section>
+        )}
+
+        {/* Aviso do WebLLM */}
+        {config.llmProvider === "webllm" && (
+        <section className="mt-12 border-t pt-8" style={{ borderColor: c.borderSoft }}>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
+            Modelo Local (Llama 3.2)
+          </p>
+          <p className="mt-3 max-w-lg text-[13px] leading-relaxed" style={{ color: c.dim }}>
+            Roda direto no seu navegador via WebGPU — zero rede, zero chave, zero custo. O
+            primeiro uso baixa <span style={{ color: c.text }}>~800 MB</span> do modelo e fica em
+            cache pras próximas análises. Precisa de Chrome/Edge 113+ ou Safari 26+ com GPU
+            razoável (≥ 2 GB VRAM).
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {["sem chave", "sem custo", "seus dados não saem", "~30-60s por análise"].map((t) => (
+              <span
+                key={t}
+                className="rounded-full border px-2.5 py-0.5 font-mono text-[10px]"
+                style={{ borderColor: c.borderSoft, color: c.dim }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </section>
+        )}
 
         {/* Análise profunda */}
         <section className="mt-12 flex items-center justify-between border-t pt-8" style={{ borderColor: c.borderSoft }}>
