@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,6 @@ export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props)
   if (!note) return null;
 
   const titleOf = (slug: string) => notes.find((n) => n.slug === slug)?.title ?? slug;
-  const githubUrl = `https://github.com/caua-ferreira/brainfrost/blob/main/.brainfrost/${note.file}`;
 
   async function copyPrompt() {
     if (!note) return;
@@ -62,39 +61,28 @@ export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props)
     <Sheet open={!!note} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 border-l bg-card p-0 text-arctic hairline sm:max-w-[440px]"
+        className="flex w-full flex-col gap-0 border-l bg-card p-0 text-arctic hairline sm:max-w-[640px] lg:max-w-[720px]"
       >
         <SheetHeader className="space-y-3 border-b p-5 text-left hairline">
           <div className="flex items-baseline justify-between gap-3">
             <p className="font-mono text-[11px] text-glow">
               {note.file} · {formatDate(note.updatedAt)}
             </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={copyPrompt}
-                className="flex items-center gap-1.5 rounded-md border border-glow/20 px-2 py-1 font-mono text-[11px] text-mute transition-colors hover:border-glow/60 hover:text-arctic"
-                title="Copia título + tags + corpo pronto para colar num prompt"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3" /> copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" /> copiar prompt
-                  </>
-                )}
-              </button>
-              <a
-                href={githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 rounded-md border border-glow/20 px-2 py-1 font-mono text-[11px] text-mute transition-colors hover:border-glow/60 hover:text-arctic"
-                title="Abre o arquivo no GitHub"
-              >
-                <ExternalLink className="h-3 w-3" /> github
-              </a>
-            </div>
+            <button
+              onClick={copyPrompt}
+              className="flex items-center gap-1.5 rounded-md border border-glow/20 px-3 py-1.5 font-mono text-[11px] text-mute transition-colors hover:border-glow/60 hover:text-arctic"
+              title="Copia título + tags + corpo pronto para colar num prompt"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3 w-3" /> copiado
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3 w-3" /> copiar prompt
+                </>
+              )}
+            </button>
           </div>
           <SheetTitle className="truncate text-lg font-semibold tracking-tight text-arctic">
             {note.title}
