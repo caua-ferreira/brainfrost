@@ -1,49 +1,67 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
+import { ClaudeLogo, CopilotLogo, CortexLogo, CursorLogo, GeminiLogo } from "@/components/saas/AiLogos";
 
-type MockProvider = "google" | "github" | "microsoft";
+type OAuthProvider = "google" | "github" | "azure";
 
 const PROVIDERS: {
-  id: MockProvider;
+  id: OAuthProvider;
   label: string;
   hint: string;
-  meta: { display_name: string; avatar_initials: string };
+  scopes?: string;
 }[] = [
-  { id: "google",    label: "Entrar com Google",    hint: "conta pessoal",          meta: { display_name: "Cauã Ferreira", avatar_initials: "CF" } },
-  { id: "github",    label: "Entrar com GitHub",    hint: "para importar repositórios", meta: { display_name: "caua-ferreira", avatar_initials: "CF" } },
-  { id: "microsoft", label: "Entrar com Microsoft", hint: "conta de empresa",       meta: { display_name: "Cauã Ferreira", avatar_initials: "CF" } },
+  { id: "google", label: "Entrar com Google", hint: "conta pessoal" },
+  { id: "github", label: "Entrar com GitHub", hint: "para importar repositórios", scopes: "read:user user:email repo" },
+  { id: "azure",  label: "Entrar com Microsoft", hint: "conta de empresa", scopes: "email" },
 ];
 
 export default function LoginPage() {
   const router = useRouter();
+  const params = useSearchParams();
   const { session } = useSession();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(params.get("error"));
+  const [busy, setBusy] = useState<OAuthProvider | "anon" | null>(null);
 
   useEffect(() => {
     if (session) router.replace("/painel");
   }, [session, router]);
 
-  const enterAs = async (provider: MockProvider, meta: { display_name: string; avatar_initials: string }) => {
-    setBusy(true);
+  const signInWith = async (provider: OAuthProvider, scopes?: string) => {
+    setBusy(provider);
     setError(null);
-    const supabase = getSupabase();
-    const { error: err } = await supabase.auth.signInAnonymously({
-      options: { data: { mock_provider: provider, ...meta } },
+    const { error: err } = await getSupabase().auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes,
+      },
     });
-    setBusy(false);
     if (err) {
+      setBusy(null);
       setError(
-        err.message.includes("anonymous")
-          ? "Anonymous sign-in ainda não está habilitado no Supabase. Habilite em Auth → Providers."
+        err.message.includes("provider") || err.message.includes("not enabled")
+          ? `${provider}: OAuth não habilitado no Supabase — configure em Auth → Providers.`
           : err.message
       );
+    }
+    // Se der certo, o browser redireciona pro provedor; nada mais a fazer.
+  };
+
+  const signInAnon = async () => {
+    setBusy("anon");
+    setError(null);
+    const { error: err } = await getSupabase().auth.signInAnonymously({
+      options: { data: { display_name: "Convidado", avatar_initials: "??", mock_provider: "anonymous" } },
+    });
+    setBusy(null);
+    if (err) {
+      setError(err.message);
       return;
     }
     router.replace("/painel");
@@ -70,16 +88,27 @@ export default function LoginPage() {
             <Button
               key={p.id}
               variant="outline"
-              disabled={busy}
+              disabled={busy !== null}
               className="h-11 justify-between border-glow/20 text-arctic hover:border-glow/60 hover:bg-rift/30"
-              onClick={() => enterAs(p.id, p.meta)}
+              onClick={() => signInWith(p.id, p.scopes)}
             >
-              <span>{p.label}</span>
+              <span>{busy === p.id ? "…" : p.label}</span>
               <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
                 {p.hint}
               </span>
             </Button>
           ))}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-3 opacity-60">
+          <ClaudeLogo size={16} />
+          <CursorLogo size={16} />
+          <CopilotLogo size={16} />
+          <CortexLogo size={16} />
+          <GeminiLogo size={16} />
+          <span className="ml-1 font-mono text-[10px] uppercase tracking-widest text-mute">
+            leve o contexto pra qualquer uma
+          </span>
         </div>
 
         {error && (
@@ -88,9 +117,16 @@ export default function LoginPage() {
           </p>
         )}
 
-        <p className="mt-8 font-mono text-[10px] uppercase tracking-widest text-mute/70">
-          demo — anon sign-in do supabase
-        </p>
+        <div className="mt-8 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-mute/70">
+          <button
+            onClick={signInAnon}
+            disabled={busy !== null}
+            className="underline underline-offset-4 hover:text-arctic disabled:opacity-40"
+          >
+            entrar em modo demo
+          </button>
+          <span>oauth via supabase</span>
+        </div>
       </div>
     </div>
   );
