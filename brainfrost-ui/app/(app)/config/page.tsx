@@ -1,16 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Eye, EyeOff, ShieldCheck, Terminal, Trash2 } from "lucide-react";
+import { Check, Copy, Cpu, Eye, EyeOff, ShieldCheck, Sparkles, Terminal, Trash2 } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { useSession } from "@/components/saas/SessionProvider";
 import { palette } from "@/lib/saas-theme";
 import type { LlmProvider } from "@/lib/saas-types";
+import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
 
-const PROVIDERS: { id: LlmProvider; label: string; hint: string; placeholder: string; local?: boolean }[] = [
-  { id: "claude", label: "Anthropic Claude", hint: "modelos Opus, Sonnet, Haiku", placeholder: "sk-ant-…" },
-  { id: "gemini", label: "Google Gemini",    hint: "modelos 3.6 Pro, Flash, Nano", placeholder: "AIza…" },
-  { id: "webllm", label: "Local (Llama 3.2)", hint: "roda no navegador — sem chave, sem custo", placeholder: "—", local: true },
+// Ordem importa: LLM local vem primeiro (default do dono, sem custo).
+const PROVIDERS: {
+  id: LlmProvider;
+  label: string;
+  hint: string;
+  placeholder: string;
+  local?: boolean;
+  Icon: React.ComponentType<{ className?: string; size?: number }>;
+}[] = [
+  { id: "webllm", label: "Local (WebLLM)",     hint: "Roda no navegador · sem chave · sem custo", placeholder: "—",       local: true, Icon: Cpu },
+  { id: "claude", label: "Anthropic Claude",   hint: "Modelos Opus, Sonnet, Haiku",                placeholder: "sk-ant-…", Icon: Sparkles },
+  { id: "gemini", label: "Google Gemini",      hint: "Modelos 3.6 Pro, Flash, Nano",               placeholder: "AIza…",    Icon: Sparkles },
 ];
 
 const SANITIZED = [
@@ -124,58 +133,81 @@ export default function ConfigPage() {
           </span>
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
-          Suas chaves da LLM ficam criptografadas com AES-256-GCM antes de tocar o banco. Você pode
-          guardar Claude e Gemini juntos e escolher qual usar em cada análise.
+          Comece com o LLM local — sem chave, sem custo, roda no seu navegador. Se quiser
+          qualidade maior, adicione sua chave do Claude ou Gemini. Ativa apenas um por vez.
         </p>
 
-        {/* Provedor */}
+        {/* Provedor — lista vertical estilo tabela, só um ativo */}
         <section className="mt-14 border-t pt-8" style={{ borderColor: c.borderSoft }}>
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
-                Provedor selecionado
-              </p>
-              <p className="mt-2 max-w-lg text-[13px]" style={{ color: c.dim }}>
-                É o que a próxima análise vai usar. Você pode ter chave dos dois.
-              </p>
-            </div>
-          </div>
-          <div className="mt-5 grid grid-cols-1 gap-2 md:grid-cols-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
+            Provedores
+          </p>
+          <p className="mt-2 max-w-lg text-[13px]" style={{ color: c.dim }}>
+            A LLM ativa é a que a próxima análise vai usar. Você pode alternar quando quiser.
+          </p>
+
+          <div
+            className="mt-5 divide-y rounded-2xl border"
+            style={{ background: c.card, borderColor: c.border }}
+          >
             {PROVIDERS.map((p) => {
               const active = config.llmProvider === p.id;
               const has = isStored(p.id);
+              const Icon = p.Icon;
               return (
-                <button
+                <div
                   key={p.id}
-                  onClick={() => setConfig({ llmProvider: p.id })}
-                  className="rounded-2xl border p-4 text-left transition-all"
-                  style={{
-                    background: active ? `${c.accent}12` : "transparent",
-                    borderColor: active ? c.accent : c.borderSoft,
-                  }}
+                  className="flex items-center justify-between gap-4 p-4"
+                  style={{ borderColor: c.borderSoft }}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-[14px] font-semibold" style={{ color: c.text }}>
-                      {p.label}
-                    </div>
+                  <div className="flex min-w-0 items-center gap-3">
                     <span
-                      className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                       style={{
-                        background: p.local
-                          ? `${c.accent}20`
-                          : has
-                            ? `${c.aurora}20`
-                            : `${c.dim}20`,
-                        color: p.local ? c.accent : has ? c.aurora : c.dim,
+                        background: active ? `${c.accent}20` : `${c.dim}15`,
+                        color: active ? c.accent : c.dim,
                       }}
                     >
-                      {p.local ? "sem chave" : has ? "chave salva" : "sem chave"}
+                      <Icon size={18} />
                     </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-semibold" style={{ color: c.text }}>
+                          {p.label}
+                        </span>
+                        <span
+                          className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest"
+                          style={{
+                            background: p.local
+                              ? `${c.accent}20`
+                              : has
+                                ? `${c.aurora}20`
+                                : `${c.dim}20`,
+                            color: p.local ? c.accent : has ? c.aurora : c.dim,
+                          }}
+                        >
+                          {p.local ? "sem chave" : has ? "chave salva" : "sem chave"}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 font-mono text-[11px]" style={{ color: c.dim }}>
+                        {p.hint}
+                      </p>
+                    </div>
                   </div>
-                  <div className="mt-1 font-mono text-[10px]" style={{ color: c.dim }}>
-                    {p.hint}
-                  </div>
-                </button>
+                  <button
+                    onClick={() => setConfig({ llmProvider: p.id })}
+                    disabled={active}
+                    className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[12px] font-medium transition-colors disabled:cursor-default"
+                    style={{
+                      background: active ? c.accent : "transparent",
+                      color: active ? c.onAccent : c.text,
+                      borderColor: active ? c.accent : c.borderSoft,
+                    }}
+                  >
+                    {active && <Check className="h-3 w-3" strokeWidth={2.5} />}
+                    {active ? "Ativa" : "Ativar"}
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -255,20 +287,65 @@ export default function ConfigPage() {
         </section>
         )}
 
-        {/* Aviso do WebLLM */}
+        {/* Escolha de modelo do WebLLM */}
         {config.llmProvider === "webllm" && (
         <section className="mt-12 border-t pt-8" style={{ borderColor: c.borderSoft }}>
           <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
-            Modelo Local (Llama 3.2)
+            Modelo local
           </p>
-          <p className="mt-3 max-w-lg text-[13px] leading-relaxed" style={{ color: c.dim }}>
-            Roda direto no seu navegador via WebGPU — zero rede, zero chave, zero custo. O
-            primeiro uso baixa <span style={{ color: c.text }}>~800 MB</span> do modelo e fica em
-            cache pras próximas análises. Precisa de Chrome/Edge 113+ ou Safari 26+ com GPU
-            razoável (≥ 2 GB VRAM).
+          <p className="mt-2 max-w-lg text-[13px] leading-relaxed" style={{ color: c.dim }}>
+            Roda direto no navegador via WebGPU. Zero rede, zero chave, zero custo. Precisa de
+            Chrome/Edge 113+ ou Safari 26+. Modelo baixa uma vez e fica em cache pra sempre.
           </p>
+
+          <div
+            className="mt-5 divide-y rounded-2xl border"
+            style={{ background: c.card, borderColor: c.border }}
+          >
+            {WEBLLM_MODELS.map((m) => {
+              const selected = (config.webLlmModel ?? DEFAULT_WEBLLM_MODEL) === m.id;
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between gap-4 p-4"
+                  style={{ borderColor: c.borderSoft }}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px] font-semibold" style={{ color: c.text }}>
+                        {m.label}
+                      </span>
+                      <span
+                        className="rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest"
+                        style={{ background: `${c.accent}18`, color: c.accent }}
+                      >
+                        {m.quality}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 font-mono text-[11px]" style={{ color: c.dim }}>
+                      {m.size} · {m.vram} de VRAM recomendado
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setConfig({ webLlmModel: m.id })}
+                    disabled={selected}
+                    className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[12px] font-medium disabled:cursor-default"
+                    style={{
+                      background: selected ? c.accent : "transparent",
+                      color: selected ? c.onAccent : c.text,
+                      borderColor: selected ? c.accent : c.borderSoft,
+                    }}
+                  >
+                    {selected && <Check className="h-3 w-3" strokeWidth={2.5} />}
+                    {selected ? "Ativo" : "Usar"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
           <div className="mt-4 flex flex-wrap gap-2">
-            {["sem chave", "sem custo", "seus dados não saem", "~30-60s por análise"].map((t) => (
+            {["seus dados não saem", "primeiro uso demora", "só extrai padrões técnicos"].map((t) => (
               <span
                 key={t}
                 className="rounded-full border px-2.5 py-0.5 font-mono text-[10px]"

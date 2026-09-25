@@ -6,7 +6,7 @@ import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { sanitize } from "@/lib/sanitize";
-import { analyzeLocally, isWebGPUAvailable, type WebLlmProgress } from "@/lib/webllm";
+import { analyzeLocally, DEFAULT_WEBLLM_MODEL, isWebGPUAvailable, type WebLlmProgress } from "@/lib/webllm";
 import { isCategory } from "@/lib/prompts";
 
 const STAGES = [
@@ -21,6 +21,7 @@ export default function AnalisandoPage() {
   const router = useRouter();
   const theme = useSaas((s) => s.theme);
   const provider = useSaas((s) => s.config.llmProvider);
+  const webLlmModel = useSaas((s) => s.config.webLlmModel ?? DEFAULT_WEBLLM_MODEL);
   const c = palette(theme);
 
   const [progress, setProgress] = useState(5);
@@ -63,7 +64,7 @@ export default function AnalisandoPage() {
       if (!imp.raw_text) throw new Error("import sem conteúdo (raw_text vazio)");
 
       const sanitized = sanitize(imp.raw_text);
-      const rawSuggestions = await analyzeLocally(sanitized.cleanText, (p) => setModelProgress(p));
+      const rawSuggestions = await analyzeLocally(sanitized.cleanText, webLlmModel, (p) => setModelProgress(p));
 
       const rows = rawSuggestions
         .filter((s) => s.title && s.body)
@@ -105,7 +106,7 @@ export default function AnalisandoPage() {
     })();
 
     return () => clearInterval(tick);
-  }, [params.id, router, provider]);
+  }, [params.id, router, provider, webLlmModel]);
 
   const stage = [...STAGES].reverse().find((s) => progress >= s.at) ?? STAGES[0];
   const showModelProgress = provider === "webllm" && modelProgress && modelProgress.progress < 1;
