@@ -16,6 +16,7 @@ import { getSupabase } from "@/lib/supabase/client";
 
 interface Identity {
   provider?: string;
+  last_sign_in_at?: string;
   identity_data?: {
     full_name?: string;
     name?: string;
@@ -25,9 +26,28 @@ interface Identity {
   };
 }
 
-function extractDisplay(user: { user_metadata?: Record<string, unknown>; identities?: Identity[]; email?: string | null }) {
+function extractDisplay(user: {
+  user_metadata?: Record<string, unknown>;
+  app_metadata?: Record<string, unknown>;
+  identities?: Identity[];
+  email?: string | null;
+}) {
   const meta = user.user_metadata ?? {};
-  const identity = user.identities?.[0]?.identity_data ?? {};
+  const appMeta = user.app_metadata ?? {};
+
+  // app_metadata.provider é o do último login. Se o Supabase linkou contas por
+  // email (Google + GitHub), identities[0] pode não refletir a autenticação atual.
+  const currentProvider =
+    (meta.mock_provider as string | undefined) ??
+    (appMeta.provider as string | undefined) ??
+    user.identities?.[0]?.provider ??
+    "anônimo";
+
+  // Casa a identity pelo provider atual (fallback pra primeira).
+  const identity =
+    user.identities?.find((i) => i.provider === currentProvider)?.identity_data ??
+    user.identities?.[0]?.identity_data ??
+    {};
 
   const name =
     (meta.display_name as string | undefined) ??
@@ -61,12 +81,7 @@ function extractDisplay(user: { user_metadata?: Record<string, unknown>; identit
       .join("")
       .toUpperCase() || "??");
 
-  const provider =
-    (meta.mock_provider as string | undefined) ??
-    user.identities?.[0]?.provider ??
-    "anônimo";
-
-  return { name, email, avatar, initials, provider };
+  return { name, email, avatar, initials, provider: currentProvider };
 }
 
 export function AccountMenu() {
