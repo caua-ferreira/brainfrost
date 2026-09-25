@@ -26,29 +26,49 @@ export interface LlmSuggestion {
   evidence?: string;
 }
 
-export const EXTRACTION_SYSTEM_PROMPT = `Você é um extrator de padrões técnicos.
-Recebe um trecho de repositório (markdown, código, comentários) e devolve as
-regras/decisões/convenções que valem para o dono repetir em outros projetos.
+export const EXTRACTION_SYSTEM_PROMPT = `Você é um extrator de padrões TÉCNICOS de código e documentação.
 
-Regras:
-- Só extraia padrões DURÁVEIS (regra de projeto, decisão de arquitetura, armadilha conhecida).
-- NUNCA extraia código específico, nome de variável, ou coisa que não gera reuso.
-- Corte tudo que seja segredo/chave/senha — se aparecer, ignore.
-- Se não há nada de padrão real no texto, devolva array vazio.
+Seu ÚNICO domínio é engenharia de software: regras de projeto, decisões de
+arquitetura, armadilhas, convenções, ferramentas, processos de equipe.
 
-Devolva SOMENTE um JSON válido no formato:
+REGRAS ABSOLUTAS:
+- IGNORE conhecimento geral (geografia, biologia, história, cultura, etc.). Se o texto
+  não tem padrão técnico, devolva {"suggestions": []}.
+- Só extraia padrões DURÁVEIS que o dono possa repetir em outros projetos.
+- NUNCA inclua código específico, nomes de variáveis, ou trivialidades.
+- Descarte segredos/chaves/senhas — se aparecerem, pule.
+
+CATEGORIAS VÁLIDAS (use exatamente uma):
+- padroes_codigo         (como escrever, lint, style, formato de commit)
+- padroes_arquitetura    (SQL, modelagem, pipelines, decisões estruturais)
+- contexto_trabalho      (equipes, processos, ferramentas do dia a dia)
+- padrao_webapp          (stack de web app, armadilhas de framework, RLS)
+- glossario              (nomes internos do time)
+- projeto                (contexto específico de um projeto)
+- log_aprendizados       (decisão tomada em uma data)
+
+FORMATO DA RESPOSTA: só JSON válido, nada mais.
 {
   "suggestions": [
-    {
-      "title": "título curto imperativo",
-      "body": "explicação com o padrão, 2-4 linhas",
-      "category": "padroes_codigo | padroes_arquitetura | contexto_trabalho | padrao_webapp | glossario | projeto | log_aprendizados",
-      "evidence": "arquivo:linha ou trecho identificador (opcional)"
-    }
+    {"title": "...", "body": "...", "category": "...", "evidence": "..."}
   ]
 }
 
-Nada além do JSON. Sem preâmbulo, sem markdown fence.`;
+EXEMPLOS:
+
+Entrada: "sempre usar TypeScript strict mode com noImplicitAny=true"
+Saída: {"suggestions":[{"title":"TypeScript strict mode obrigatório","body":"Todos os projetos ativam strict mode com noImplicitAny para pegar erros de tipo cedo.","category":"padroes_codigo","evidence":"tsconfig.json"}]}
+
+Entrada: "a Amazônia tem grande diversidade biológica"
+Saída: {"suggestions":[]}
+
+Entrada: "commits sempre no formato conventional commits, com scope opcional. Nada de coautoria."
+Saída: {"suggestions":[{"title":"Commits em Conventional Commits sem coautoria","body":"Formato tipo(scope): descrição. Scope opcional mas encorajado quando o commit toca área específica. Coautoria não é usada.","category":"padroes_codigo","evidence":"CONTRIBUTING.md"}]}
+
+Entrada: "receita de bolo de cenoura: 2 ovos, 3 cenouras..."
+Saída: {"suggestions":[]}
+
+Nada de preâmbulo. Nada de markdown fence. Apenas o JSON.`;
 
 export function parseSuggestionsJson(raw: string): LlmSuggestion[] {
   const jsonStart = raw.indexOf("{");
