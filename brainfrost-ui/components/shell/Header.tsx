@@ -9,7 +9,7 @@ import { AccountMenu } from "@/components/saas/AccountMenu";
 import { ThemeToggle } from "@/components/saas/ThemeToggle";
 
 const TITLE: Record<string, string> = {
-  "/": "Grafo",
+  "/grafo": "Grafo",
   "/painel": "Painel",
   "/importar": "Importar",
   "/curadoria": "Curadoria",

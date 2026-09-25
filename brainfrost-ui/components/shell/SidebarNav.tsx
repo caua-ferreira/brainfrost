@@ -24,7 +24,7 @@ const NAV = [
   { href: "/importar", label: "Importar", icon: Upload, match: (p: string) => p.startsWith("/importar") || p.startsWith("/analisando") },
   { href: "/curadoria", label: "Curadoria", icon: ListChecks, match: (p: string) => p.startsWith("/curadoria") },
   { href: "/exportar", label: "Exportar", icon: Download, match: (p: string) => p.startsWith("/exportar") },
-  { href: "/", label: "Grafo", icon: LayoutDashboard, match: (p: string) => p === "/" },
+  { href: "/grafo", label: "Grafo", icon: LayoutDashboard, match: (p: string) => p === "/grafo" },
   { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p: string) => p.startsWith("/chat") },
   { href: "/camadas", label: "Camadas", icon: Layers, match: (p: string) => p.startsWith("/camadas") },
   { href: "/cofre", label: "Cofre", icon: Sparkles, match: (p: string) => p.startsWith("/cofre") },

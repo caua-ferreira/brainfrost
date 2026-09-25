@@ -46,7 +46,7 @@ export function CommandPalette({ notes, open, onOpenChange }: Props) {
 
   function go(slug: string) {
     onOpenChange(false);
-    router.push(`/?camada=${slug}`);
+    router.push(`/grafo?camada=${slug}`);
   }
 
   const core = notes.filter((n) => n.layer === "core");
