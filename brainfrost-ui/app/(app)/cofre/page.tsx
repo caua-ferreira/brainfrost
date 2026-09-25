@@ -1,20 +1,29 @@
+"use client";
+
 import Link from "next/link";
 import CofreDashboard from "@/components/cofre/CofreDashboard";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { readVault } from "@/lib/vault";
-
-export const dynamic = "force-static";
+import { useVaultSnapshot } from "@/lib/supabase/useVault";
 
 export default function Page() {
-  let snapshot;
-  try {
-    snapshot = readVault();
-  } catch (error) {
+  const { snapshot, loading, error } = useVaultSnapshot();
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-abyss">
+        <div className="font-mono text-xs uppercase tracking-widest text-mute">
+          carregando cofre…
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
     return (
       <div className="h-full overflow-auto p-6">
         <EmptyState
-          title="Cofre não encontrado"
-          description={error instanceof Error ? error.message : String(error)}
+          title="Não deu para ler o cofre"
+          description={error}
           action={
             <Link
               href="/"
@@ -23,6 +32,17 @@ export default function Page() {
               voltar ao grafo
             </Link>
           }
+        />
+      </div>
+    );
+  }
+
+  if (!snapshot || snapshot.notes.length === 0) {
+    return (
+      <div className="h-full overflow-auto p-6">
+        <EmptyState
+          title="Cofre vazio"
+          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria."
         />
       </div>
     );
