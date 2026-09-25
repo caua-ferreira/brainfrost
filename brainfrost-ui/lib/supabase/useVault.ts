@@ -26,11 +26,13 @@ export function buildSnapshot(noteRows: NoteRow[], linkRows: LinkRow[]): VaultSn
     const body = n.body.trim();
     const words = body.length ? body.split(/\s+/).length : 0;
     return {
+      id: n.id,
       slug: n.slug,
       file: `${n.slug}.md`,
       title: n.title,
       tags: Array.isArray(n.tags) ? n.tags : [],
       layer: (n.layer === "core" ? "core" : "growth") as "core" | "growth",
+      category: n.category,
       content: body,
       raw: body,
       excerpt: body.slice(0, 240),
@@ -92,35 +94,42 @@ interface VaultState {
   snapshot: VaultSnapshot | null;
   loading: boolean;
   error: string | null;
+  refresh: () => Promise<void>;
 }
 
 export function useVaultSnapshot(): VaultState {
-  const [state, setState] = useState<VaultState>({ snapshot: null, loading: true, error: null });
+  const [snapshot, setSnapshot] = useState<VaultSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    const supabase = getSupabase();
+    const [notesRes, linksRes] = await Promise.all([
+      supabase.from("vault_notes").select("*").order("updated_at", { ascending: false }),
+      supabase.from("vault_links").select("*"),
+    ]);
+    if (notesRes.error) {
+      setSnapshot(null);
+      setError(notesRes.error.message);
+      setLoading(false);
+      return;
+    }
+    setSnapshot(buildSnapshot(notesRes.data ?? [], linksRes.data ?? []));
+    setError(null);
+    setLoading(false);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      const supabase = getSupabase();
-      const [notesRes, linksRes] = await Promise.all([
-        supabase.from("vault_notes").select("*").order("updated_at", { ascending: false }),
-        supabase.from("vault_links").select("*"),
-      ]);
+    void (async () => {
+      await refresh();
       if (cancelled) return;
-      if (notesRes.error) {
-        setState({ snapshot: null, loading: false, error: notesRes.error.message });
-        return;
-      }
-      setState({
-        snapshot: buildSnapshot(notesRes.data ?? [], linksRes.data ?? []),
-        loading: false,
-        error: null,
-      });
-    };
-    load();
+    })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return state;
+  return { snapshot, loading, error, refresh };
 }

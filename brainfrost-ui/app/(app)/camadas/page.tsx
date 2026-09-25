@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useVaultSnapshot } from "@/lib/supabase/useVault";
 
 export default function Page() {
-  const { snapshot, loading, error } = useVaultSnapshot();
+  const { snapshot, loading, error, refresh } = useVaultSnapshot();
 
   if (loading) {
     return (
@@ -48,5 +48,5 @@ export default function Page() {
     );
   }
 
-  return <CamadasBrowser notes={snapshot.notes} />;
+  return <CamadasBrowser notes={snapshot.notes} refresh={refresh} />;
 }

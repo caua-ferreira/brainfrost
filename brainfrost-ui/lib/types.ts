@@ -1,11 +1,13 @@
 export type Layer = "core" | "growth";
 
 export interface Note {
+  id?: string;
   slug: string;
   file: string;
   title: string;
   tags: string[];
   layer: Layer;
+  category?: string;
   content: string;
   raw: string;
   excerpt: string;
