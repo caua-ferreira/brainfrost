@@ -53,14 +53,13 @@ function extractDisplay(user: { user_metadata?: Record<string, unknown>; identit
 
   const initials =
     (meta.avatar_initials as string | undefined) ??
-    name
+    (name
       .split(/\s+/)
       .map((part) => part[0])
       .filter(Boolean)
       .slice(0, 2)
       .join("")
-      .toUpperCase() ||
-    "??";
+      .toUpperCase() || "??");
 
   const provider =
     (meta.mock_provider as string | undefined) ??
