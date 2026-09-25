@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
 import { ClaudeLogo, CopilotLogo, CortexLogo, CursorLogo, GeminiLogo } from "@/components/saas/AiLogos";
+import { GitHubBrandLogo, GoogleLogo, MicrosoftLogo } from "@/components/saas/OAuthProviderLogos";
 
 type OAuthProvider = "google" | "github" | "azure";
 
@@ -15,10 +16,11 @@ const PROVIDERS: {
   label: string;
   hint: string;
   scopes?: string;
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
 }[] = [
-  { id: "google", label: "Entrar com Google", hint: "conta pessoal" },
-  { id: "github", label: "Entrar com GitHub", hint: "para importar repositórios", scopes: "read:user user:email repo" },
-  { id: "azure",  label: "Entrar com Microsoft", hint: "conta de empresa", scopes: "email" },
+  { id: "google", label: "Entrar com Google", hint: "conta pessoal", Icon: GoogleLogo },
+  { id: "github", label: "Entrar com GitHub", hint: "para importar repositórios", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
+  { id: "azure",  label: "Entrar com Microsoft", hint: "conta de empresa", scopes: "email", Icon: MicrosoftLogo },
 ];
 
 export default function LoginPage() {
@@ -98,7 +100,10 @@ export default function LoginPage() {
               className="h-11 justify-between border-glow/20 text-arctic hover:border-glow/60 hover:bg-rift/30"
               onClick={() => signInWith(p.id, p.scopes)}
             >
-              <span>{busy === p.id ? "…" : p.label}</span>
+              <span className="flex items-center gap-2.5">
+                <p.Icon size={18} className={p.id === "github" ? "text-arctic" : undefined} />
+                {busy === p.id ? "…" : p.label}
+              </span>
               <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
                 {p.hint}
               </span>
