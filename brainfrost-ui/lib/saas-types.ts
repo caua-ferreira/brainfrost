@@ -39,7 +39,7 @@ export interface MockSuggestion {
   status: SuggestionStatus;
 }
 
-export type LlmProvider = "claude" | "gemini";
+export type LlmProvider = "claude" | "gemini" | "webllm";
 
 export interface MockConfig {
   llmProvider: LlmProvider;
