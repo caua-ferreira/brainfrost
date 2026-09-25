@@ -1,9 +1,16 @@
+"use client";
+
 import { SidebarNav } from "./SidebarNav";
+import { useSaas } from "@/lib/saas-mock";
 
 export function Sidebar() {
-  // O desktop mantém o Sidebar fixo. O mobile usa MobileNav (Sheet).
+  const collapsed = useSaas((s) => s.sidebarCollapsed);
   return (
-    <aside className="hidden w-56 shrink-0 border-r bg-card/60 backdrop-blur hairline md:block">
+    <aside
+      className={`hidden shrink-0 border-r border-border bg-card/60 backdrop-blur transition-[width] duration-200 md:block ${
+        collapsed ? "w-14" : "w-56"
+      }`}
+    >
       <SidebarNav />
     </aside>
   );

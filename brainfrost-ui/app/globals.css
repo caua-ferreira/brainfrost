@@ -43,6 +43,39 @@
   color-scheme: dark;
 }
 
+/*
+  Modo claro do SaaS. Reaproveita a paleta glow/aurora e troca a base para
+  branco-frost. As telas antigas (grafo, camadas, cofre, chat) continuam
+  usando hex nomeados e permanecem dark; só componentes semânticos do shadcn
+  e superfícies do shell reagem a este bloco.
+*/
+[data-theme="light"] {
+  --arctic: #08243A;
+  --mute: #6480A0;
+  --abyss-body: #F0F5FA;
+  --deep-body: #FFFFFF;
+
+  --background: 210 40% 96%;        /* #F0F5FA */
+  --foreground: 208 62% 13%;        /* #08243A */
+  --card: 0 0% 100%;                /* #FFFFFF */
+  --card-foreground: 208 62% 13%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 208 62% 13%;
+  --primary: 197 87% 35%;           /* #0B7CA8 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 30% 90%;
+  --secondary-foreground: 208 62% 13%;
+  --muted: 210 30% 92%;
+  --muted-foreground: 210 22% 50%;
+  --accent: 168 87% 38%;            /* #0FB39A */
+  --accent-foreground: 0 0% 100%;
+  --border: 208 62% 13% / 0.10;
+  --input: 210 30% 90%;
+  --ring: 197 87% 35%;
+
+  color-scheme: light;
+}
+
 html,
 body {
   height: 100%;
@@ -50,13 +83,20 @@ body {
 
 body {
   background-color: var(--abyss);
-  /* Duas fontes de luz fracas: a superfície do gelo em cima, a fenda embaixo. */
   background-image:
     radial-gradient(120% 70% at 50% -10%, rgba(90, 216, 255, 0.16), transparent 60%),
     radial-gradient(90% 60% at 15% 110%, rgba(22, 50, 79, 0.55), transparent 65%);
   background-attachment: fixed;
   color: var(--arctic);
   -webkit-font-smoothing: antialiased;
+}
+
+html[data-theme="light"] body {
+  background-color: #F0F5FA;
+  background-image:
+    radial-gradient(120% 70% at 50% -10%, rgba(11, 124, 168, 0.10), transparent 60%),
+    radial-gradient(90% 60% at 15% 110%, rgba(15, 179, 154, 0.10), transparent 65%);
+  color: var(--arctic);
 }
 
 ::selection {
