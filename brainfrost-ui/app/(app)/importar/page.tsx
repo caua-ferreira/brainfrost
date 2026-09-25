@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileArchive, GitBranch, ShieldCheck, Type } from "lucide-react";
+import { FileArchive, GitBranch, Lock, Search, ShieldCheck, Type } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
+import { useSession } from "@/components/saas/SessionProvider";
+import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "@/lib/github";
 
 const SANITIZED = [
   ".env*", "*.pem", "*.key", "id_rsa*", "credentials.json",
@@ -57,14 +59,15 @@ export default function ImportarPage() {
           <TabTrigger c={c} icon={<FileArchive className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "zip"} onClick={() => setTab("zip")}>
             Arquivo ZIP
           </TabTrigger>
-          <TabTrigger c={c} icon={<GitBranch className="h-3.5 w-3.5" strokeWidth={2} />} disabled>
-            GitHub · em breve
+          <TabTrigger c={c} icon={<GitBranch className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "github"} onClick={() => setTab("github")}>
+            GitHub
           </TabTrigger>
         </div>
 
         <div className="mt-6">
           {tab === "text" && <TextPanel c={c} />}
           {tab === "zip" && <ZipPanel c={c} />}
+          {tab === "github" && <GitHubPanel c={c} />}
         </div>
 
         <div className="mt-16 border-t pt-8" style={{ borderColor: c.borderSoft }}>
@@ -250,6 +253,205 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
           onClick={submit}
         >
           {busy ? "…" : "Analisar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
+  const router = useRouter();
+  const { session } = useSession();
+  const providerToken = session?.provider_token ?? null;
+
+  const [repos, setRepos] = useState<Repo[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const [chosen, setChosen] = useState<Repo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!providerToken) return;
+    setLoading(true);
+    listRepos(providerToken)
+      .then((list) => setRepos(list))
+      .catch((e) => setError(e instanceof Error ? e.message : "erro ao listar repos"))
+      .finally(() => setLoading(false));
+  }, [providerToken]);
+
+  const reconnect = async () => {
+    await getSupabase().auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/importar`,
+        scopes: "read:user user:email repo",
+      },
+    });
+  };
+
+  const filtered = useMemo(() => {
+    if (!repos) return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return repos;
+    return repos.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        r.full_name.toLowerCase().includes(q) ||
+        (r.description ?? "").toLowerCase().includes(q)
+    );
+  }, [repos, query]);
+
+  const submit = async () => {
+    if (!chosen || !providerToken) return;
+    setBusy(true);
+    setStatus("Baixando arquivos de contexto…");
+    try {
+      const { files } = await fetchContextFiles(providerToken, chosen.full_name, chosen.default_branch);
+      if (files.length === 0) {
+        setBusy(false);
+        setStatus(null);
+        alert(
+          `Nenhum arquivo de contexto encontrado (README.md, CLAUDE.md, CONTEXTO.md, docs/*.md…). Escolha outro repo.`
+        );
+        return;
+      }
+      setStatus(`Criando import com ${files.length} arquivos…`);
+      const rawText = buildRawTextFromFiles(chosen.full_name, files);
+      const { data, error: dbErr } = await getSupabase()
+        .from("imports")
+        .insert({
+          source: "github",
+          label: chosen.full_name,
+          file_count: files.length,
+          raw_text: rawText,
+        })
+        .select("id")
+        .single();
+      setBusy(false);
+      setStatus(null);
+      if (dbErr || !data) {
+        alert(dbErr?.message ?? "Não foi possível criar o import.");
+        return;
+      }
+      router.push(`/analisando/${data.id}`);
+    } catch (e) {
+      setBusy(false);
+      setStatus(null);
+      alert(e instanceof Error ? e.message : "Erro ao importar.");
+    }
+  };
+
+  if (!providerToken) {
+    return (
+      <div className="rounded-2xl border p-6 text-center" style={{ background: c.card, borderColor: c.border }}>
+        <GitBranch className="mx-auto h-8 w-8" strokeWidth={1.6} style={{ color: c.accent }} />
+        <p className="mt-3 text-[14px]" style={{ color: c.text }}>
+          Precisa autorizar o GitHub para listar seus repositórios.
+        </p>
+        <p className="mt-2 max-w-sm mx-auto text-[12px]" style={{ color: c.dim }}>
+          Faz login (ou reconecta) via GitHub. Vamos pedir escopo <code>repo</code> pra ler arquivos
+          de contexto — nada é escrito no seu repo.
+        </p>
+        <button
+          onClick={reconnect}
+          className="mt-4 rounded-full px-5 py-2 text-[13px] font-medium"
+          style={{ background: c.accent, color: c.onAccent }}
+        >
+          Conectar GitHub
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ background: c.card, borderColor: c.border }}>
+      <div className="flex items-center gap-2 rounded-xl border px-3" style={{ background: c.bgSoft, borderColor: c.borderSoft }}>
+        <Search className="h-4 w-4" strokeWidth={2} style={{ color: c.dim }} />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="filtrar repositórios…"
+          className="h-11 flex-1 bg-transparent text-[13px] outline-none placeholder:opacity-50"
+          style={{ color: c.text }}
+        />
+        {repos && (
+          <span className="font-mono text-[11px]" style={{ color: c.dim }}>
+            {filtered.length}/{repos.length}
+          </span>
+        )}
+      </div>
+
+      {loading && (
+        <p className="mt-6 text-center font-mono text-[11px] uppercase tracking-widest" style={{ color: c.dim }}>
+          buscando seus repositórios…
+        </p>
+      )}
+      {error && (
+        <div className="mt-4 rounded-md border border-red-400/40 bg-red-500/10 p-3 font-mono text-[11px] text-red-300">
+          {error}
+        </div>
+      )}
+
+      {repos && !loading && (
+        <ul className="mt-4 max-h-[360px] divide-y overflow-y-auto rounded-lg border" style={{ borderColor: c.borderSoft }}>
+          {filtered.map((r) => {
+            const active = chosen?.id === r.id;
+            return (
+              <li key={r.id}>
+                <button
+                  onClick={() => setChosen(r)}
+                  className="flex w-full items-start justify-between gap-4 px-4 py-3 text-left transition-colors"
+                  style={{ background: active ? `${c.accent}12` : "transparent" }}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-[14px] font-medium" style={{ color: c.text }}>
+                        {r.full_name}
+                      </span>
+                      {r.private && <Lock className="h-3 w-3" strokeWidth={2} style={{ color: c.dim }} />}
+                      {r.fork && (
+                        <span className="rounded-full border px-1.5 py-0 font-mono text-[9px] uppercase tracking-widest" style={{ borderColor: c.borderSoft, color: c.dim }}>
+                          fork
+                        </span>
+                      )}
+                    </div>
+                    {r.description && (
+                      <p className="mt-0.5 truncate text-[12px]" style={{ color: c.dim }}>
+                        {r.description}
+                      </p>
+                    )}
+                    <p className="mt-1 font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
+                      {r.language ?? "—"} · {r.default_branch} · atualizado {new Date(r.updated_at).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+          {filtered.length === 0 && (
+            <li className="p-6 text-center font-mono text-[11px] uppercase tracking-widest" style={{ color: c.dim }}>
+              nada com esse filtro
+            </li>
+          )}
+        </ul>
+      )}
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="text-[11px]" style={{ color: c.dim }}>
+          {status ??
+            (chosen
+              ? `Vamos ler README, CLAUDE.md, CONTEXTO.md, .cursor/rules, docs/*.md (até 20 arquivos, 200 KB total)`
+              : "Escolha um repo à esquerda.")}
+        </p>
+        <button
+          disabled={!chosen || busy}
+          className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ background: c.accent, color: c.onAccent }}
+          onClick={submit}
+        >
+          {busy ? "…" : "Importar & analisar"}
         </button>
       </div>
     </div>
