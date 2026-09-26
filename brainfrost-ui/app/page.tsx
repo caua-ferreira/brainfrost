@@ -50,7 +50,7 @@ export default function LandingPage() {
   const router = useRouter();
   const { session, loading } = useSession();
   const [year, setYear] = useState<number | null>(null);
-  const [plan, setPlan] = useState<Plan>("annual");
+  const [plan, setPlan] = useState<Plan>("monthly");
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
@@ -339,9 +339,9 @@ export default function LandingPage() {
             Escolha seu plano:
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[16px]" style={{ color: LIGHT.dim }}>
-            Estamos em beta gratuito.
-            Depois do lançamento oficial, o Pro vai custar <br /> R$ 10/mês — quem
-            entrar agora <span style={{ color: LIGHT.fg }}>garante 1 ano grátis</span>.
+            Estamos em beta. Depois do lançamento oficial, o Pro vai custar{" "}
+            <span className="line-through">R$29,90/mês</span> —{" "}
+            <span style={{ color: LIGHT.fg }}>quem entrar agora paga R$12,90 pra sempre</span>.
           </p>
         </div>
 
@@ -416,8 +416,14 @@ export default function LandingPage() {
             </div>
 
             <div className="mt-4 flex items-baseline gap-2">
+              <span
+                className="line-through"
+                style={{ color: LIGHT.dim, fontSize: 22 }}
+              >
+                {plan === "monthly" ? "R$29,90" : "R$358,80"}
+              </span>
               <span className="text-[42px] font-bold">
-                {plan === "monthly" ? "R$10" : "R$100"}
+                {plan === "monthly" ? "R$12,90" : "R$129"}
               </span>
               <span style={{ color: LIGHT.dim }}>
                 {plan === "monthly" ? "/mês" : "/ano"}
@@ -425,8 +431,8 @@ export default function LandingPage() {
             </div>
             <p className="mt-3 text-[14px]" style={{ color: LIGHT.dim }}>
               {plan === "monthly"
-                ? "R$10/mês, cancela quando quiser."
-                : "R$100/ano — pague 10, use 12."}
+                ? "R$12,90/mês, cancela quando quiser."
+                : "R$129/ano — 2 meses grátis (equivale a R$10,75/mês)."}
             </p>
 
             <ul className="mt-8 space-y-3 text-[14px]">
@@ -482,7 +488,7 @@ export default function LandingPage() {
               Ainda não. No beta o foco é dev solo. Multi-tenant, org, RBAC e SSO vem depois — se quiser priorizar, manda um email.
             </Faq>
             <Faq q="Como funciona o preço vitalício?">
-              Quem cadastrar no beta grátis não paga quando o plano Pro sair. Simples assim. Vai continuar sendo o que você tá vendo e muito mais por R$0.
+              Quem assinar durante o beta trava R$12,90/mês pra sempre. Quando o Pro sair oficialmente e o preço subir pra R$29,90, sua mensalidade continua a mesma — enquanto você não cancelar.
             </Faq>
           </div>
         </div>
