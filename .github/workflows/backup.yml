@@ -1,0 +1,51 @@
+name: Backup Supabase
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instala postgresql-client 17 (bate com Supabase)
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: pg_dump + gpg
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ] || [ -z "${BACKUP_PASSPHRASE:-}" ]; then
+            echo "::error::Falta secret SUPABASE_DB_URL ou BACKUP_PASSPHRASE."
+            exit 1
+          fi
+          STAMP=$(date -u +'%Y%m%dT%H%M%SZ')
+          OUT="brainfrost-${STAMP}.sql"
+          pg_dump "$SUPABASE_DB_URL" \
+            --no-owner --no-privileges --clean --if-exists \
+            --exclude-schema=auth --exclude-schema=storage \
+            --exclude-schema=graphql --exclude-schema=graphql_public \
+            --exclude-schema=extensions --exclude-schema=vault \
+            --exclude-schema=realtime --exclude-schema=supabase_functions \
+            > "$OUT"
+          gzip "$OUT"
+          gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 \
+            "${OUT}.gz"
+          echo "BACKUP_FILE=${OUT}.gz.gpg" >> "$GITHUB_ENV"
+
+      - name: Sobe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          if-no-files-found: error
