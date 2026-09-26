@@ -6,7 +6,13 @@ import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { sanitize } from "@/lib/sanitize";
-import { analyzeLocally, DEFAULT_WEBLLM_MODEL, isWebGPUAvailable, type WebLlmProgress } from "@/lib/webllm";
+import {
+  analyzeLocally,
+  DEFAULT_WEBLLM_MODEL,
+  isWebGPUAvailable,
+  WEBLLM_MODELS,
+  type WebLlmProgress,
+} from "@/lib/webllm";
 import { isCategory } from "@/lib/prompts";
 
 const STAGES = [
@@ -125,7 +131,7 @@ export default function AnalisandoPage() {
           {status === "erro"
             ? errorMsg
             : showModelProgress
-              ? "primeiro uso baixa ~800 MB. Fica em cache pra próximas."
+              ? `primeiro uso baixa ${WEBLLM_MODELS.find((m) => m.id === webLlmModel)?.size ?? "o modelo"}. Fica em cache pra próximas.`
               : stage.detail}
         </p>
 

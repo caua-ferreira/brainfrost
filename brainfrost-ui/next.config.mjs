@@ -14,6 +14,9 @@ const nextConfig = {
       { protocol: "https", hostname: "graph.microsoft.com" },
     ],
   },
+  experimental: {
+    allowedDevOrigins: ["192.168.3.24", "192.168.3.24:3000", "localhost"],
+  },
 };
 
 export default nextConfig;
