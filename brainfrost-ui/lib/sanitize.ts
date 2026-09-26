@@ -60,34 +60,26 @@ export function shouldSkipFile(path: string): boolean {
   return FILE_DENYLIST.some((r) => r.test(path));
 }
 
+const ALL_PATTERNS: Array<{ name: string; regex: RegExp; replacement: string }> = [
+  ...DROP_LINES.map((regex) => ({
+    name: "env assignment",
+    regex,
+    replacement: "// [REDACTED env assignment]",
+  })),
+  ...SECRET_PATTERNS.map(({ name, regex }) => ({ name, regex, replacement: `[REDACTED ${name}]` })),
+  ...PII_PATTERNS.map(({ name, regex }) => ({ name, regex, replacement: `[REDACTED ${name}]` })),
+];
+
 export function sanitize(input: string): SanitizeResult {
   const bytesIn = input.length;
   const redactions: Redaction[] = [];
   let cleaned = input;
 
-  for (const rx of DROP_LINES) {
-    let hits = 0;
-    cleaned = cleaned.replace(rx, () => {
-      hits++;
-      return "// [REDACTED env assignment]";
-    });
-    if (hits > 0) redactions.push({ pattern: "env assignment", count: hits });
-  }
-
-  for (const { name, regex } of SECRET_PATTERNS) {
+  for (const { name, regex, replacement } of ALL_PATTERNS) {
     let hits = 0;
     cleaned = cleaned.replace(regex, () => {
       hits++;
-      return `[REDACTED ${name}]`;
-    });
-    if (hits > 0) redactions.push({ pattern: name, count: hits });
-  }
-
-  for (const { name, regex } of PII_PATTERNS) {
-    let hits = 0;
-    cleaned = cleaned.replace(regex, () => {
-      hits++;
-      return `[REDACTED ${name}]`;
+      return replacement;
     });
     if (hits > 0) redactions.push({ pattern: name, count: hits });
   }
