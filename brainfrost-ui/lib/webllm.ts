@@ -8,34 +8,34 @@ import { EXTRACTION_SYSTEM_PROMPT, parseSuggestionsJson, type LlmSuggestion } fr
  * Precisa de WebGPU (Chrome/Edge 113+, Safari 26+).
  */
 
-// Modelos disponíveis, ordenados por tamanho/qualidade. Todos rodam via WebGPU
-// e ficam em cache do browser depois do primeiro download.
+// Modelos disponíveis via WebGPU. Ficam em cache do browser depois do
+// primeiro download. Priorizamos modelos treinados em código.
 export const WEBLLM_MODELS = [
+  {
+    id: "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC",
+    label: "Qwen Coder 1.5B",
+    size: "~950 MB",
+    quality: "treinado em código",
+    vram: "3 GB",
+  },
   {
     id: "Llama-3.2-1B-Instruct-q4f16_1-MLC",
     label: "Llama 3.2 1B",
     size: "~800 MB",
-    quality: "básica",
+    quality: "generalista rápido",
     vram: "2 GB",
   },
   {
-    id: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
-    label: "Qwen 2.5 1.5B",
-    size: "~950 MB",
-    quality: "boa em JSON",
-    vram: "3 GB",
-  },
-  {
-    id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
-    label: "Phi 3.5 Mini (3.8B)",
-    size: "~2.2 GB",
-    quality: "alta",
+    id: "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC",
+    label: "Qwen Coder 3B",
+    size: "~1.9 GB",
+    quality: "código, alta qualidade",
     vram: "5 GB",
   },
 ] as const;
 
 export type WebLlmModelId = (typeof WEBLLM_MODELS)[number]["id"];
-export const DEFAULT_WEBLLM_MODEL: WebLlmModelId = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
+export const DEFAULT_WEBLLM_MODEL: WebLlmModelId = "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC";
 
 export interface WebLlmProgress {
   progress: number; // 0..1
@@ -80,6 +80,9 @@ export async function analyzeLocally(
   const engine = await getEngine(modelId, onProgress);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const e = engine as any;
+  // response_format json_object dá "Cannot pass non-string to std::string"
+  // no WebLLM 0.2.85. O prompt já pede JSON estrito e parseSuggestionsJson
+  // extrai o objeto entre { e }, então dispensa.
   const response = await e.chat.completions.create({
     messages: [
       { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
@@ -87,7 +90,6 @@ export async function analyzeLocally(
     ],
     temperature: 0.2,
     max_tokens: 1500,
-    response_format: { type: "json_object" },
   });
   const raw = response.choices[0]?.message?.content ?? "";
   return parseSuggestionsJson(raw);

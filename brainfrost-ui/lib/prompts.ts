@@ -76,8 +76,23 @@ export function parseSuggestionsJson(raw: string): LlmSuggestion[] {
   if (jsonStart < 0 || jsonEnd < 0) {
     throw new Error("LLM não devolveu JSON válido");
   }
-  const parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1)) as {
-    suggestions?: LlmSuggestion[];
+  const slice = raw.slice(jsonStart, jsonEnd + 1);
+
+  const tryParse = (s: string) => {
+    const parsed = JSON.parse(s) as { suggestions?: LlmSuggestion[] };
+    return parsed.suggestions ?? [];
   };
-  return parsed.suggestions ?? [];
+
+  try {
+    return tryParse(slice);
+  } catch {
+    // LLMs pequenos (Qwen 1.5B) escorregam: chave sem aspas, aspas tortas,
+    // trailing commas. Faxina barata e tenta de novo.
+    const cleaned = slice
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+      .replace(/,(\s*[}\]])/g, "$1");
+    return tryParse(cleaned);
+  }
 }
