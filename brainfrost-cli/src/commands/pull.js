@@ -12,7 +12,16 @@ import { ok, fail, say, c } from "../ui.js";
  * exatamente como antes, sem saber que a fonte mudou.
  */
 export default async function pull() {
-  const config = loadConfig();
+  let config;
+  try {
+    config = loadConfig();
+  } catch (e) {
+    if (!/Cofre não encontrado/.test(e.message)) throw e;
+    const here = path.join(process.cwd(), ".brainfrost");
+    fs.mkdirSync(here, { recursive: true });
+    say(c.dim(`   criei ${c.white(here)} pra receber as camadas do cofre online.`));
+    config = loadConfig();
+  }
   const remote = config.remote;
   if (!remote || !remote.accessToken) {
     fail(`Nenhuma sessão remota. Rode ${c.white("bfrost login")} primeiro.`);
