@@ -17,12 +17,28 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+const TITLE = "BrainFrost — seu contexto, em qualquer IA";
+const DESCRIPTION =
+  "O segundo cérebro que aprende seus padrões e exporta o contexto pro Claude, Cursor, Copilot, Cortex e mais.";
+
 export const metadata: Metadata = {
-  title: "BrainFrost",
-  description: "O cofre de contexto do Cauã: camadas de conhecimento e as conexões entre elas.",
+  title: TITLE,
+  description: DESCRIPTION,
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
+  },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "BrainFrost",
+    locale: "pt_BR",
+  },
+  twitter: {
+    card: "summary",
+    title: TITLE,
+    description: DESCRIPTION,
   },
   appleWebApp: {
     capable: true,
