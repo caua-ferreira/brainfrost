@@ -11,6 +11,11 @@ interface Ctx {
 
 const SessionContext = createContext<Ctx>({ session: null, loading: true });
 
+export const useIsDemo = () => {
+  const { session } = useContext(SessionContext);
+  return session?.user?.is_anonymous === true;
+};
+
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<Ctx>({ session: null, loading: true });
 
