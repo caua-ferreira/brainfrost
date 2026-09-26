@@ -144,7 +144,12 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       .from("imports")
       .update({ status: "erro", error: "LLM não devolveu JSON válido" })
       .eq("id", importId);
-    return NextResponse.json({ error: "LLM não devolveu JSON válido", raw }, { status: 502 });
+    // Não devolvemos `raw` inteiro: em caso patológico o LLM pode ecoar
+    // o system prompt ou pedaços de contexto que valem menos vazar.
+    return NextResponse.json(
+      { error: "LLM não devolveu JSON válido", rawPreview: raw.slice(0, 200) },
+      { status: 502 }
+    );
   }
 
   const rows = (parsed.suggestions ?? [])
