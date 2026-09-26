@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "./client";
+import { DEMO_IMPORTS, DEMO_SUGGESTIONS, DEMO_VAULT_NOTES } from "./demo-data";
 import type { Database } from "./database.types";
+import { useIsDemo } from "@/components/saas/SessionProvider";
 
 type ImportRow = Database["public"]["Tables"]["imports"]["Row"];
 type SuggestionRow = Database["public"]["Tables"]["pattern_suggestions"]["Row"];
@@ -10,17 +12,23 @@ type VaultNoteRow = Database["public"]["Tables"]["vault_notes"]["Row"];
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
 export function useImports() {
+  const isDemo = useIsDemo();
   const [imports, setImports] = useState<ImportRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (isDemo) {
+      setImports(DEMO_IMPORTS);
+      setLoading(false);
+      return;
+    }
     const { data } = await getSupabase()
       .from("imports")
       .select("*")
       .order("created_at", { ascending: false });
     setImports(data ?? []);
     setLoading(false);
-  }, []);
+  }, [isDemo]);
 
   useEffect(() => {
     refresh();
@@ -30,10 +38,19 @@ export function useImports() {
 }
 
 export function useSuggestions(status: SuggestionRow["status"] | "all" = "pending") {
+  const isDemo = useIsDemo();
   const [suggestions, setSuggestions] = useState<SuggestionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (isDemo) {
+      const filtered = status === "all"
+        ? DEMO_SUGGESTIONS
+        : DEMO_SUGGESTIONS.filter((s) => s.status === status);
+      setSuggestions(filtered);
+      setLoading(false);
+      return;
+    }
     let q = getSupabase()
       .from("pattern_suggestions")
       .select("*")
@@ -42,7 +59,7 @@ export function useSuggestions(status: SuggestionRow["status"] | "all" = "pendin
     const { data } = await q;
     setSuggestions(data ?? []);
     setLoading(false);
-  }, [status]);
+  }, [status, isDemo]);
 
   useEffect(() => {
     refresh();
@@ -52,17 +69,23 @@ export function useSuggestions(status: SuggestionRow["status"] | "all" = "pendin
 }
 
 export function useVaultNotes() {
+  const isDemo = useIsDemo();
   const [notes, setNotes] = useState<VaultNoteRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (isDemo) {
+      setNotes(DEMO_VAULT_NOTES);
+      setLoading(false);
+      return;
+    }
     const { data } = await getSupabase()
       .from("vault_notes")
       .select("*")
       .order("updated_at", { ascending: false });
     setNotes(data ?? []);
     setLoading(false);
-  }, []);
+  }, [isDemo]);
 
   useEffect(() => {
     refresh();

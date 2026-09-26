@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Layers,
-  MessagesSquare,
+  Download,
+  Home,
+  ListChecks,
   Settings,
-  Sparkles,
+  Upload,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,10 +20,10 @@ interface Item {
 }
 
 const NAV: Item[] = [
-  { href: "/", label: "Grafo", icon: LayoutDashboard, match: (p) => p === "/" },
-  { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p) => p.startsWith("/chat") },
-  { href: "/camadas", label: "Camadas", icon: Layers, match: (p) => p.startsWith("/camadas") },
-  { href: "/cofre", label: "Cofre", icon: Sparkles, match: (p) => p.startsWith("/cofre") },
+  { href: "/painel", label: "Painel", icon: Home, match: (p) => p.startsWith("/painel") },
+  { href: "/importar", label: "Importar", icon: Upload, match: (p) => p.startsWith("/importar") || p.startsWith("/analisando") },
+  { href: "/curadoria", label: "Curadoria", icon: ListChecks, match: (p) => p.startsWith("/curadoria") },
+  { href: "/exportar", label: "Exportar", icon: Download, match: (p) => p.startsWith("/exportar") },
   { href: "/config", label: "Config", icon: Settings, match: (p) => p.startsWith("/config") },
 ];
 

@@ -40,7 +40,7 @@ const TARGETS: {
     color: "#0F0F0F",
     Icon: CursorLogo,
     build: (body) =>
-      `---\ndescription: Contexto do BrainFrost\nglobs: **/*\n---\n\n${body}`,
+      `---\ndescription: Contexto do BrainFrost\nglobs: **/*\nalwaysApply: true\n---\n\n${body}`,
   },
   {
     id: "copilot",
@@ -58,8 +58,11 @@ const TARGETS: {
     hint: "prompt dollar-quoted para COMPLETE",
     color: "#29B5E8",
     Icon: CortexLogo,
-    build: (body) =>
-      `-- gerado pelo BrainFrost\nSELECT SNOWFLAKE.CORTEX.COMPLETE(\n  'claude-3-5-sonnet',\n  $$${body}$$\n);`,
+    build: (body) => {
+      // dollar-tag único evita colisão se o body contiver "$$"
+      const tag = `$brainfrost$`;
+      return `-- gerado pelo BrainFrost · troque o modelo por um disponível na sua região (SHOW CORTEX MODELS)\nSELECT SNOWFLAKE.CORTEX.COMPLETE(\n  'claude-3-5-sonnet',\n  ${tag}${body}${tag}\n);`;
+    },
   },
   {
     id: "generic",
