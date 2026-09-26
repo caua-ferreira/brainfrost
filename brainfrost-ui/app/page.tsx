@@ -128,7 +128,7 @@ export default function LandingPage() {
               style={{ background: DARK.aurora }}
             />
             <span className="font-mono text-[11px] uppercase tracking-widest">
-              Beta gratuito — vale R$ 10/mês
+              Beta gratuito — por tempo limitado
             </span>
           </div>
 
@@ -150,7 +150,7 @@ export default function LandingPage() {
             style={{ color: DARK.dim }}
           >
             O BrainFrost é um segundo cérebro para desenvolvedores. Ele aprende como você escreve
-            código, seus padrões, decisões de arquitetura e devolve isso empacotado no formato
+            seus códigos, seus padrões, suas decisões de arquitetura e devolve isso empacotado no formato
             que <span style={{ color: DARK.fg }}>Claude Code</span>,{" "}
             <span style={{ color: DARK.fg }}>Cursor</span>,{" "}
             <span style={{ color: DARK.fg }}>GitHub Copilot</span> e outras IAs entendem.
@@ -162,7 +162,7 @@ export default function LandingPage() {
               className="group inline-flex items-center gap-2 rounded-full px-6 py-3 text-[15px] font-medium transition-transform hover:scale-[1.02]"
               style={{ background: DARK.accent, color: DARK.bg }}
             >
-              Testar agora — é grátis
+              Teste agora — é grátis
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2.5} />
             </Link>
             <a
@@ -179,7 +179,7 @@ export default function LandingPage() {
               className="font-mono text-[10px] uppercase tracking-[0.28em]"
               style={{ color: DARK.dim }}
             >
-              suporta
+              funciona com:
             </p>
             {[
               { Icon: ClaudeLogo, label: "Claude" },
@@ -205,16 +205,16 @@ export default function LandingPage() {
       {/* Como funciona */}
       <section id="como-funciona" className="mx-auto max-w-5xl px-6 py-24">
         <p
-          className="font-mono text-[10px] uppercase tracking-[0.3em]"
+          className="font-bold text-[12px] uppercase tracking-[0.1em]"
           style={{ color: LIGHT.accent }}
         >
           Como funciona
         </p>
         <h2 className="mt-3 text-[32px] font-semibold leading-tight tracking-tight md:text-[42px]">
-          Você trabalha, o cofre aprende sozinho.
+          Você trabalha e ele aprende sobre você.
         </h2>
         <p className="mt-4 max-w-2xl text-[16px]" style={{ color: LIGHT.dim }}>
-          Três passos que rodam no ritmo do seu dia. Nada de configurar prompts do zero toda vez
+          Três etapas simples. Nada de configurar prompts do zero toda vez
           que abrir uma IA nova.
         </p>
 
@@ -222,20 +222,21 @@ export default function LandingPage() {
           <Step
             n={1}
             Icon={GitBranch}
-            title="Sobe qualquer repositório"
-            body="Cola um trecho, escolhe um repo do seu GitHub, ou joga um ZIP. O extrator lê READMEs, CLAUDE.md, docs e comentários — nunca segredos."
+            title="Aceita quase qualquer coisa"
+            body="Você pode colar um trecho de código ou escolher um repo do seu GitHub ou até carregar um ZIP. 
+            O extrator lê READMEs, CLAUDE.md, docs e comentários, nunca segredos e senhas."
           />
           <Step
             n={2}
             Icon={Sparkles}
             title="A IA extrai seus padrões"
-            body="Roda no seu navegador (grátis) ou com sua chave Claude/Gemini. Devolve regras técnicas: como você commita, como monta RLS, o que evita, o que lembra."
+            body="Roda no seu navegador (grátis) ou com sua chave Claude/Gemini. Devolve regras técnicas: como você escreve, como commita, o que evita e o que lembra."
           />
           <Step
             n={3}
             Icon={Layers}
-            title="Você aprova e o cofre cresce"
-            body="Cada sugestão vira uma camada. Você aceita, edita ou rejeita. O cofre é seu — nada entra sem você dizer sim."
+            title="Você aprova e o cérebro cresce"
+            body="Cada sugestão vira uma camada. Você aceita, edita ou rejeita. O cérebro é seu, você controla o que ele aprende e decide o que incluir."
           />
         </div>
       </section>
@@ -244,19 +245,19 @@ export default function LandingPage() {
       <section className="border-y" style={{ background: LIGHT.card, borderColor: LIGHT.border }}>
         <div className="mx-auto max-w-5xl px-6 py-24">
           <p
-            className="font-mono text-[10px] uppercase tracking-[0.3em]"
+            className="font-bold text-[12px] uppercase tracking-[0.1em]"
             style={{ color: LIGHT.accent }}
           >
             Por que isso importa
           </p>
           <h2 className="mt-3 text-[32px] font-semibold leading-tight tracking-tight md:text-[42px]">
-            Toda IA nova começa do zero.
+            Toda IA nova começa do zero...
             <br />
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: `linear-gradient(to right, ${LIGHT.accent}, ${LIGHT.aurora})` }}
             >
-              A sua começa te conhecendo.
+              A sua começa te conhecendo!
             </span>
           </h2>
 
@@ -264,22 +265,22 @@ export default function LandingPage() {
             <Feature
               Icon={Cpu}
               title="Grátis pra sempre com LLM local"
-              body="Rodamos Llama 3.2 ou Qwen 2.5 direto no navegador via WebGPU. Zero rede, zero chave, zero custo. Ideal pra código que você não quer que saia da máquina."
+              body="Rodamos Llama 3.2 ou Qwen 2.5 direto no navegador. Zero rede, zero chave, zero custo."
             />
             <Feature
               Icon={Zap}
               title="Claude / Gemini se quiser turbo"
-              body="Cola sua chave uma vez, ela vira AES-256 antes de tocar o banco. Nem a gente vê. Análises em ~5s no Sonnet 4.6."
+              body="Você cola sua chave uma vez, ela fica criptografada antes de entrar no banco. Nem a gente vê. Análises em ~5s no Sonnet 4.6."
             />
             <Feature
               Icon={FileCode2}
               title="Export pra qualquer IA"
-              body="Um clique e o cofre vira CLAUDE.md, .cursor/rules, .github/copilot-instructions, SQL do Snowflake Cortex ou CONTEXTO.md pra colar no ChatGPT."
+              body="Um clique e o cérebro vira um markdown que qualquer IA entende. Claude, Gemini, Copilot, ChatGPT, Cursor, Cortex… e até o seu próprio LLM local."
             />
             <Feature
               Icon={GitBranch}
               title="CLI que injeta no repo"
-              body="bfrost login + bfrost pull + bfrost inject. Puxa suas camadas e coloca no CLAUDE.md do repo em qualquer máquina. Zero configuração."
+              body="Três comandos, ele puxa suas informações e coloca no CLAUDE.md do repo em qualquer máquina. Low-Code."
             />
           </div>
         </div>
@@ -289,17 +290,18 @@ export default function LandingPage() {
       <section id="pricing" className="mx-auto max-w-5xl px-6 py-24">
         <div className="text-center">
           <p
-            className="font-mono text-[10px] uppercase tracking-[0.3em]"
+            className="font-bold text-[12px] uppercase tracking-[0.1em]"
             style={{ color: LIGHT.accent }}
           >
             Preços
           </p>
           <h2 className="mt-3 text-[32px] font-semibold leading-tight tracking-tight md:text-[42px]">
-            Escolhe seu plano. Cancela quando quiser.
+            Escolha seu plano:
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[16px]" style={{ color: LIGHT.dim }}>
-            Estamos em beta gratuito. Depois do lançamento oficial, o Pro custa R$ 10/mês — quem
-            entrar agora <span style={{ color: LIGHT.fg }}>garante preço vitalício</span>.
+            Estamos em beta gratuito.
+            Depois do lançamento oficial, o Pro vai custar <br /> R$ 10/mês — quem
+            entrar agora <span style={{ color: LIGHT.fg }}>garante 1 ano grátis</span>.
           </p>
         </div>
 
@@ -309,7 +311,7 @@ export default function LandingPage() {
             className="rounded-3xl border p-8"
             style={{ background: LIGHT.card, borderColor: LIGHT.border }}
           >
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: LIGHT.dim }}>
+            <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.dim }}>
               Free
             </p>
             <div className="mt-3 flex items-baseline gap-2">
@@ -317,16 +319,17 @@ export default function LandingPage() {
               <span style={{ color: LIGHT.dim }}>/pra sempre</span>
             </div>
             <p className="mt-3 text-[14px]" style={{ color: LIGHT.dim }}>
-              Pra experimentar sem cadastrar cartão.
+              Pra experimentar sem cadastrar cartão
             </p>
 
             <ul className="mt-8 space-y-3 text-[14px]">
               <Tick label="LLM local (WebLLM) ilimitada" />
               <Tick label="Até 3 importações por mês" />
-              <Tick label="Até 50 camadas no cofre" />
+              <Tick label="Até 50 camadas no cérebro" />
               <Tick label="Export pra qualquer IA" />
               <Tick label="CLI bfrost" />
             </ul>
+            <br />
 
             <Link
               href="/login"
@@ -347,18 +350,18 @@ export default function LandingPage() {
             }}
           >
             <div className="absolute -top-3 right-6 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-white" style={{ background: LIGHT.accent }}>
-              beta grátis
+              RECOMENDADO
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: LIGHT.accent }}>
+            <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.accent }}>
               Pro
             </p>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="line-through" style={{ color: LIGHT.dim, fontSize: 22 }}>R$10/mês</span>
-              <span className="text-[42px] font-bold">R$0</span>
-              <span style={{ color: LIGHT.dim }}>/agora</span>
+              <span className="line-through" style={{ color: LIGHT.dim, fontSize: 22 }}>R$40/mês</span>
+              <span className="text-[42px] font-bold">R$10</span>
+              <span style={{ color: LIGHT.dim }}>/mês</span>
             </div>
             <p className="mt-3 text-[14px]" style={{ color: LIGHT.dim }}>
-              Preço vitalício quando lançar. Entra agora, nunca paga.
+              Periodo beta gratuito + 1 ano gratis
             </p>
 
             <ul className="mt-8 space-y-3 text-[14px]">
@@ -368,7 +371,7 @@ export default function LandingPage() {
               <Tick label="Camadas ilimitadas" />
               <Tick label="Import direto do GitHub (public + private)" />
               <Tick label="Reprocessar sugestão com outra LLM" />
-              <Tick label="Suporte por email" />
+              {/* <Tick label="Suporte por email" /> */}
             </ul>
 
             <Link
@@ -379,6 +382,9 @@ export default function LandingPage() {
               Garantir preço vitalício
               <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
             </Link>
+            {/* <ul className="mt-8 space-y-3 text-[14px]">
+              <>*com sua chave <i>(pode haver custo)</i></>
+            </ul> */}
           </div>
         </div>
       </section>
@@ -391,7 +397,7 @@ export default function LandingPage() {
       >
         <div className="mx-auto max-w-3xl px-6 py-24">
           <p
-            className="font-mono text-[10px] uppercase tracking-[0.3em]"
+            className="font-bold text-[12px] uppercase tracking-[0.1em]"
             style={{ color: LIGHT.accent }}
           >
             Perguntas comuns
@@ -408,13 +414,13 @@ export default function LandingPage() {
               Guardamos criptografada com AES-256-GCM. A chave-mestra fica em variável de ambiente do servidor; a chave dele só é usada quando você dispara uma análise. Nunca aparece no cliente.
             </Faq>
             <Faq q="E se eu não confiar em rodar LLM no navegador?">
-              Sem problema. Você entra com Claude ou Gemini com sua chave e o LLM local vira só um botão que você nunca clica. O cofre funciona igual.
+              Sem problema. Você entra com Claude ou Gemini com sua chave e o LLM local vira só um botão que você nunca clica. O cérebro funciona igual.
             </Faq>
             <Faq q="Serve pra empresas?">
               Ainda não. No beta o foco é dev solo. Multi-tenant, org, RBAC e SSO vem depois — se quiser priorizar, manda um email.
             </Faq>
             <Faq q="Como funciona o preço vitalício?">
-              Quem cadastrar no beta grátis não paga quando o plano Pro sair. Simples assim. Vai continuar sendo o que você tá vendo por R$0.
+              Quem cadastrar no beta grátis não paga quando o plano Pro sair. Simples assim. Vai continuar sendo o que você tá vendo e muito mais por R$0.
             </Faq>
           </div>
         </div>
@@ -436,13 +442,13 @@ export default function LandingPage() {
 
         <div className="relative mx-auto max-w-4xl px-6 py-24 text-center md:py-32">
           <h2 className="text-[36px] font-semibold leading-tight tracking-tight md:text-[54px]">
-            Vai levar 30 segundos.
+            Leva menos de 30 segundos.
             <br />
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: `linear-gradient(to right, ${DARK.accent}, ${DARK.aurora})` }}
             >
-              Perde o preço vitalício?
+              Vai perder o beta gratis?
             </span>
           </h2>
           <Link
@@ -454,18 +460,32 @@ export default function LandingPage() {
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
           </Link>
           <p className="mt-4 font-mono text-[11px] uppercase tracking-widest" style={{ color: DARK.dim }}>
-            sem cartão · sem configuração · offline funciona
+            sem cartão · sem configuração · offline funciona · exporta pra qualquer IA
           </p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t" style={{ background: LIGHT.card, borderColor: LIGHT.border }}>
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 md:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 py-8 md:flex-row md:gap-4">
           <div className="flex items-center gap-2 text-[13px]" style={{ color: LIGHT.dim }}>
             <Snowflake className="h-4 w-4" strokeWidth={1.8} style={{ color: LIGHT.accent }} />
             <span>BrainFrost {year ?? ""}</span>
           </div>
+          
+          <div className="text-center text-[10px] md:text-left" style={{ color: LIGHT.dim }}>
+            desenvolvido por um dev cansado. se encontrar um problema,{" "}
+            <a
+              href="https://github.com/caua-ferreira/brainfrost/issues/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:opacity-80"
+              style={{ color: LIGHT.accent }}
+            >
+              abra uma issue
+            </a>
+          </div>
+
           <div className="flex items-center gap-6 text-[13px]" style={{ color: LIGHT.dim }}>
             <a href="https://github.com/caua-ferreira/brainfrost" target="_blank" rel="noreferrer" className="hover:opacity-70">
               GitHub
@@ -541,7 +561,9 @@ function Feature({
   );
 }
 
-function Tick({ label, bold }: { label: string; bold?: boolean }) {
+import React from "react"; // Adicione o import do React se ainda não tiver
+
+function Tick({ label, bold }: { label: React.ReactNode; bold?: boolean }) {
   return (
     <li className="flex items-start gap-2.5">
       <Check className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.4} style={{ color: LIGHT.accent }} />
