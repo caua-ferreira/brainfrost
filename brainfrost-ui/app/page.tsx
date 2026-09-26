@@ -44,10 +44,14 @@ const DARK = {
   border: "rgba(92,230,255,0.15)",
 } as const;
 
+type Plan = "monthly" | "annual";
+
 export default function LandingPage() {
   const router = useRouter();
   const { session, loading } = useSession();
   const [year, setYear] = useState<number | null>(null);
+  const [plan, setPlan] = useState<Plan>("annual");
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     setYear(new Date().getFullYear());
@@ -57,6 +61,42 @@ export default function LandingPage() {
   useEffect(() => {
     if (!loading && session) router.replace("/painel");
   }, [loading, session, router]);
+
+  const subscribe = async () => {
+    if (!session) {
+      router.push(`/login?next=${encodeURIComponent(`/?plan=${plan}&checkout=1`)}`);
+      return;
+    }
+    setChecking(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.url) {
+        alert(json.error ?? "Não consegui abrir o checkout.");
+        return;
+      }
+      window.location.href = json.url;
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // Autocontinuar checkout depois do login (?plan=annual&checkout=1)
+  useEffect(() => {
+    if (loading || !session) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("checkout") !== "1") return;
+    const p = q.get("plan");
+    if (p === "monthly" || p === "annual") {
+      setPlan(p);
+      subscribe();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, session]);
 
   return (
     <div className="min-h-[100dvh]" style={{ background: LIGHT.bg, color: LIGHT.fg }}>
@@ -355,13 +395,38 @@ export default function LandingPage() {
             <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.accent }}>
               Pro
             </p>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="line-through" style={{ color: LIGHT.dim, fontSize: 22 }}>R$40/mês</span>
-              <span className="text-[42px] font-bold">R$10</span>
-              <span style={{ color: LIGHT.dim }}>/mês</span>
+
+            <div
+              className="mt-3 inline-flex rounded-full border p-1"
+              style={{ borderColor: LIGHT.border, background: LIGHT.bg }}
+            >
+              {(["monthly", "annual"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPlan(p)}
+                  className="rounded-full px-4 py-1.5 text-[12px] font-medium transition-colors"
+                  style={{
+                    background: plan === p ? LIGHT.fg : "transparent",
+                    color: plan === p ? LIGHT.bg : LIGHT.dim,
+                  }}
+                >
+                  {p === "monthly" ? "Mensal" : "Anual · 2 meses grátis"}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-[42px] font-bold">
+                {plan === "monthly" ? "R$10" : "R$100"}
+              </span>
+              <span style={{ color: LIGHT.dim }}>
+                {plan === "monthly" ? "/mês" : "/ano"}
+              </span>
             </div>
             <p className="mt-3 text-[14px]" style={{ color: LIGHT.dim }}>
-              Periodo beta gratuito + 1 ano gratis
+              {plan === "monthly"
+                ? "R$10/mês, cancela quando quiser."
+                : "R$100/ano — pague 10, use 12."}
             </p>
 
             <ul className="mt-8 space-y-3 text-[14px]">
@@ -371,20 +436,17 @@ export default function LandingPage() {
               <Tick label="Camadas ilimitadas" />
               <Tick label="Import direto do GitHub (public + private)" />
               <Tick label="Reprocessar sugestão com outra LLM" />
-              {/* <Tick label="Suporte por email" /> */}
             </ul>
 
-            <Link
-              href="/login"
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-medium hover:scale-[1.02]"
+            <button
+              onClick={subscribe}
+              disabled={checking}
+              className="mt-8 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-medium hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
               style={{ background: LIGHT.fg, color: LIGHT.bg }}
             >
-              Garantir preço vitalício
+              {checking ? "Abrindo checkout…" : `Assinar ${plan === "monthly" ? "mensal" : "anual"}`}
               <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
-            </Link>
-            {/* <ul className="mt-8 space-y-3 text-[14px]">
-              <>*com sua chave <i>(pode haver custo)</i></>
-            </ul> */}
+            </button>
           </div>
         </div>
       </section>
