@@ -14,7 +14,7 @@ export const PALETTES = {
     onAccent: "#050E1A",
   },
   light: {
-    bg: "#F0F5FA",
+    bg: "#FFFFFF",
     bgSoft: "#E5EEF5",
     card: "#FFFFFF",
     border: "rgba(8, 36, 58, 0.10)",

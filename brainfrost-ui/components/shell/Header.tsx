@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { Search, Snowflake } from "lucide-react";
 import { CommandPalette, type PaletteNote } from "./CommandPalette";
 import { AccountMenu } from "@/components/saas/AccountMenu";
-import { ThemeToggle } from "@/components/saas/ThemeToggle";
 
 const TITLE: Record<string, string> = {
   "/grafo": "Grafo",
@@ -57,7 +56,6 @@ export function Header({ commit, notes }: Props) {
               <span className="hidden tracking-widest md:inline">⌘K</span>
             </button>
           )}
-          <ThemeToggle />
           <AccountMenu />
         </div>
       </header>

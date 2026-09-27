@@ -17,7 +17,7 @@ interface SaasState {
 }
 
 const DEFAULTS = {
-  theme: "dark" as Theme,
+  theme: "light" as Theme,
   sidebarCollapsed: false,
   config: {
     llmProvider: "claude" as const,
@@ -37,6 +37,6 @@ export const useSaas = create<SaasState>()(
       setConfig: (patch) =>
         set((s) => ({ config: { ...s.config, ...patch } })),
     }),
-    { name: "brainfrost.saas.mock.v1" }
+    { name: "brainfrost.saas.mock.v2" }
   )
 );

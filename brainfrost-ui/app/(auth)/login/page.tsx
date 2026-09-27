@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
@@ -77,28 +76,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-abyss px-4 py-12">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex items-center gap-2">
-          <Snowflake className="h-6 w-6 text-glow" strokeWidth={1.8} />
-          <span className="text-lg font-semibold tracking-tight text-arctic">BrainFrost</span>
+    <div className="flex min-h-[100dvh] items-center justify-center px-4 py-8" style={{ background: "#FCFCFB" }}>
+      <div className="grid w-full max-w-5xl grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-16">
+        {/* esquerda: yeti hero */}
+        <div className="flex justify-center md:justify-end">
+          <div className="relative w-[320px] md:w-[420px]">
+            <Image
+              src="/mascot/yeti-sign.png"
+              alt="Frostie segurando a placa de login"
+              width={420}
+              height={496}
+              priority
+              className="h-auto w-full"
+            />
+            <span
+              className="pointer-events-none absolute left-1/2 top-[6%] -translate-x-1/2 font-semibold uppercase tracking-[0.2em] text-abyss"
+              style={{ fontSize: 44 }}
+            >
+              Login
+            </span>
+          </div>
         </div>
 
-        <div className="mb-6 flex justify-center">
-          <Image
-            src="/mascot/yeti-waving.png"
-            alt="Frostie te dando as boas-vindas"
-            width={140}
-            height={140}
-            priority
-            className="h-auto w-[120px]"
-          />
-        </div>
-
-        <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-arctic">
+        {/* direita: descrição + botões */}
+        <div className="w-full max-w-sm">
+        <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-abyss">
           Seu segundo cérebro para qualquer IA.
         </h1>
-        <p className="mt-2 text-[13px] leading-relaxed text-mute">
+        <p className="mt-2 text-[13px] leading-relaxed text-abyss/60">
           Suba os seus repositórios, deixe o cofre aprender seus padrões, e leve o contexto
           para o Claude, Cursor, Copilot ou qualquer outra IA que você usar para codar.
         </p>
@@ -109,14 +114,14 @@ export default function LoginPage() {
               key={p.id}
               variant="outline"
               disabled={busy !== null}
-              className="h-11 justify-between border-glow/20 text-arctic hover:border-glow/60 hover:bg-rift/30"
+              className="h-11 justify-between border-abyss/15 bg-white text-abyss hover:border-abyss/40 hover:bg-abyss/5"
               onClick={() => signInWith(p.id, p.scopes)}
             >
               <span className="flex items-center gap-2.5">
-                <p.Icon size={18} className={p.id === "github" ? "text-arctic" : undefined} />
+                <p.Icon size={18} />
                 {busy === p.id ? "…" : p.label}
               </span>
-              <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-abyss/50">
                 {p.hint}
               </span>
             </Button>
@@ -129,7 +134,7 @@ export default function LoginPage() {
           <CopilotLogo size={16} />
           <CortexLogo size={16} />
           <GeminiLogo size={16} />
-          <span className="ml-1 font-mono text-[10px] uppercase tracking-widest text-mute">
+          <span className="ml-1 font-mono text-[10px] uppercase tracking-widest text-abyss/60">
             leve o contexto pra qualquer uma
           </span>
         </div>
@@ -140,15 +145,16 @@ export default function LoginPage() {
           </p>
         )}
 
-        <div className="mt-8 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-mute/70">
+        <div className="mt-8 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-abyss/50">
           <button
             onClick={signInAnon}
             disabled={busy !== null}
-            className="underline underline-offset-4 hover:text-arctic disabled:opacity-40"
+            className="underline underline-offset-4 hover:text-abyss disabled:opacity-40"
           >
             entrar em modo demo
           </button>
           <span>oauth via supabase</span>
+        </div>
         </div>
       </div>
     </div>

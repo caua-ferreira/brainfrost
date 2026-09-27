@@ -48,23 +48,65 @@ export default function PainelPage() {
 
   return (
     <div className="relative h-full overflow-y-auto overflow-x-hidden" style={{ background: c.bg }}>
-      {/* Blobs vivem no wrapper todo — sem section com overflow-hidden pra não criar corte visual */}
-      <div
-        className="pointer-events-none absolute -right-32 top-0 h-[520px] w-[520px] rounded-full blur-3xl"
-        style={{ background: c.accent, opacity: 0.10 }}
-      />
-      <div
-        className="pointer-events-none absolute -left-32 top-72 h-[520px] w-[520px] rounded-full blur-3xl"
-        style={{ background: c.aurora, opacity: 0.07 }}
-      />
+      
+      {/* === BACKGROUND DO HERO === */}
+      <div 
+        className="pointer-events-none absolute left-0 right-0 top-0 h-[650px] bg-white"
+        style={{
+          maskImage: 'linear-gradient(to bottom, black 75%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 75%, transparent 100%)'
+        }}
+      >
+        <div
+          className="absolute right-0 top-12 h-[350px] w-[350px] translate-x-[20%] rounded-full blur-[80px]"
+          style={{ background: "#2563eb", opacity: 0.15 }} 
+        />
+      </div>
+      {/* ========================== */}
 
-      <div className="relative">
+      <div className="relative z-10">
         <div className="mx-auto max-w-5xl px-6 py-16 md:py-20">
           <div className="grid grid-cols-12 items-center gap-6">
-            <div className="col-span-12 md:col-span-8">
+            
+            {/* COLUNA ESQUERDA (Yeti em 450px) */}
+            <div className="col-span-12 hidden md:col-span-6 md:flex md:justify-start">
+              <div className="relative">
+                {vaultLayers === 0 && pending === 0 ? (
+                  <Image 
+                    src="/mascot/yeti-waving.png" 
+                    alt="Frostie acenando" 
+                    width={480} 
+                    height={630} 
+                    priority 
+                    className="yeti-float h-auto w-[450px]"
+                  />
+                ) : pending > 0 ? (
+                  <video
+                    src="/mascot/yeti-laptop.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-auto w-[450px]"
+                  />
+                ) : (
+                  <video
+                    src="/mascot/yeti-sleeping-video.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-auto w-[450px]"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* COLUNA DIREITA (Textos) */}
+            <div className="col-span-12 md:col-span-6">
               <h1
                 className="text-[44px] font-semibold leading-[1.02] tracking-tight md:text-[64px]"
-                style={{ color: c.text }}
+                style={{ color: "#0f172a" }} 
               >
                 {firstName},
               </h1>
@@ -80,7 +122,7 @@ export default function PainelPage() {
                   sempre à mão.
                 </span>
               </h1>
-              <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
+              <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: "#475569" }}>
                 {pending > 0
                   ? `${pending} sugestões novas esperando seu sim. Cada uma vira uma camada quando você aprova.`
                   : "Tudo em dia por aqui. Suba um repo novo pra deixar o cofre aprender."}
@@ -98,8 +140,8 @@ export default function PainelPage() {
                 </Link>
                 <Link
                   href="/exportar"
-                  className="inline-flex items-center gap-2 rounded-full border px-5 py-3 text-[14px] font-medium transition-colors"
-                  style={{ borderColor: c.border, color: c.text }}
+                  className="inline-flex items-center gap-2 rounded-full border px-5 py-3 text-[14px] font-medium transition-colors hover:bg-slate-50"
+                  style={{ borderColor: "#e2e8f0", color: "#0f172a" }}
                 >
                   <Download className="h-4 w-4" strokeWidth={1.8} />
                   Baixar contexto
@@ -107,30 +149,9 @@ export default function PainelPage() {
               </div>
             </div>
 
-            <div className="col-span-12 hidden md:col-span-4 md:flex md:justify-end">
-              <div className="relative">
-                <div
-                  className="absolute inset-0 -z-10 rounded-full blur-3xl"
-                  style={{ background: c.accent, opacity: 0.18 }}
-                />
-                {vaultLayers === 0 && pending === 0 ? (
-                  <Image src="/mascot/yeti-waving.png" alt="Frostie acenando" width={220} height={290} priority className="yeti-float h-auto w-[200px]" />
-                ) : pending > 0 ? (
-                  <Image src="/mascot/yeti-crystals.png" alt="Frostie com cristais" width={220} height={290} priority className="yeti-float h-auto w-[200px]" />
-                ) : (
-                  <video
-                    src="/mascot/yeti-sleeping-video.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-auto w-[200px]"
-                  />
-                )}
-              </div>
-            </div>
           </div>
 
+          {/* ESTATÍSTICAS */}
           <div
             className="mt-12 grid grid-cols-3 gap-6 border-t pt-8"
             style={{ borderColor: c.borderSoft }}
@@ -240,21 +261,4 @@ function Stat({
     </div>
   );
   return href ? <Link href={href}>{inner}</Link> : inner;
-}
-
-function Orbe({ accent, aurora }: { accent: string; aurora: string }) {
-  return (
-    <div className="relative mx-auto h-52 w-52">
-      <div className="absolute inset-0 rounded-full border" style={{ borderColor: `${accent}25` }} />
-      <div className="absolute inset-6 rounded-full border" style={{ borderColor: `${accent}20` }} />
-      <div className="absolute inset-12 rounded-full border" style={{ borderColor: `${aurora}20` }} />
-      <div
-        className="absolute inset-20 rounded-full"
-        style={{ background: `linear-gradient(135deg, ${accent}, ${aurora})` }}
-      />
-      <span className="absolute right-2 top-8 h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
-      <span className="absolute -left-1 top-20 h-1 w-1 rounded-full" style={{ background: aurora }} />
-      <span className="absolute bottom-4 left-8 h-1 w-1 rounded-full" style={{ background: accent, opacity: 0.7 }} />
-    </div>
-  );
 }
