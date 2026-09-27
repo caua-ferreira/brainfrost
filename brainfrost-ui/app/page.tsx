@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -158,21 +159,26 @@ export default function LandingPage() {
           style={{ background: DARK.aurora, opacity: 0.12 }}
         />
 
-        <div className="relative mx-auto max-w-4xl px-6 py-24 md:py-32">
+        <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-24 md:grid-cols-[1fr_auto] md:gap-14 md:py-32">
+          <div>
           <div
-            className="mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-4"
             style={{ borderColor: DARK.border, color: DARK.dim }}
           >
-            <span
-              className="h-2 w-2 animate-pulse rounded-full"
-              style={{ background: DARK.aurora }}
+            <video
+              src="/mascot/yeti-beta-video.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-8 w-8 rounded-full object-cover"
             />
             <span className="font-mono text-[11px] uppercase tracking-widest">
               Beta gratuito — por tempo limitado
             </span>
           </div>
 
-          <h1 className="text-[44px] font-semibold leading-[1.02] tracking-tight md:text-[68px]">
+          <h1 className="text-[44px] font-semibold leading-[1.02] tracking-tight md:text-[62px]">
             Seu contexto de trabalho
             <br />
             <span
@@ -238,6 +244,22 @@ export default function LandingPage() {
                 <span className="text-[12px] font-medium">{label}</span>
               </div>
             ))}
+          </div>
+          </div>
+
+          <div className="relative flex justify-center md:justify-end">
+            <div
+              className="absolute inset-0 -z-10 rounded-full blur-3xl"
+              style={{ background: DARK.accent, opacity: 0.18 }}
+            />
+            <Image
+              src="/mascot/yeti-waving.png"
+              alt="Frostie acenando"
+              width={340}
+              height={450}
+              priority
+              className="yeti-wave h-auto w-[240px] drop-shadow-[0_20px_60px_rgba(92,230,255,0.25)] md:w-[340px]"
+            />
           </div>
         </div>
       </section>

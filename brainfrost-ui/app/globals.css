@@ -218,6 +218,35 @@ html[data-theme="light"] body {
   border-top: 1px solid rgba(90, 216, 255, 0.12);
 }
 
+/* Animações do Frostie — mantêm PNG estático e movem o conjunto */
+@keyframes yeti-wave {
+  0%, 12%, 100% { transform: rotate(0deg); }
+  4%, 8%        { transform: rotate(-6deg); }
+  6%            { transform: rotate(-8deg); }
+  20%           { transform: rotate(6deg); }
+}
+.yeti-wave {
+  transform-origin: 55% 90%;
+  animation: yeti-wave 3.6s ease-in-out infinite;
+}
+
+@keyframes yeti-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.yeti-float {
+  animation: yeti-float 3s ease-in-out infinite;
+}
+
+@keyframes yeti-stir {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-3px) rotate(1.5deg); }
+}
+.yeti-stir {
+  transform-origin: 50% 80%;
+  animation: yeti-stir 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

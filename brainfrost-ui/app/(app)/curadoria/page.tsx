@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Check, Pencil, X } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
@@ -126,13 +127,16 @@ export default function CuradoriaPage() {
               carregando…
             </p>
           ) : suggestions.length === 0 ? (
-            <p className="py-12 text-center text-[14px]" style={{ color: c.dim }}>
-              Nada por aqui. Volte depois de{" "}
-              <Link href="/importar" className="underline underline-offset-4" style={{ color: c.accent }}>
-                importar mais um repo
-              </Link>
-              .
-            </p>
+            <div className="flex flex-col items-center py-8">
+              <Image src="/mascot/yeti-reading.png" alt="Frostie esperando conteúdo" width={180} height={180} className="h-auto w-[160px]" />
+              <p className="mt-4 text-center text-[14px]" style={{ color: c.dim }}>
+                Nada por aqui. Volte depois de{" "}
+                <Link href="/importar" className="underline underline-offset-4" style={{ color: c.accent }}>
+                  importar mais um repo
+                </Link>
+                .
+              </p>
+            </div>
           ) : (
             <div className="space-y-3">
               {suggestions.map((s) => (
