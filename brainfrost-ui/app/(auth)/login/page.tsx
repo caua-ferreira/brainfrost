@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,17 @@ export default function LoginPage() {
         <div className="mb-8 flex items-center gap-2">
           <Snowflake className="h-6 w-6 text-glow" strokeWidth={1.8} />
           <span className="text-lg font-semibold tracking-tight text-arctic">BrainFrost</span>
+        </div>
+
+        <div className="mb-6 flex justify-center">
+          <Image
+            src="/mascot/yeti-waving.png"
+            alt="Frostie te dando as boas-vindas"
+            width={140}
+            height={140}
+            priority
+            className="h-auto w-[120px]"
+          />
         </div>
 
         <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-arctic">

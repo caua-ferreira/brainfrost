@@ -121,15 +121,28 @@ export default function AnalisandoPage() {
   return (
     <div className="flex h-full items-center justify-center overflow-auto" style={{ background: c.bg }}>
       <div className="mx-auto w-full max-w-xl px-6 py-10">
-        <div className={`mb-6 flex justify-center ${status !== "erro" ? "animate-pulse" : ""}`}>
-          <Image
-            src="/mascot/yeti-face.png"
-            alt="Frostie processando"
-            width={140}
-            height={140}
-            priority
-            className="h-auto w-[120px]"
-          />
+        <div className="mb-6 flex justify-center">
+          {status === "erro" ? (
+            <Image
+              src="/mascot/yeti-sad.png"
+              alt="Frostie triste"
+              width={200}
+              height={200}
+              priority
+              className="h-auto w-[180px]"
+            />
+          ) : (
+            <video
+              src="/mascot/yeti-laptop.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              width={200}
+              height={200}
+              className="h-auto w-[200px]"
+            />
+          )}
         </div>
         <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.accent, opacity: 0.8 }}>
           {status === "erro" ? "algo deu errado" : provider === "webllm" ? "analisando local" : "analisando"}

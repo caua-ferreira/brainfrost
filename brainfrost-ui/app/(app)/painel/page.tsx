@@ -113,14 +113,20 @@ export default function PainelPage() {
                   className="absolute inset-0 -z-10 rounded-full blur-3xl"
                   style={{ background: c.accent, opacity: 0.18 }}
                 />
-                <Image
-                  src="/mascot/yeti.png"
-                  alt="Frostie"
-                  width={220}
-                  height={290}
-                  priority
-                  className="h-auto w-[200px]"
-                />
+                {vaultLayers === 0 && pending === 0 ? (
+                  <Image src="/mascot/yeti-waving.png" alt="Frostie acenando" width={220} height={290} priority className="yeti-float h-auto w-[200px]" />
+                ) : pending > 0 ? (
+                  <Image src="/mascot/yeti-crystals.png" alt="Frostie com cristais" width={220} height={290} priority className="yeti-float h-auto w-[200px]" />
+                ) : (
+                  <video
+                    src="/mascot/yeti-sleeping-video.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-auto w-[200px]"
+                  />
+                )}
               </div>
             </div>
           </div>
