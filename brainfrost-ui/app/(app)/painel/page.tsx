@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Download, Upload } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
@@ -106,8 +107,21 @@ export default function PainelPage() {
               </div>
             </div>
 
-            <div className="col-span-12 hidden md:col-span-4 md:block">
-              <Orbe accent={c.accent} aurora={c.aurora} />
+            <div className="col-span-12 hidden md:col-span-4 md:flex md:justify-end">
+              <div className="relative">
+                <div
+                  className="absolute inset-0 -z-10 rounded-full blur-3xl"
+                  style={{ background: c.accent, opacity: 0.18 }}
+                />
+                <Image
+                  src="/mascot/yeti.png"
+                  alt="Frostie"
+                  width={220}
+                  height={290}
+                  priority
+                  className="h-auto w-[200px]"
+                />
+              </div>
             </div>
           </div>
 
