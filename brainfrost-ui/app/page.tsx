@@ -253,12 +253,12 @@ export default function LandingPage() {
               style={{ background: DARK.accent, opacity: 0.18 }}
             />
             <Image
-              src="/mascot/yeti-waving.png"
-              alt="Frostie acenando"
+              src="/mascot/yeti.png"
+              alt="Frostie, o mascote do BrainFrost"
               width={340}
               height={450}
               priority
-              className="yeti-wave h-auto w-[240px] drop-shadow-[0_20px_60px_rgba(92,230,255,0.25)] md:w-[340px]"
+              className="h-auto w-[240px] drop-shadow-[0_20px_60px_rgba(92,230,255,0.25)] md:w-[340px]"
             />
           </div>
         </div>
