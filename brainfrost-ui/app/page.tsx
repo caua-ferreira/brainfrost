@@ -162,16 +162,12 @@ export default function LandingPage() {
         <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-24 md:grid-cols-[1fr_auto] md:gap-14 md:py-32">
           <div>
           <div
-            className="mb-6 inline-flex items-center gap-2 rounded-full border py-1 pl-1 pr-4"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1"
             style={{ borderColor: DARK.border, color: DARK.dim }}
           >
-            <video
-              src="/mascot/yeti-beta-video.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-8 w-8 rounded-full object-cover"
+            <span
+              className="h-2 w-2 animate-pulse rounded-full"
+              style={{ background: DARK.aurora }}
             />
             <span className="font-mono text-[11px] uppercase tracking-widest">
               Beta gratuito — por tempo limitado
@@ -370,9 +366,16 @@ export default function LandingPage() {
         <div className="mt-14 grid gap-6 md:grid-cols-2">
           {/* Free */}
           <div
-            className="rounded-3xl border p-8"
-            style={{ background: LIGHT.card, borderColor: LIGHT.border }}
+            className="relative overflow-hidden rounded-3xl border p-8"
+            style={{ background: "#FCFCFB", borderColor: LIGHT.border }}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mascot/yeti-beta-flag.gif"
+              alt="Frostie avisando que estamos em beta"
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-36 right-2 h-48 w-auto select-none"
+            />
             <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.dim }}>
               Free
             </p>
