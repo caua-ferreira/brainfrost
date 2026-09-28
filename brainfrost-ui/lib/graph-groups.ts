@@ -50,7 +50,7 @@ export function groupKey(note: Note) {
 }
 
 export function groupInfo(key: string) {
-  return GROUPS[key] ?? { title: key, description: "Agrupamento do seu cofre." };
+  return GROUPS[key] ?? { title: key, description: "Agrupamento do seu cérebro." };
 }
 
 export function buildNoteGroups(notes: Note[], graph: GraphData): NoteGroup[] {

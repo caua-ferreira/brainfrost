@@ -82,7 +82,7 @@ export default function CuradoriaPage() {
           )}
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
-          Cada aceite vira uma camada no seu cofre. Rejeitar não apaga: só ignora.
+          Cada aceite vira uma camada no seu cérebro. Rejeitar não apaga: só ignora.
         </p>
 
         <div className="mt-12">

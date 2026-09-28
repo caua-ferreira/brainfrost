@@ -28,7 +28,7 @@ const NAV = [
   { href: "/grafo", label: "Grafo", icon: LayoutDashboard, match: (p: string) => p === "/grafo" },
   { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p: string) => p.startsWith("/chat") },
   { href: "/camadas", label: "Camadas", icon: Layers, match: (p: string) => p.startsWith("/camadas") },
-  { href: "/cofre", label: "Cofre", icon: Sparkles, match: (p: string) => p.startsWith("/cofre") },
+  { href: "/cofre", label: "Cérebro", icon: Sparkles, match: (p: string) => p.startsWith("/cofre") },
   { href: "/assinatura", label: "Assinatura", icon: CreditCard, match: (p: string) => p.startsWith("/assinatura") },
   { href: "/config", label: "Config", icon: Settings, match: (p: string) => p.startsWith("/config") },
 ];
@@ -106,7 +106,7 @@ export function SidebarNav({ onNavigate }: Props) {
         {!collapsed && (
           <>
             <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              cofre online
+              cérebro online
             </p>
             <p className="mt-1 font-mono text-[11px] text-foreground/80">
               brainfrost · sincronizado

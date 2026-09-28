@@ -10,14 +10,14 @@ export default function Page() {
   const { snapshot, loading, error, refresh } = useVaultSnapshot();
 
   if (loading) {
-    return <LoadingScreen message="carregando cofre" />;
+    return <LoadingScreen message="carregando cérebro" />;
   }
 
   if (error) {
     return (
       <div className="h-full overflow-auto p-6">
         <EmptyState
-          title="Não deu para ler o cofre"
+          title="Não deu para ler o cérebro"
           description={error}
           action={
             <Link
@@ -36,7 +36,7 @@ export default function Page() {
     return (
       <div className="h-full overflow-auto p-6">
         <EmptyState
-          title="Cofre vazio"
+          title="Cérebro vazio"
           description="Sobe um repositório em /importar e aceita as sugestões em /curadoria."
         />
       </div>

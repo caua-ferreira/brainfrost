@@ -1,6 +1,6 @@
 import type { Note } from "./types";
 
-const DEFAULT_HEADER = `Abaixo está o contexto pessoal de quem está perguntando, carregado do cofre BrainFrost.
+const DEFAULT_HEADER = `Abaixo está o contexto pessoal de quem está perguntando, carregado do cérebro BrainFrost.
 Trate o bloco CONTEXTO como verdade sobre o ambiente dele: decisões já tomadas, ferramentas em uso e
 restrições reais. Não proponha nada que contrarie esse bloco sem dizer explicitamente o que está
 contrariando e por quê.`;

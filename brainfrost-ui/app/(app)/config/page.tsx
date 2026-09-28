@@ -421,7 +421,7 @@ export default function ConfigPage() {
           </pre>
           <div className="mt-6 flex items-center justify-between gap-3">
             <p className="max-w-md text-[11px]" style={{ color: c.dim }}>
-              O blob dá acesso total ao seu cofre. Não compartilhe. Cada login refresca essa sessão.
+              O blob dá acesso total ao seu cérebro. Não compartilhe. Cada login refresca essa sessão.
             </p>
             <button
               onClick={copyCliBlob}

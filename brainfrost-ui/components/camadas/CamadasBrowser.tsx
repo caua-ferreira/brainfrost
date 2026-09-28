@@ -72,7 +72,7 @@ export default function CamadasBrowser({ notes, refresh }: Props) {
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: `linear-gradient(to right, ${c.accent}, ${c.aurora})` }}
           >
-            do seu cofre.
+            do seu cérebro.
           </span>
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>

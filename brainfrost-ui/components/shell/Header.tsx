@@ -16,7 +16,7 @@ const TITLE: Record<string, string> = {
   "/exportar": "Exportar",
   "/chat": "Chat",
   "/camadas": "Camadas",
-  "/cofre": "Cofre",
+  "/cofre": "Cérebro",
   "/assinatura": "Assinatura",
   "/perfil": "Perfil",
   "/config": "Config",

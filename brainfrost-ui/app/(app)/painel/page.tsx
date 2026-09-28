@@ -137,7 +137,7 @@ export default function PainelPage() {
               <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: "#475569" }}>
                 {pending > 0
                   ? `${pending} sugestões novas esperando seu sim. Cada uma vira uma camada quando você aprova.`
-                  : "Tudo em dia por aqui. Suba um repo novo pra deixar o cofre aprender."}
+                  : "Tudo em dia por aqui. Suba um repo novo pra deixar o cérebro aprender."}
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -168,7 +168,7 @@ export default function PainelPage() {
             className="mt-12 grid grid-cols-3 gap-6 border-t pt-8"
             style={{ borderColor: c.borderSoft }}
           >
-            <Stat value={vaultLayers} label="camadas no cofre" tint={c.accent} textColor={c.text} dimColor={c.dim} />
+            <Stat value={vaultLayers} label="camadas no cérebro" tint={c.accent} textColor={c.text} dimColor={c.dim} />
             <Stat value={pending} label="sugestões pendentes" tint={c.aurora} textColor={c.text} dimColor={c.dim} href={pending > 0 ? "/curadoria" : undefined} />
             <Stat value={imports.length} label="repos analisados" tint={c.dim} textColor={c.text} dimColor={c.dim} />
           </div>

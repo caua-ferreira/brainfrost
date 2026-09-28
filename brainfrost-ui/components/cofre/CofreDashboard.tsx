@@ -164,12 +164,12 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
             className="bg-clip-text text-transparent"
             style={{ backgroundImage: `linear-gradient(to right, ${c.accent}, ${c.aurora})` }}
           >
-            seu cofre.
+            seu cérebro.
           </span>
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
           O que existe, o que está solto, o que aponta pra lugar nenhum. Use como termômetro
-          antes de deixar o cofre alimentar a IA que você trabalha.
+            antes de deixar o cérebro alimentar a IA que você trabalha.
         </p>
 
         {brokenCount > 0 && (
