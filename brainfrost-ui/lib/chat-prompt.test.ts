@@ -94,8 +94,16 @@ describe("buildChatFollowup", () => {
     const followup = buildChatFollowup([commitNote], "E vai com coautoria ou sem?");
     expect(followup).toContain("Coautoria não é usada");
     expect(followup).toContain("sem coautoria");
+    expect(followup).toContain("## DECISÃO PRIORITÁRIA");
+    expect(followup).toContain("Respostas anteriores do assistente podem estar erradas");
     expect(followup).toMatch(/## PERGUNTA/);
     expect(followup).toMatch(/E vai com coautoria ou sem\?$/);
+  });
+
+  test("trata autoria como termo relacionado a coautoria", () => {
+    const followup = buildChatFollowup([commitNote], "Eu gosto de commitar com autoria ou sem?");
+    expect(followup).toContain("Coautoria não é usada");
+    expect(followup).toMatch(/Eu gosto de commitar com autoria ou sem\?$/);
   });
 
   test("prioriza notas que compartilham termos com a pergunta", () => {
