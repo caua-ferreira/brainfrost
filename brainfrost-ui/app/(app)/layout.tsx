@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/saas/AuthGuard";
 import { ThemeApplicator } from "@/components/saas/ThemeApplicator";
 import { NavigationLoader } from "@/components/shared/NavigationLoader";
 import { BillingProvider } from "@/components/saas/BillingProvider";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
@@ -39,6 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </main>
           </div>
           <BottomNav />
+          <ChatWidget />
         </div>
       </BillingProvider>
     </AuthGuard>

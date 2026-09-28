@@ -101,16 +101,6 @@ export function SidebarNav({ onNavigate }: Props) {
             </>
           )}
         </button>
-        {!collapsed && (
-          <>
-            <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              cérebro online
-            </p>
-            <p className="mt-1 font-mono text-[11px] text-foreground/80">
-              brainfrost · sincronizado
-            </p>
-          </>
-        )}
       </div>
     </div>
   );

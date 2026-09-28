@@ -14,7 +14,7 @@ interface Props {
 /** Lista compacta de provedores. Cada linha funciona como uma opção de seletor. */
 export function ProviderPicker({ onPick, compact }: Props) {
   const configs = useChatStore((s) => s.configs);
-  const connectedKeys = new Set(configs.map((c) => c.label));
+  const connectedKeys = new Set(["Local (WebLLM)", ...configs.map((c) => c.label)]);
 
   return (
     <div

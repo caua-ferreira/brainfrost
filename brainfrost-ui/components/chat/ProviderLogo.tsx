@@ -1,4 +1,4 @@
-import { Settings2 } from "lucide-react";
+import { Cpu, Settings2 } from "lucide-react";
 import {
   ChatGPTLogo,
   ClaudeLogo,
@@ -17,6 +17,7 @@ export function ProviderLogo({ preset, size = 24 }: { preset: ProviderPreset; si
   if (preset.key === "gpt") return <ChatGPTLogo {...shared} />;
   if (preset.key === "gemini") return <GeminiLogo {...shared} />;
   if (preset.key === "cortex") return <CortexLogo {...shared} />;
+  if (preset.key === "webllm") return <Cpu size={size} strokeWidth={1.8} color={color} aria-label="WebLLM local" />;
   if (preset.key === "ollama") return <OllamaLogo size={size} color={color} />;
   if (preset.key === "lmstudio") return <LmStudioLogo size={size} color={color} />;
   return <Settings2 size={size} strokeWidth={1.8} color={color} aria-label="Endpoint personalizado" />;

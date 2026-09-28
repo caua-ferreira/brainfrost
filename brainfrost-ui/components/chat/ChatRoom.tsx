@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Bot, Loader2, MessagesSquare, Plus, Send, Sparkles, User } from "lucide-react";
+import { ArrowLeft, Bot, Loader2, MessagesSquare, Plus, Send, Sparkles, User } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfigDrawer } from "./ConfigDrawer";
 import { ProviderPicker } from "./ProviderPicker";
-import { sendChat, type ChatMessage, type ProviderPreset } from "@/lib/chat-client";
+import { LOCAL_CHAT_CONFIG, sendChat, type ChatMessage, type ProviderPreset } from "@/lib/chat-client";
 import { useChatStore } from "@/lib/chat-store";
 import { buildChatOpener } from "@/lib/chat-prompt";
 import { useSaas } from "@/lib/saas-mock";
@@ -19,6 +21,7 @@ interface Props {
 }
 
 export default function ChatRoom({ notes }: Props) {
+  const router = useRouter();
   const theme = useSaas((s) => s.theme);
   const c = palette(theme);
 
@@ -31,9 +34,14 @@ export default function ChatRoom({ notes }: Props) {
   const newSession = useChatStore((s) => s.newSession);
   const appendMessage = useChatStore((s) => s.appendMessage);
 
+  const availableConfigs = useMemo(
+    () => [LOCAL_CHAT_CONFIG, ...configs.filter((config) => config.label !== LOCAL_CHAT_CONFIG.label)],
+    [configs]
+  );
+
   const activeConfig = useMemo(
-    () => configs.find((c) => c.label === activeConfigLabel) ?? null,
-    [configs, activeConfigLabel]
+    () => availableConfigs.find((c) => c.label === activeConfigLabel) ?? LOCAL_CHAT_CONFIG,
+    [availableConfigs, activeConfigLabel]
   );
   const session = useMemo(
     () => sessions.find((s) => s.id === activeSessionId) ?? null,
@@ -95,51 +103,6 @@ export default function ChatRoom({ notes }: Props) {
     }
   }
 
-  // Onboarding: nenhuma config → picker no meio, com hero da linguagem nova.
-  if (configs.length === 0) {
-    return (
-      <div className="relative h-full overflow-y-auto overflow-x-hidden" style={{ background: c.bg }}>
-        <div
-          className="pointer-events-none absolute -right-32 top-0 h-[520px] w-[520px] rounded-full blur-3xl"
-          style={{ background: c.accent, opacity: 0.10 }}
-        />
-        <div
-          className="pointer-events-none absolute -left-32 top-72 h-[520px] w-[520px] rounded-full blur-3xl"
-          style={{ background: c.aurora, opacity: 0.07 }}
-        />
-
-        <div className="relative mx-auto max-w-4xl space-y-8 px-6 py-16 md:py-20">
-          <div>
-            <h1
-              className="text-[42px] font-semibold leading-[1.02] tracking-tight md:text-[56px]"
-              style={{ color: c.text }}
-            >
-              Converse com o cérebro
-              <br />
-              <span
-                className="bg-clip-text text-transparent"
-                style={{ backgroundImage: `linear-gradient(to right, ${c.accent}, ${c.aurora})` }}
-              >
-                em qualquer IA.
-              </span>
-            </h1>
-            <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
-              Escolha um provedor abaixo e cole sua chave. Ela fica só no seu navegador — o
-              BrainFrost nunca vê. A primeira pergunta leva o cérebro inteiro como contexto.
-            </p>
-          </div>
-          <ProviderPicker onPick={setDrawerPreset} />
-        </div>
-
-        <ConfigDrawer
-          open={drawerPreset !== null}
-          onOpenChange={(o) => !o && setDrawerPreset(null)}
-          preset={drawerPreset}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden" style={{ background: c.bg }}>
       <div
@@ -154,13 +117,29 @@ export default function ChatRoom({ notes }: Props) {
       >
         <div className="flex min-w-0 items-center gap-2">
           <MessagesSquare className="h-4 w-4 shrink-0" style={{ color: c.accent }} />
+          <Image
+            src="/mascot/yeti-video-ezgif.com-crop.gif"
+            alt="Yeti digitando"
+            width={36}
+            height={36}
+            unoptimized
+            className="h-8 w-8 rounded-full object-contain"
+          />
+          <button
+            onClick={() => router.push("/painel")}
+            className="flex h-8 items-center gap-1 rounded-full border px-2.5 font-mono text-[11px]"
+            style={{ borderColor: c.borderSoft, color: c.dim }}
+            title="Voltar ao painel"
+          >
+            <ArrowLeft className="h-3 w-3" /> painel
+          </button>
           <select
-            value={activeConfigLabel ?? ""}
+            value={activeConfig.label}
             onChange={(e) => setActiveConfig(e.target.value || null)}
             className="min-w-0 rounded-md border bg-transparent px-2 py-1.5 text-[13px] outline-none focus:ring-2"
             style={{ color: c.text, borderColor: c.borderSoft, background: c.bgSoft }}
           >
-            {configs.map((cfg) => (
+            {availableConfigs.map((cfg) => (
               <option key={cfg.label} value={cfg.label} style={{ background: c.card, color: c.text }}>
                 {cfg.label}
               </option>
