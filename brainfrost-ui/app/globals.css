@@ -123,7 +123,7 @@ html[data-theme="light"] body {
 .reader {
   font-size: 0.95rem;
   line-height: 1.7;
-  color: rgba(233, 246, 255, 0.86);
+  color: hsl(var(--foreground) / 0.86);
 }
 .reader > * + * {
   margin-top: 1rem;
@@ -132,7 +132,7 @@ html[data-theme="light"] body {
 .reader h2,
 .reader h3 {
   font-weight: 600;
-  color: var(--arctic);
+  color: hsl(var(--foreground));
   letter-spacing: -0.01em;
 }
 .reader h1 {
@@ -142,11 +142,11 @@ html[data-theme="light"] body {
   font-size: 1.1rem;
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(90, 216, 255, 0.12);
+  border-top: 1px solid hsl(var(--primary) / 0.14);
 }
 .reader h3 {
   font-size: 1rem;
-  color: var(--glow);
+  color: hsl(var(--primary));
 }
 .reader p,
 .reader li {
@@ -161,7 +161,7 @@ html[data-theme="light"] body {
 }
 .reader ul li::before {
   content: "❄";
-  color: rgba(90, 216, 255, 0.5);
+  color: hsl(var(--primary) / 0.62);
   font-size: 0.7em;
   margin-left: -1.15rem;
   margin-right: 0.55rem;
@@ -176,14 +176,14 @@ html[data-theme="light"] body {
 .reader code {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.85em;
-  background: rgba(90, 216, 255, 0.1);
-  border: 1px solid rgba(90, 216, 255, 0.14);
+  background: hsl(var(--primary) / 0.1);
+  border: 1px solid hsl(var(--primary) / 0.16);
   padding: 0.1em 0.38em;
   border-radius: 4px;
 }
 .reader pre {
-  background: rgba(4, 11, 20, 0.85);
-  border: 1px solid rgba(90, 216, 255, 0.14);
+  background: hsl(var(--muted) / 0.72);
+  border: 1px solid hsl(var(--primary) / 0.16);
   border-radius: 8px;
   padding: 0.9rem 1rem;
   overflow-x: auto;
@@ -194,9 +194,9 @@ html[data-theme="light"] body {
   padding: 0;
 }
 .reader blockquote {
-  border-left: 2px solid rgba(90, 216, 255, 0.4);
+  border-left: 2px solid hsl(var(--primary) / 0.45);
   padding-left: 0.9rem;
-  color: var(--mute);
+  color: hsl(var(--muted-foreground));
 }
 .reader table {
   width: 100%;
@@ -207,15 +207,15 @@ html[data-theme="light"] body {
 .reader td {
   text-align: left;
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid rgba(90, 216, 255, 0.12);
+  border-bottom: 1px solid hsl(var(--primary) / 0.14);
 }
 .reader th {
-  color: var(--glow);
+  color: hsl(var(--primary));
   font-weight: 500;
 }
 .reader hr {
   border: 0;
-  border-top: 1px solid rgba(90, 216, 255, 0.12);
+  border-top: 1px solid hsl(var(--primary) / 0.14);
 }
 
 /* Animações do Frostie — mantêm PNG estático e movem o conjunto */
