@@ -83,12 +83,13 @@ export default function PainelPage() {
             <div className="col-span-12 hidden md:col-span-6 md:flex md:justify-start">
               <div className="relative">
                 {vaultLayers === 0 && pending === 0 ? (
-                  <Image 
-                    src="/mascot/yeti-waving.png" 
-                    alt="Frostie acenando" 
+                  <Image
+                    src="/mascot/yeti-laptop-ezgif.com-crop.gif"
+                    alt="Frostie digitando"
                     width={480} 
                     height={630} 
-                    priority 
+                    priority
+                    unoptimized
                     className="yeti-float h-auto w-[450px]"
                   />
                 ) : pending > 0 ? (

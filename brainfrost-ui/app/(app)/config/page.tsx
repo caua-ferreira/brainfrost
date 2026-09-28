@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Copy, Cpu, Eye, EyeOff, ShieldCheck, Sparkles, Terminal, Trash2 } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { useSession } from "@/components/saas/SessionProvider";
-import { LinkedAccounts } from "@/components/saas/LinkedAccounts";
 import { palette } from "@/lib/saas-theme";
 import type { LlmProvider } from "@/lib/saas-types";
 import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
+import { useBilling } from "@/components/saas/BillingProvider";
 
 // Ordem importa: LLM local vem primeiro (default do dono, sem custo).
 const PROVIDERS: {
@@ -40,6 +41,8 @@ export default function ConfigPage() {
   const config = useSaas((s) => s.config);
   const setConfig = useSaas((s) => s.setConfig);
   const { session } = useSession();
+  const router = useRouter();
+  const { isPro } = useBilling();
   const c = palette(theme);
   const [showKey, setShowKey] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -102,7 +105,10 @@ export default function ConfigPage() {
   const remove = async (provider: LlmProvider) => {
     if (!confirm(`Remover a chave do ${provider}? Isso não pode ser desfeito.`)) return;
     const res = await fetch(`/api/config/llm-key?provider=${provider}`, { method: "DELETE" });
-    if (res.ok) refresh();
+    if (res.ok) {
+      if (config.llmProvider === provider) setConfig({ llmProvider: "webllm" });
+      refresh();
+    }
   };
 
   const providerLabel = PROVIDERS.find((p) => p.id === config.llmProvider)?.label;
@@ -138,8 +144,6 @@ export default function ConfigPage() {
           qualidade maior, adicione sua chave do Claude ou Gemini. Ativa apenas um por vez.
         </p>
 
-        <LinkedAccounts />
-
         {/* Provedor — lista vertical estilo tabela, só um ativo */}
         <section className="mt-14 border-t pt-8" style={{ borderColor: c.borderSoft }}>
           <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
@@ -154,8 +158,8 @@ export default function ConfigPage() {
             style={{ background: c.card, borderColor: c.border }}
           >
             {PROVIDERS.map((p) => {
-              const active = config.llmProvider === p.id;
               const has = isStored(p.id);
+              const active = config.llmProvider === p.id && (p.local || has);
               const Icon = p.Icon;
               return (
                 <div
@@ -198,7 +202,13 @@ export default function ConfigPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setConfig({ llmProvider: p.id })}
+                    onClick={() => {
+                      if (!p.local && !isPro) {
+                        router.push("/assinatura");
+                        return;
+                      }
+                      setConfig({ llmProvider: p.id });
+                    }}
                     disabled={active}
                     className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[12px] font-medium transition-colors disabled:cursor-default"
                     style={{
@@ -208,7 +218,7 @@ export default function ConfigPage() {
                     }}
                   >
                     {active && <Check className="h-3 w-3" strokeWidth={2.5} />}
-                    {active ? "Ativa" : "Ativar"}
+                    {active ? "Ativa" : !p.local && !isPro ? "Ver Pro" : !p.local && !has ? "Configurar" : "Ativar"}
                   </button>
                 </div>
               );

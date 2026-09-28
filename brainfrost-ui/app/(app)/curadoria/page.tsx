@@ -12,15 +12,6 @@ import type { Database } from "@/lib/supabase/database.types";
 
 type SuggestionRow = Database["public"]["Tables"]["pattern_suggestions"]["Row"];
 
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 60);
-
 export default function CuradoriaPage() {
   const theme = useSaas((s) => s.theme);
   const c = palette(theme);
@@ -28,47 +19,20 @@ export default function CuradoriaPage() {
   const categories = useCategories();
 
   const accept = async (s: SuggestionRow, overrides?: Partial<SuggestionRow>) => {
-    const supabase = getSupabase();
     const title = overrides?.title ?? s.title;
     const body = overrides?.body ?? s.body;
     const category = overrides?.category ?? s.category;
 
-    const { data: note, error: noteErr } = await supabase
-      .from("vault_notes")
-      .insert({
-        slug: `${slugify(title)}_${s.id.slice(0, 6)}`,
-        title,
-        body,
-        category,
-      })
-      .select("id, slug")
-      .single();
-
-    if (noteErr || !note) {
-      alert(noteErr?.message ?? "Erro ao criar camada.");
+    const response = await fetch("/api/curadoria/accept", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ suggestion_id: s.id, title, content: body, category }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      alert(result.error ?? "Erro ao criar camada.");
       return;
     }
-
-    // Conecta a nova camada com as outras da mesma categoria — evita cofre virar
-    // um monte de nós soltos no grafo. Limita a 8 pra não gerar hairball.
-    const { data: siblings } = await supabase
-      .from("vault_notes")
-      .select("slug")
-      .eq("category", category)
-      .neq("id", note.id)
-      .order("updated_at", { ascending: false })
-      .limit(8);
-
-    if (siblings && siblings.length > 0) {
-      await supabase.from("vault_links").insert(
-        siblings.map((sib) => ({ from_note_id: note.id, to_slug: sib.slug }))
-      );
-    }
-
-    await supabase
-      .from("pattern_suggestions")
-      .update({ status: "accepted", accepted_note_id: note.id })
-      .eq("id", s.id);
     refresh();
   };
 

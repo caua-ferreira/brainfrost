@@ -6,6 +6,7 @@ import { readVault } from "@/lib/vault";
 import { AuthGuard } from "@/components/saas/AuthGuard";
 import { ThemeApplicator } from "@/components/saas/ThemeApplicator";
 import { NavigationLoader } from "@/components/shared/NavigationLoader";
+import { BillingProvider } from "@/components/saas/BillingProvider";
 
 const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
@@ -26,18 +27,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const notes = paletteNotes();
   return (
     <AuthGuard>
-      <ThemeApplicator />
-      <NavigationLoader />
-      <div className="flex h-[100dvh] overflow-hidden">
-        <Sidebar />
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <Header commit={commit} notes={notes} />
-          <main className="min-h-0 flex-1 overflow-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
-            {children}
-          </main>
+      <BillingProvider>
+        <ThemeApplicator />
+        <NavigationLoader />
+        <div className="flex h-[100dvh] overflow-hidden">
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <Header commit={commit} notes={notes} />
+            <main className="min-h-0 flex-1 overflow-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
+              {children}
+            </main>
+          </div>
+          <BottomNav />
         </div>
-      </div>
-      <BottomNav />
+      </BillingProvider>
     </AuthGuard>
   );
 }
