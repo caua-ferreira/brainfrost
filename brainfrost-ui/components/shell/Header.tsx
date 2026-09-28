@@ -18,6 +18,7 @@ const TITLE: Record<string, string> = {
   "/camadas": "Camadas",
   "/cofre": "Cofre",
   "/assinatura": "Assinatura",
+  "/perfil": "Perfil",
   "/config": "Config",
 };
 

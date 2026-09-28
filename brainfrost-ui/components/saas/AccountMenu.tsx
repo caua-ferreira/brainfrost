@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, LogOut, User } from "lucide-react";
+import { CreditCard, LogOut, Pencil, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -148,6 +148,10 @@ export function AccountMenu() {
         <DropdownMenuItem onClick={() => { announceNavigation(); router.push("/assinatura"); }}>
           <CreditCard className="mr-2 h-3.5 w-3.5" strokeWidth={1.8} />
           Assinatura e pagamentos
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => { announceNavigation(); router.push("/perfil"); }}>
+          <Pencil className="mr-2 h-3.5 w-3.5" strokeWidth={1.8} />
+          Editar perfil
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { announceNavigation(); router.push("/config"); }}>
           <User className="mr-2 h-3.5 w-3.5" strokeWidth={1.8} />
