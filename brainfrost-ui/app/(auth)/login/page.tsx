@@ -76,10 +76,14 @@ export default function LoginPage() {
   const signInWith = async (provider: OAuthProvider, scopes?: string) => {
     setBusy(provider);
     setError(null);
+    const requestedNext = new URLSearchParams(window.location.search).get("next");
+    const next = requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/painel";
     const { error: err } = await getSupabase().auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         scopes,
       },
     });

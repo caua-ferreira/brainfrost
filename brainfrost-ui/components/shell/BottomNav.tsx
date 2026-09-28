@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Download,
+  CreditCard,
   Home,
   ListChecks,
   Settings,
@@ -24,6 +25,7 @@ const NAV: Item[] = [
   { href: "/importar", label: "Importar", icon: Upload, match: (p) => p.startsWith("/importar") || p.startsWith("/analisando") },
   { href: "/curadoria", label: "Curadoria", icon: ListChecks, match: (p) => p.startsWith("/curadoria") },
   { href: "/exportar", label: "Exportar", icon: Download, match: (p) => p.startsWith("/exportar") },
+  { href: "/assinatura", label: "Plano", icon: CreditCard, match: (p) => p.startsWith("/assinatura") },
   { href: "/config", label: "Config", icon: Settings, match: (p) => p.startsWith("/config") },
 ];
 
@@ -37,7 +39,7 @@ export function BottomNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-abyss/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] hairline md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t bg-abyss/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] hairline md:hidden"
       aria-label="Navegação principal"
     >
       {NAV.map(({ href, label, icon: Icon, match }) => {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   Download,
+  CreditCard,
   Home,
   LayoutDashboard,
   Layers,
@@ -28,6 +29,7 @@ const NAV = [
   { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p: string) => p.startsWith("/chat") },
   { href: "/camadas", label: "Camadas", icon: Layers, match: (p: string) => p.startsWith("/camadas") },
   { href: "/cofre", label: "Cofre", icon: Sparkles, match: (p: string) => p.startsWith("/cofre") },
+  { href: "/assinatura", label: "Assinatura", icon: CreditCard, match: (p: string) => p.startsWith("/assinatura") },
   { href: "/config", label: "Config", icon: Settings, match: (p: string) => p.startsWith("/config") },
 ];
 
