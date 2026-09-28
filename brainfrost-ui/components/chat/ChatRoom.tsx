@@ -114,7 +114,7 @@ export default function ChatRoom({ notes }: Props) {
               className="text-[42px] font-semibold leading-[1.02] tracking-tight md:text-[56px]"
               style={{ color: c.text }}
             >
-              Converse com o cofre
+              Converse com o cérebro
               <br />
               <span
                 className="bg-clip-text text-transparent"
@@ -125,7 +125,7 @@ export default function ChatRoom({ notes }: Props) {
             </h1>
             <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
               Escolha um provedor abaixo e cole sua chave. Ela fica só no seu navegador — o
-              BrainFrost nunca vê. A primeira pergunta leva o cofre inteiro como contexto.
+              BrainFrost nunca vê. A primeira pergunta leva o cérebro inteiro como contexto.
             </p>
           </div>
           <ProviderPicker onPick={setDrawerPreset} />
@@ -201,7 +201,7 @@ export default function ChatRoom({ notes }: Props) {
             <div className="pt-16">
               <EmptyState
                 title="Faça sua primeira pergunta"
-                description="A primeira mensagem leva o cofre inteiro como contexto. As seguintes só mandam a pergunta + histórico."
+                description="A primeira mensagem leva o cérebro inteiro como contexto. As seguintes só mandam a pergunta + histórico."
               />
             </div>
           ) : (
@@ -239,7 +239,7 @@ export default function ChatRoom({ notes }: Props) {
             placeholder={
               session && session.messages.length > 0
                 ? "continue a conversa"
-                : "primeira pergunta (o cofre inteiro entra no contexto)"
+                : "primeira pergunta (o cérebro inteiro entra no contexto)"
             }
             rows={2}
             className="flex-1 resize-none rounded-xl border px-4 py-3 text-[14px] outline-none placeholder:opacity-50 focus:ring-2"

@@ -14,7 +14,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [loading, session, router]);
 
   if (loading || !session) {
-    return <LoadingScreen fullScreen message="abrindo seu cofre" />;
+    return <LoadingScreen fullScreen message="abrindo seu cérebro" />;
   }
 
   return <>{children}</>;

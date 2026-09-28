@@ -59,7 +59,7 @@ export default function ImportarPage() {
           className="text-[42px] font-semibold leading-[1.02] tracking-tight md:text-[56px]"
           style={{ color: c.text }}
         >
-          Deixa o cofre
+          Deixa o cérebro
           <br />
           <span
             className="bg-clip-text text-transparent"
@@ -70,7 +70,7 @@ export default function ImportarPage() {
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
           Suba um repositório ou um trecho. O extrator lê e propõe padrões — nada entra
-          no cofre sem sua aprovação.
+          no cérebro sem sua aprovação.
         </p>
 
         <div className="mt-10 flex gap-2 border-b" style={{ borderColor: c.borderSoft }}>
@@ -483,7 +483,7 @@ function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
           Importação pelo GitHub é um recurso Pro.
         </p>
         <p className="mx-auto mt-2 max-w-sm text-[12px]" style={{ color: c.dim }}>
-          Faça upgrade para importar repositórios privados ou públicos diretamente para o cofre.
+          Faça upgrade para importar repositórios privados ou públicos diretamente para o cérebro.
         </p>
         <button
           onClick={() => router.push("/assinatura")}

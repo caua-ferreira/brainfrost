@@ -22,6 +22,8 @@ export interface GraphNode {
   id: string;
   title: string;
   layer: Layer;
+  kind?: "note" | "group";
+  count?: number;
   degree: number;
   words: number;
   updatedAt: string;
@@ -32,6 +34,7 @@ export interface GraphNode {
 export interface GraphLink {
   source: string;
   target: string;
+  weight?: number;
 }
 
 export interface GraphData {

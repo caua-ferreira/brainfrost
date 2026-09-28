@@ -10,14 +10,14 @@ export default function Page() {
   const { snapshot, loading, error } = useVaultSnapshot();
 
   if (loading) {
-    return <LoadingScreen message="carregando cofre" />;
+    return <LoadingScreen message="carregando cérebro" />;
   }
 
   if (error) {
     return (
       <div className="h-full overflow-auto p-6">
         <EmptyState
-          title="Não deu para ler o cofre"
+          title="Não deu para ler o cérebro"
           description="Sua sessão pode ter expirado ou o Supabase está indisponível."
           action={
             <pre className="max-w-2xl overflow-x-auto rounded-lg border border-glow/15 bg-abyss/80 p-4 text-left font-mono text-xs leading-relaxed text-mute">
@@ -33,8 +33,8 @@ export default function Page() {
     return (
       <div className="h-full overflow-auto p-6">
         <EmptyState
-          title="Cofre vazio"
-          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria pra começar a preencher o cofre e ver o grafo."
+          title="Cérebro vazio"
+          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria pra começar a preencher o cérebro e ver o grafo."
         />
       </div>
     );

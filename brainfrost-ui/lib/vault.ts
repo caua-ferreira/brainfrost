@@ -5,7 +5,7 @@ import type { GraphData, Note, VaultSnapshot } from "./types";
 const WIKILINK = /\[\[([^\]|#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
 
 /**
- * Onde o cofre pode estar, em ordem de prioridade.
+ * Onde o cérebro pode estar, em ordem de prioridade.
  * Na Vercel, defina a Root Directory como `brainfrost-ui` e mantenha ligada a opção
  * "Include source files outside of the Root Directory" — assim `../.brainfrost` existe no build.
  */
@@ -26,7 +26,7 @@ export function resolveVaultDir(): string {
   }
   throw new Error(
     [
-      "Cofre não encontrado. Procurei em:",
+      "Cérebro não encontrado. Procurei em:",
       ...candidatePaths().map((p) => `  - ${p}`),
       "",
       "Aponte o caminho na variável BRAINFROST_VAULT ou copie a pasta .brainfrost para dentro de brainfrost-ui/content.",

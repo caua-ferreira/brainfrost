@@ -1,4 +1,4 @@
-// Diagnóstico rápido: mostra onde o build vai achar o cofre.
+// Diagnóstico rápido: mostra onde o build vai achar o cérebro.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -18,7 +18,7 @@ for (const candidate of candidates) {
 }
 
 if (!found) {
-  console.error("\nNenhum cofre encontrado. Defina BRAINFROST_VAULT ou copie .brainfrost para ./content");
+  console.error("\nNenhum cérebro encontrado. Defina BRAINFROST_VAULT ou copie .brainfrost para ./content");
   process.exit(1);
 }
 

@@ -135,7 +135,7 @@ export default function AssinaturaPage() {
 
             <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-4" style={{ borderColor: c.borderSoft }}>
               <Metric label="importações este mês" value={`${data?.usage.importsThisMonth ?? 0}${isPro ? "" : " / 3"}`} c={c} />
-              <Metric label="camadas no cofre" value={`${data?.usage.layers ?? 0}${isPro ? "" : " / 50"}`} c={c} />
+              <Metric label="camadas no cérebro" value={`${data?.usage.layers ?? 0}${isPro ? "" : " / 50"}`} c={c} />
               <Metric label={subscription?.cancelAtPeriodEnd ? "acesso até" : "próxima cobrança"} value={subscription ? date(subscription.currentPeriodEnd) : "—"} c={c} />
               <Metric label="total pago" value={money(data?.totals?.totalPaid ?? 0)} c={c} />
             </div>

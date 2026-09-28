@@ -83,7 +83,7 @@ export default function ExportarPage() {
 
   const body = notes.length
     ? notes.map((n) => `## ${n.title}\n\n${n.body}\n`).join("\n")
-    : "_(nenhuma camada no cofre ainda — aceite sugestões em /curadoria)_";
+    : "_(nenhuma camada no cérebro ainda — aceite sugestões em /curadoria)_";
 
   const current = TARGETS.find((t) => t.id === target)!;
   const content = current.build(body);
@@ -116,7 +116,7 @@ export default function ExportarPage() {
           className="text-[42px] font-semibold leading-[1.02] tracking-tight md:text-[56px]"
           style={{ color: c.text }}
         >
-          Seu cofre,
+          Seu cérebro,
           <br />
           <span
             className="bg-clip-text text-transparent"

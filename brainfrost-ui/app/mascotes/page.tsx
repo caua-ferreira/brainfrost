@@ -23,7 +23,7 @@ interface Mascot {
 const MASCOTS: Mascot[] = [
   {
     name: "1 · Iglu",
-    tagline: "O cofre virou casa. Porta é o caminho pro conteúdo.",
+    tagline: "O cérebro virou casa. Porta é o caminho pro conteúdo.",
     svg: (
       <>
         <defs>

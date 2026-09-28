@@ -95,7 +95,7 @@ export function LinkedAccounts() {
       </p>
       <p className="mt-2 max-w-lg text-[13px] text-slate-500">
         Conecte mais de uma conta pra entrar por qualquer uma delas. Todas ligam ao
-        mesmo cofre.
+        mesmo cérebro.
       </p>
 
       <div className="mt-5 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
