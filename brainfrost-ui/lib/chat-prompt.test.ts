@@ -1,5 +1,11 @@
 import { test, expect, describe } from "vitest";
-import { selectNotesForChat, formatContextForChat, buildChatOpener } from "./chat-prompt";
+import {
+  selectNotesForChat,
+  formatContextForChat,
+  buildChatFollowup,
+  buildChatOpener,
+  selectRelevantNotes,
+} from "./chat-prompt";
 import type { Note } from "./types";
 
 function noteFactory(overrides: Partial<Note>): Note {
@@ -72,5 +78,28 @@ describe("buildChatOpener", () => {
     const opener = buildChatOpener(NOTES, ["b-core"], "qualquer");
     expect(opener).toMatch(/camada: b-core/);
     expect(opener).not.toMatch(/camada: index/);
+  });
+});
+
+describe("buildChatFollowup", () => {
+  const commitNote = noteFactory({
+    slug: "conventional-commits-sem-coautoria",
+    title: "Conventional Commits sem coautoria",
+    raw: "Formato tipo(scope): descrição. Coautoria não é usada — quem colabora entra na descrição do PR, não no commit.",
+    content: "Formato tipo(scope): descrição. Coautoria não é usada — quem colabora entra na descrição do PR, não no commit.",
+    tags: ["commits", "regras"],
+  });
+
+  test("reenviará a camada relevante e preservará negações em perguntas seguintes", () => {
+    const followup = buildChatFollowup([commitNote], "E vai com coautoria ou sem?");
+    expect(followup).toContain("Coautoria não é usada");
+    expect(followup).toContain("sem coautoria");
+    expect(followup).toMatch(/## PERGUNTA/);
+    expect(followup).toMatch(/E vai com coautoria ou sem\?$/);
+  });
+
+  test("prioriza notas que compartilham termos com a pergunta", () => {
+    const unrelated = noteFactory({ title: "Receitas", raw: "Bolo de cenoura" });
+    expect(selectRelevantNotes([unrelated, commitNote], "qual regra de coautoria devo seguir?")[0]).toBe(commitNote);
   });
 });

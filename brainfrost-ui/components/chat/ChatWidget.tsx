@@ -4,13 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bot, ChevronDown, Expand, Loader2, Send, User, X } from "lucide-react";
+import { ChevronDown, Expand, Loader2, Send, X } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { useVaultSnapshot } from "@/lib/supabase/useVault";
-import { buildChatOpener } from "@/lib/chat-prompt";
-import { LOCAL_CHAT_CONFIG, sendChat, type ChatMessage } from "@/lib/chat-client";
+import { buildChatFollowup, buildChatOpener } from "@/lib/chat-prompt";
+import { LOCAL_CHAT_CONFIG, sendChat, type ChatConfig, type ChatMessage } from "@/lib/chat-client";
 import { useChatStore } from "@/lib/chat-store";
+import { useSession } from "@/components/saas/SessionProvider";
 
 const HIDDEN_PATHS = ["/config", "/assinatura"];
 
@@ -23,15 +24,31 @@ export default function ChatWidget() {
 function ChatWidgetContent() {
   const router = useRouter();
   const theme = useSaas((s) => s.theme);
-  const model = useSaas((s) => s.config.webLlmModel ?? LOCAL_CHAT_CONFIG.model);
+  const localModel = useSaas((s) => s.config.webLlmModel ?? LOCAL_CHAT_CONFIG.model);
   const c = palette(theme);
   const { snapshot, loading: vaultLoading } = useVaultSnapshot();
+  const { session: authSession } = useSession();
+  const configs = useChatStore((s) => s.configs);
+  const activeConfigLabel = useChatStore((s) => s.activeConfigLabel);
+  const setActiveConfig = useChatStore((s) => s.setActiveConfig);
   const sessions = useChatStore((s) => s.sessions);
   const newSession = useChatStore((s) => s.newSession);
   const appendMessage = useChatStore((s) => s.appendMessage);
-  const localSession = useMemo(
-    () => sessions.find((session) => session.configLabel === LOCAL_CHAT_CONFIG.label) ?? null,
-    [sessions]
+  const availableConfigs = useMemo(
+    () => [LOCAL_CHAT_CONFIG, ...configs.filter((config) => config.label !== LOCAL_CHAT_CONFIG.label)],
+    [configs]
+  );
+  const activeConfig = useMemo(
+    () => availableConfigs.find((config) => config.label === activeConfigLabel) ?? LOCAL_CHAT_CONFIG,
+    [availableConfigs, activeConfigLabel]
+  );
+  const activeSession = useMemo(
+    () => sessions.find((session) => session.configLabel === activeConfig.label) ?? null,
+    [sessions, activeConfig.label]
+  );
+  const userProfile = useMemo(
+    () => buildUserProfile(authSession?.user),
+    [authSession]
   );
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -42,7 +59,7 @@ function ChatWidgetContent() {
 
   useEffect(() => {
     if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight;
-  }, [localSession?.messages.length, sending]);
+  }, [activeSession?.messages.length, sending]);
 
   async function handleSend() {
     if (!input.trim() || sending) return;
@@ -50,14 +67,17 @@ function ChatWidgetContent() {
     setInput("");
     setError(null);
     setSending(true);
-    setModelLoading(true);
+    const requestConfig: ChatConfig = activeConfig.api === "webllm"
+      ? { ...activeConfig, model: localModel }
+      : activeConfig;
+    setModelLoading(requestConfig.api === "webllm");
 
-    let current = localSession;
+    let current = activeSession;
     if (!current) {
-      const id = newSession(LOCAL_CHAT_CONFIG.label, null);
+      const id = newSession(requestConfig.label, null);
       current = {
         id,
-        configLabel: LOCAL_CHAT_CONFIG.label,
+        configLabel: requestConfig.label,
         layers: null,
         startedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -67,13 +87,13 @@ function ChatWidgetContent() {
 
     const userContent = current.messages.length === 0
       ? buildChatOpener(snapshot?.notes ?? [], null, question)
-      : question;
+      : buildChatFollowup(snapshot?.notes ?? [], question);
     const userMsg: ChatMessage = { role: "user", content: userContent };
     appendMessage(current.id, userMsg);
 
     try {
       const answer = await sendChat(
-        { ...LOCAL_CHAT_CONFIG, model },
+        requestConfig,
         [...current.messages, userMsg]
       );
       appendMessage(current.id, { role: "assistant", content: answer });
@@ -99,8 +119,8 @@ function ChatWidgetContent() {
         onClick={() => setOpen(true)}
         className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full border shadow-xl transition-transform hover:scale-105 md:bottom-6 md:right-6"
         style={{ background: c.card, borderColor: `${c.accent}70`, color: c.accent }}
-        title="Conversar com o cérebro local"
-        aria-label="Abrir chat local"
+        title="Conversar com o cérebro"
+        aria-label="Abrir chat"
       >
         <Image
           src="/mascot/yeti-video-ezgif.com-crop.gif"
@@ -119,23 +139,45 @@ function ChatWidgetContent() {
     <section
       className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-3 z-40 flex h-[min(620px,calc(100dvh-92px))] w-[min(390px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border shadow-2xl md:bottom-6 md:right-6"
       style={{ background: c.bg, borderColor: c.border }}
-      aria-label="Mini chat local"
+      aria-label="Mini chat"
     >
       <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2.5" style={{ background: c.card, borderColor: c.borderSoft }}>
         <Image
           src="/mascot/yeti-video-ezgif.com-crop.gif"
-          alt="Yeti digitando"
+          alt="Yeti respondendo"
           width={38}
           height={38}
           unoptimized
           className="h-9 w-9 rounded-full object-contain"
         />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold" style={{ color: c.text }}>Cérebro local</p>
+          <p className="text-[13px] font-semibold" style={{ color: c.text }}>{activeConfig.label}</p>
           <p className="font-mono text-[10px]" style={{ color: c.dim }}>
-            {modelLoading ? "carregando modelo no navegador…" : "WebLLM · seus dados ficam aqui"}
+            {modelLoading
+              ? "carregando modelo no navegador…"
+              : activeConfig.api === "webllm"
+                ? "WebLLM · seus dados ficam aqui"
+                : activeConfig.model}
           </p>
         </div>
+        <select
+          value={activeConfig.label}
+          onChange={(event) => {
+            setError(null);
+            setActiveConfig(event.target.value);
+          }}
+          disabled={sending}
+          className="max-w-[120px] rounded-md border bg-transparent px-1.5 py-1 text-[10px] outline-none disabled:opacity-50"
+          style={{ color: c.text, borderColor: c.borderSoft, background: c.bgSoft }}
+          aria-label="Escolher LLM"
+          title="Escolher LLM"
+        >
+          {availableConfigs.map((config) => (
+            <option key={config.label} value={config.label} style={{ background: c.card, color: c.text }}>
+              {config.label}
+            </option>
+          ))}
+        </select>
         <Link
           href="/chat"
           onClick={() => setOpen(false)}
@@ -152,17 +194,19 @@ function ChatWidgetContent() {
       </header>
 
       <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-        {vaultLoading && !localSession?.messages.length && (
+        {vaultLoading && !activeSession?.messages.length && (
           <p className="py-8 text-center font-mono text-[11px]" style={{ color: c.dim }}>carregando contexto…</p>
         )}
-        {!vaultLoading && !localSession?.messages.length && (
+        {!vaultLoading && !activeSession?.messages.length && (
           <div className="rounded-xl border p-3 text-[12px] leading-relaxed" style={{ borderColor: c.borderSoft, color: c.dim }}>
             <p className="font-medium" style={{ color: c.text }}>Pergunte qualquer coisa ao seu cérebro.</p>
-            <p className="mt-1">A primeira pergunta usa suas camadas como contexto e roda localmente.</p>
+            <p className="mt-1">
+              A primeira pergunta usa suas camadas como contexto e será respondida por {activeConfig.label}.
+            </p>
           </div>
         )}
-        {localSession?.messages.map((message, index) => (
-          <MiniMessage key={`${localSession.id}-${index}`} message={message} c={c} first={index === 0} />
+        {activeSession?.messages.map((message, index) => (
+              <MiniMessage key={`${activeSession.id}-${index}`} message={message} c={c} userProfile={userProfile} />
         ))}
         {sending && (
           <div className="flex items-center gap-2 font-mono text-[11px]" style={{ color: c.dim }}>
@@ -202,19 +246,78 @@ function ChatWidgetContent() {
   );
 }
 
-function MiniMessage({ message, first, c }: { message: ChatMessage; first: boolean; c: ReturnType<typeof palette> }) {
+interface UserProfile {
+  avatar: string | null;
+  initials: string;
+}
+
+function MiniMessage({
+  message,
+  c,
+  userProfile,
+}: {
+  message: ChatMessage;
+  c: ReturnType<typeof palette>;
+  userProfile: UserProfile;
+}) {
   const isUser = message.role === "user";
-  const display = isUser && first ? extractQuestion(message.content) : message.content;
+  const display = isUser ? extractQuestion(message.content) : message.content;
   return (
     <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg" style={{ background: isUser ? `${c.accent}20` : `${c.aurora}20`, color: isUser ? c.accent : c.aurora }}>
-        {isUser ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+      <div className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full" style={{ background: isUser ? `${c.accent}20` : `${c.aurora}20`, color: isUser ? c.accent : c.aurora }}>
+        {isUser ? (
+          userProfile.avatar ? (
+            <Image src={userProfile.avatar} alt="Você" fill sizes="28px" className="object-cover" />
+          ) : (
+            <span className="font-mono text-[9px] font-semibold">{userProfile.initials}</span>
+          )
+        ) : (
+          <Image
+            src="/mascot/yeti-video-ezgif.com-crop.gif"
+            alt="Yeti respondendo"
+            width={28}
+            height={28}
+            unoptimized
+            className="h-7 w-7 object-contain"
+          />
+        )}
       </div>
       <p className="max-w-[84%] rounded-xl px-3 py-2 text-[12px] leading-relaxed" style={{ background: isUser ? `${c.accent}10` : c.card, border: isUser ? "none" : `1px solid ${c.borderSoft}`, color: c.text }}>
         {display}
       </p>
     </div>
   );
+}
+
+function buildUserProfile(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+  identities?: Array<{ identity_data?: Record<string, unknown> }>;
+} | undefined): UserProfile {
+  const metadata = user?.user_metadata ?? {};
+  const identity = user?.identities?.[0]?.identity_data ?? {};
+  const avatar =
+    (typeof metadata.avatar_url === "string" && metadata.avatar_url) ||
+    (typeof metadata.picture === "string" && metadata.picture) ||
+    (typeof identity.avatar_url === "string" && identity.avatar_url) ||
+    (typeof identity.picture === "string" && identity.picture) ||
+    null;
+  const name =
+    (typeof metadata.display_name === "string" && metadata.display_name) ||
+    (typeof metadata.full_name === "string" && metadata.full_name) ||
+    (typeof metadata.name === "string" && metadata.name) ||
+    (typeof identity.full_name === "string" && identity.full_name) ||
+    (typeof identity.name === "string" && identity.name) ||
+    user?.email ||
+    "Você";
+  const initials = name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "??";
+  return { avatar, initials };
 }
 
 function extractQuestion(fullPrompt: string) {

@@ -12,6 +12,16 @@ const MASCOTS = [
   "/mascot/yeti-sleeping-video-ezgif.com-crop.gif",
 ] as const;
 
+// Estas rotas já têm um LoadingScreen próprio enquanto consultam o cérebro.
+// Manter o overlay global nelas cria dois Yetis durante a mesma navegação.
+const ROUTES_WITH_CONTENT_LOADING = new Set([
+  "/painel",
+  "/chat",
+  "/camadas",
+  "/grafo",
+  "/assinatura",
+]);
+
 /** Aviso para ações que usam router.push/replace em vez de um <Link>. */
 export function announceNavigation() {
   if (typeof window !== "undefined") {
@@ -29,6 +39,11 @@ export function NavigationLoader() {
 
   useEffect(() => {
     if (startedAt.current === null) return;
+    if (ROUTES_WITH_CONTENT_LOADING.has(pathname)) {
+      startedAt.current = null;
+      setPending(false);
+      return;
+    }
     const elapsed = Date.now() - startedAt.current;
     const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
     const timeout = window.setTimeout(() => {
@@ -36,7 +51,7 @@ export function NavigationLoader() {
       setPending(false);
     }, remaining);
     return () => window.clearTimeout(timeout);
-  }, [routeKey]);
+  }, [pathname, routeKey]);
 
   useEffect(() => {
     const start = () => {
@@ -90,7 +105,7 @@ export function NavigationLoader() {
     return () => window.clearTimeout(timeout);
   }, [pending]);
 
-  if (!pending) return null;
+  if (!pending || ROUTES_WITH_CONTENT_LOADING.has(pathname)) return null;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-black/10 px-4 backdrop-blur-[1px]">

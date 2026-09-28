@@ -10,8 +10,8 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfigDrawer } from "./ConfigDrawer";
 import { ProviderPicker } from "./ProviderPicker";
 import { LOCAL_CHAT_CONFIG, sendChat, type ChatMessage, type ProviderPreset } from "@/lib/chat-client";
-import { useChatStore } from "@/lib/chat-store";
-import { buildChatOpener } from "@/lib/chat-prompt";
+import { useChatStore, type ChatSession } from "@/lib/chat-store";
+import { buildChatFollowup, buildChatOpener } from "@/lib/chat-prompt";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import type { Note } from "@/lib/types";
@@ -82,7 +82,9 @@ export default function ChatRoom({ notes }: Props) {
     }
 
     const isFirst = currentSession.messages.length === 0;
-    const userContent = isFirst ? buildChatOpener(notes, currentSession.layers, question) : question;
+    const userContent = isFirst
+      ? buildChatOpener(notes, currentSession.layers, question)
+      : buildChatFollowup(notes, question);
     const userMsg: ChatMessage = { role: "user", content: userContent };
     appendMessage(currentSession.id, userMsg);
 
@@ -135,7 +137,12 @@ export default function ChatRoom({ notes }: Props) {
           </button>
           <select
             value={activeConfig.label}
-            onChange={(e) => setActiveConfig(e.target.value || null)}
+            onChange={(e) => {
+              const label = e.target.value || null;
+              setActiveConfig(label);
+              const nextSession = sessions.find((item) => item.configLabel === label);
+              setActiveSession(nextSession?.id ?? null);
+            }}
             className="min-w-0 rounded-md border bg-transparent px-2 py-1.5 text-[13px] outline-none focus:ring-2"
             style={{ color: c.text, borderColor: c.borderSoft, background: c.bgSoft }}
           >
@@ -145,6 +152,28 @@ export default function ChatRoom({ notes }: Props) {
               </option>
             ))}
           </select>
+          {sessions.length > 0 && (
+            <select
+              value={activeSessionId ?? ""}
+              onChange={(e) => {
+                const nextSession = sessions.find((item) => item.id === e.target.value);
+                setActiveSession(nextSession?.id ?? null);
+                if (nextSession) setActiveConfig(nextSession.configLabel);
+              }}
+              className="max-w-[150px] rounded-md border bg-transparent px-2 py-1.5 text-[11px] outline-none md:hidden"
+              style={{ color: c.text, borderColor: c.borderSoft, background: c.bgSoft }}
+              aria-label="Selecionar conversa"
+            >
+              <option value="" style={{ background: c.card, color: c.text }}>
+                nova conversa
+              </option>
+              {sessions.map((item) => (
+                <option key={item.id} value={item.id} style={{ background: c.card, color: c.text }}>
+                  {sessionTitle(item)}
+                </option>
+              ))}
+            </select>
+          )}
           {activeConfig && (
             <span className="hidden truncate font-mono text-[11px] sm:inline" style={{ color: c.dim }}>
               {activeConfig.model}
@@ -173,66 +202,131 @@ export default function ChatRoom({ notes }: Props) {
         </div>
       </div>
 
-      {/* Área de mensagens */}
-      <div ref={scroller} className="relative z-10 flex-1 overflow-y-auto px-4 py-6 md:px-6">
-        <div className="mx-auto max-w-3xl space-y-4">
-          {!session || session.messages.length === 0 ? (
-            <div className="pt-16">
-              <EmptyState
-                title="Faça sua primeira pergunta"
-                description="A primeira mensagem leva o cérebro inteiro como contexto. As seguintes só mandam a pergunta + histórico."
-              />
+      <div className="relative z-10 flex min-h-0 flex-1">
+        {/* Histórico de conversas */}
+        <aside
+          className="hidden w-64 shrink-0 flex-col border-r md:flex"
+          style={{ background: c.card + "45", borderColor: c.borderSoft }}
+        >
+          <div className="flex shrink-0 items-center justify-between border-b px-4 py-3" style={{ borderColor: c.borderSoft }}>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em]" style={{ color: c.dim }}>
+                histórico
+              </p>
+              <p className="mt-1 text-[13px] font-semibold" style={{ color: c.text }}>
+                Conversas
+              </p>
             </div>
-          ) : (
-            session.messages.map((msg, i) => (
-              <Message key={i} msg={msg} first={i === 0} c={c} />
-            ))
-          )}
-          {sending && (
-            <div className="flex items-center gap-2 text-xs" style={{ color: c.dim }}>
-              <Loader2 className="h-3 w-3 animate-spin" />
-              pensando…
-            </div>
-          )}
-          {error && (
-            <div
-              className="rounded-md border p-3 text-xs"
-              style={{ borderColor: "#ff6b81", background: "#ff6b8118", color: "#ff9caf" }}
+            <button
+              onClick={() => setActiveSession(null)}
+              className="flex h-7 items-center gap-1 rounded-full border px-2.5 font-mono text-[10px]"
+              style={{ borderColor: c.borderSoft, color: c.accent }}
+              title="Começar uma nova conversa"
             >
-              {error}
-            </div>
-          )}
-        </div>
-      </div>
+              <Plus className="h-3 w-3" /> nova
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+            {sessions.length === 0 ? (
+              <p className="px-2 py-4 text-[12px] leading-relaxed" style={{ color: c.dim }}>
+                Suas conversas aparecerão aqui.
+              </p>
+            ) : (
+              sessions.map((item) => {
+                const active = item.id === activeSessionId;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveSession(item.id);
+                      setActiveConfig(item.configLabel);
+                    }}
+                    className="w-full rounded-lg border px-3 py-2.5 text-left transition-colors"
+                    style={{
+                      background: active ? `${c.accent}14` : "transparent",
+                      borderColor: active ? `${c.accent}55` : "transparent",
+                    }}
+                  >
+                    <p className="truncate text-[12px] font-medium" style={{ color: active ? c.text : c.dim }}>
+                      {sessionTitle(item)}
+                    </p>
+                    <div className="mt-1 flex items-center justify-between gap-2 font-mono text-[10px]" style={{ color: c.dim }}>
+                      <span className="truncate">{item.configLabel}</span>
+                      <span className="shrink-0">{formatSessionDate(item.updatedAt)}</span>
+                    </div>
+                    <p className="mt-1 font-mono text-[10px]" style={{ color: c.dim }}>
+                      {Math.ceil(item.messages.length / 2)} {Math.ceil(item.messages.length / 2) === 1 ? "troca" : "trocas"}
+                    </p>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </aside>
 
-      {/* Input */}
-      <div
-        className="relative z-10 shrink-0 border-t p-3 md:px-6 md:py-4"
-        style={{ background: c.card + "80", borderColor: c.borderSoft }}
-      >
-        <div className="mx-auto flex max-w-3xl items-end gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            placeholder={
-              session && session.messages.length > 0
-                ? "continue a conversa"
-                : "primeira pergunta (o cérebro inteiro entra no contexto)"
-            }
-            rows={2}
-            className="flex-1 resize-none rounded-xl border px-4 py-3 text-[14px] outline-none placeholder:opacity-50 focus:ring-2"
-            style={{ background: c.bgSoft, borderColor: c.borderSoft, color: c.text }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || sending}
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-[1.02] disabled:opacity-40"
-            style={{ background: c.accent, color: c.onAccent }}
-            aria-label="Enviar"
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Área de mensagens */}
+          <div ref={scroller} className="relative flex-1 overflow-y-auto px-4 py-6 md:px-6">
+            <div className="mx-auto max-w-3xl space-y-4">
+              {!session || session.messages.length === 0 ? (
+                <div className="pt-16">
+                  <EmptyState
+                    title="Faça sua primeira pergunta"
+                    description="A primeira mensagem leva o cérebro inteiro como contexto. As seguintes reenviam as regras relevantes + histórico."
+                  />
+                </div>
+              ) : (
+                session.messages.map((msg, i) => (
+                  <Message key={i} msg={msg} c={c} />
+                ))
+              )}
+              {sending && (
+                <div className="flex items-center gap-2 text-xs" style={{ color: c.dim }}>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  pensando…
+                </div>
+              )}
+              {error && (
+                <div
+                  className="rounded-md border p-3 text-xs"
+                  style={{ borderColor: "#ff6b81", background: "#ff6b8118", color: "#ff9caf" }}
+                >
+                  {error}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Input */}
+          <div
+            className="relative shrink-0 border-t p-3 md:px-6 md:py-4"
+            style={{ background: c.card + "80", borderColor: c.borderSoft }}
           >
-            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-          </button>
+            <div className="mx-auto flex max-w-3xl items-end gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder={
+                  session && session.messages.length > 0
+                    ? "continue a conversa"
+                    : "primeira pergunta (o cérebro inteiro entra no contexto)"
+                }
+                rows={2}
+                className="flex-1 resize-none rounded-xl border px-4 py-3 text-[14px] outline-none placeholder:opacity-50 focus:ring-2"
+                style={{ background: c.bgSoft, borderColor: c.borderSoft, color: c.text }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || sending}
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-[1.02] disabled:opacity-40"
+                style={{ background: c.accent, color: c.onAccent }}
+                aria-label="Enviar"
+              >
+                {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -278,9 +372,9 @@ export default function ChatRoom({ notes }: Props) {
   );
 }
 
-function Message({ msg, first, c }: { msg: ChatMessage; first: boolean; c: ReturnType<typeof palette> }) {
+function Message({ msg, c }: { msg: ChatMessage; c: ReturnType<typeof palette> }) {
   const isUser = msg.role === "user";
-  const display = isUser && first ? extractQuestion(msg.content) : msg.content;
+  const display = isUser ? extractQuestion(msg.content) : msg.content;
 
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -305,6 +399,20 @@ function Message({ msg, first, c }: { msg: ChatMessage; first: boolean; c: Retur
       </div>
     </div>
   );
+}
+
+function sessionTitle(session: ChatSession): string {
+  const firstQuestion = session.messages.find((message) => message.role === "user");
+  const title = firstQuestion ? extractQuestion(firstQuestion.content).replace(/\s+/g, " ").trim() : "Nova conversa";
+  return title.length > 52 ? `${title.slice(0, 52).trimEnd()}…` : title;
+}
+
+function formatSessionDate(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(value)).replace(".", "");
 }
 
 function extractQuestion(fullPrompt: string): string {
