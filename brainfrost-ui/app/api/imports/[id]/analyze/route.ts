@@ -4,7 +4,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { sanitize } from "@/lib/sanitize";
-import { EXTRACTION_SYSTEM_PROMPT, isCategory, type LlmSuggestion } from "@/lib/prompts";
+import {
+  EXTRACTION_SYSTEM_PROMPT,
+  buildExtractionInput,
+  isCategory,
+  type LlmSuggestion,
+} from "@/lib/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -88,12 +93,19 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
   }
 
+  const { data: existingNotes } = await supabase
+    .from("vault_notes")
+    .select("slug, title, category")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+  const analysisInput = buildExtractionInput(sanitized.cleanText, existingNotes ?? []);
+
   let raw: string;
   try {
     raw =
       provider === "claude"
-        ? await callClaude(apiKey, sanitized.cleanText)
-        : await callGemini(apiKey, sanitized.cleanText);
+        ? await callClaude(apiKey, analysisInput)
+        : await callGemini(apiKey, analysisInput);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro no LLM";
     await supabase.from("imports").update({ status: "erro", error: msg }).eq("id", importId);
@@ -120,13 +132,31 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   const rows = (parsed.suggestions ?? [])
     .filter((s) => s.title && s.body)
-    .map((s) => ({
-      import_id: importId,
-      title: s.title.slice(0, 200),
-      body: s.body,
-      category: isCategory(s.category) ? s.category : "projeto",
-      evidence: s.evidence?.slice(0, 200) ?? null,
-    }));
+    .map((s) => {
+      const concepts = Array.isArray(s.concepts)
+        ? s.concepts.filter((concept): concept is string => typeof concept === "string").map((concept) => concept.trim()).filter(Boolean).slice(0, 5)
+        : [];
+      const suggestedLinks = Array.isArray(s.links)
+        ? s.links
+            .filter((link) => link && typeof link.slug === "string" && existingNotes?.some((note) => note.slug === link.slug))
+            .slice(0, 5)
+            .map((link) => ({ slug: link.slug, reason: typeof link.reason === "string" ? link.reason.slice(0, 240) : null }))
+        : [];
+      const confidence = typeof s.category_confidence === "number" && Number.isFinite(s.category_confidence)
+        ? Math.max(0, Math.min(1, s.category_confidence))
+        : null;
+      return {
+        import_id: importId,
+        title: s.title.slice(0, 200),
+        body: s.body,
+        category: isCategory(s.category) ? s.category : "projeto",
+        category_reason: s.category_reason?.slice(0, 300) ?? null,
+        category_confidence: confidence,
+        concepts,
+        suggested_links: suggestedLinks,
+        evidence: s.evidence?.slice(0, 200) ?? null,
+      };
+    });
 
   if (rows.length > 0) {
     const { error: insErr } = await supabase.from("pattern_suggestions").insert(rows);

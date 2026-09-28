@@ -31,6 +31,7 @@ export function buildSnapshot(noteRows: NoteRow[], linkRows: LinkRow[]): VaultSn
       file: `${n.slug}.md`,
       title: n.title,
       tags: Array.isArray(n.tags) ? n.tags : [],
+      concepts: Array.isArray(n.concepts) ? n.concepts : [],
       layer: (n.layer === "core" ? "core" : "growth") as "core" | "growth",
       category: n.category,
       content: body,

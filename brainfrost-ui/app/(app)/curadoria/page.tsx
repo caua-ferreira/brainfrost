@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, Link2, Pencil, X } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
@@ -11,6 +11,17 @@ import { useSuggestions, useCategories } from "@/lib/supabase/hooks";
 import type { Database } from "@/lib/supabase/database.types";
 
 type SuggestionRow = Database["public"]["Tables"]["pattern_suggestions"]["Row"];
+
+type SuggestedLink = { slug: string; reason?: string | null };
+
+function suggestedLinks(value: unknown): SuggestedLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is SuggestedLink => {
+    if (!item || typeof item !== "object") return false;
+    const row = item as Record<string, unknown>;
+    return typeof row.slug === "string" && row.slug.length > 0;
+  });
+}
 
 export default function CuradoriaPage() {
   const theme = useSaas((s) => s.theme);
@@ -26,7 +37,14 @@ export default function CuradoriaPage() {
     const response = await fetch("/api/curadoria/accept", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ suggestion_id: s.id, title, content: body, category }),
+      body: JSON.stringify({
+        suggestion_id: s.id,
+        title,
+        content: body,
+        category,
+        concepts: overrides?.concepts ?? s.concepts,
+        links: overrides?.suggested_links ?? s.suggested_links,
+      }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -138,11 +156,16 @@ function SuggestionRow({
   const [title, setTitle] = useState(s.title);
   const [body, setBody] = useState(s.body);
   const [category, setCategory] = useState(s.category);
+  const [conceptsText, setConceptsText] = useState(s.concepts.join(", "));
+  const [linksText, setLinksText] = useState(
+    suggestedLinks(s.suggested_links).map((link) => link.slug).join(", ")
+  );
 
   const catLabel = useMemo(
     () => categories.find((cat) => cat.id === category)?.label ?? category,
     [categories, category]
   );
+  const links = suggestedLinks(s.suggested_links);
 
   return (
     <article
@@ -186,7 +209,17 @@ function SuggestionRow({
               </span>
             )}
             {s.evidence && <span style={{ color: c.dim }}>{s.evidence}</span>}
+            {typeof s.category_confidence === "number" && (
+              <span style={{ color: c.aurora }}>
+                {Math.round(s.category_confidence * 100)}% confiança
+              </span>
+            )}
           </div>
+          {s.category_reason && (
+            <p className="mt-2 text-[12px] leading-relaxed" style={{ color: c.dim }}>
+              <span style={{ color: c.text }}>Por que esta gaveta:</span> {s.category_reason}
+            </p>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -198,7 +231,26 @@ function SuggestionRow({
           </IconBtn>
           <IconBtn
             c={c}
-            onClick={() => onAccept(editing ? { title, body, category } : undefined)}
+            onClick={() =>
+              onAccept(
+                editing
+                  ? {
+                      title,
+                      body,
+                      category,
+                      concepts: conceptsText
+                        .split(",")
+                        .map((concept) => concept.trim())
+                        .filter(Boolean),
+                      suggested_links: linksText
+                        .split(",")
+                        .map((slug) => slug.trim())
+                        .filter(Boolean)
+                        .map((slug) => ({ slug })),
+                    }
+                  : undefined
+              )
+            }
             title="Aceitar"
             tone="accept"
           >
@@ -206,6 +258,33 @@ function SuggestionRow({
           </IconBtn>
         </div>
       </div>
+
+      {editing && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1">
+            <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
+              conceitos · separados por vírgula
+            </span>
+            <input
+              value={conceptsText}
+              onChange={(e) => setConceptsText(e.target.value)}
+              className="w-full rounded-md border bg-transparent px-3 py-2 text-[12px] outline-none"
+              style={{ color: c.text, borderColor: c.border }}
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
+              ligações · slugs separados por vírgula
+            </span>
+            <input
+              value={linksText}
+              onChange={(e) => setLinksText(e.target.value)}
+              className="w-full rounded-md border bg-transparent px-3 py-2 text-[12px] outline-none"
+              style={{ color: c.text, borderColor: c.border }}
+            />
+          </label>
+        </div>
+      )}
 
       {editing ? (
         <textarea
@@ -218,6 +297,50 @@ function SuggestionRow({
         <p className="mt-4 max-w-2xl text-[14px] leading-relaxed" style={{ color: c.dim }}>
           {body}
         </p>
+      )}
+
+      {(s.concepts.length > 0 || links.length > 0) && (
+        <div className="mt-5 space-y-3 border-t pt-4" style={{ borderColor: c.border }}>
+          {s.concepts.length > 0 && (
+            <div>
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
+                conceitos sugeridos
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {s.concepts.map((concept) => (
+                  <span
+                    key={concept}
+                    className="rounded-full border px-2 py-1 font-mono text-[10px]"
+                    style={{ borderColor: `${c.aurora}55`, background: `${c.aurora}12`, color: c.text }}
+                  >
+                    {concept}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {links.length > 0 && (
+            <div>
+              <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
+                <Link2 className="h-3 w-3" /> ligações sugeridas
+              </p>
+              <div className="space-y-1.5">
+                {links.map((link) => (
+                  <div key={link.slug} className="flex items-start gap-2 text-[12px]" style={{ color: c.dim }}>
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.accent }} />
+                    <span>
+                      <span style={{ color: c.text }}>{link.slug}</span>
+                      {link.reason ? ` — ${link.reason}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="text-[11px] italic" style={{ color: c.dim }}>
+            Nada entra no cérebro até você aceitar esta sugestão.
+          </p>
+        </div>
       )}
     </article>
   );

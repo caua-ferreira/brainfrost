@@ -8,6 +8,7 @@ function noteFactory(overrides: Partial<Note>): Note {
     file: "n.md",
     title: "N",
     tags: [],
+    concepts: [],
     layer: "growth",
     content: "corpo",
     raw: "corpo",

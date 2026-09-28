@@ -8,6 +8,7 @@ function note(overrides: Partial<Note>): Note {
     file: "note.md",
     title: "Note",
     tags: [],
+    concepts: [],
     layer: "growth",
     category: "projeto",
     content: "conteúdo",

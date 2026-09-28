@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Download,
-  CreditCard,
   Home,
+  LayoutDashboard,
   ListChecks,
+  MessagesSquare,
   Settings,
   Upload,
   type LucideIcon,
@@ -24,8 +24,8 @@ const NAV: Item[] = [
   { href: "/painel", label: "Painel", icon: Home, match: (p) => p.startsWith("/painel") },
   { href: "/importar", label: "Importar", icon: Upload, match: (p) => p.startsWith("/importar") || p.startsWith("/analisando") },
   { href: "/curadoria", label: "Curadoria", icon: ListChecks, match: (p) => p.startsWith("/curadoria") },
-  { href: "/exportar", label: "Exportar", icon: Download, match: (p) => p.startsWith("/exportar") },
-  { href: "/assinatura", label: "Plano", icon: CreditCard, match: (p) => p.startsWith("/assinatura") },
+  { href: "/grafo", label: "Cérebro", icon: LayoutDashboard, match: (p) => p === "/grafo" || p === "/cofre" },
+  { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p) => p.startsWith("/chat") },
   { href: "/config", label: "Config", icon: Settings, match: (p) => p.startsWith("/config") },
 ];
 

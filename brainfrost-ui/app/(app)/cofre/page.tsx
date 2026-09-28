@@ -1,47 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Link from "next/link";
-import CofreDashboard from "@/components/cofre/CofreDashboard";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { useVaultSnapshot } from "@/lib/supabase/useVault";
-import { LoadingScreen } from "@/components/shared/LoadingScreen";
-
+// Compatibilidade com links antigos: o painel analítico foi incorporado ao
+// fluxo principal e a entrada antiga não fica mais duplicada na navegação.
 export default function Page() {
-  const { snapshot, loading, error, refresh } = useVaultSnapshot();
-
-  if (loading) {
-    return <LoadingScreen message="carregando cérebro" />;
-  }
-
-  if (error) {
-    return (
-      <div className="h-full overflow-auto p-6">
-        <EmptyState
-          title="Não deu para ler o cérebro"
-          description={error}
-          action={
-            <Link
-              href="/"
-              className="rounded-md border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary/60"
-            >
-              voltar ao grafo
-            </Link>
-          }
-        />
-      </div>
-    );
-  }
-
-  if (!snapshot || snapshot.notes.length === 0) {
-    return (
-      <div className="h-full overflow-auto p-6">
-        <EmptyState
-          title="Cérebro vazio"
-          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria."
-        />
-      </div>
-    );
-  }
-
-  return <CofreDashboard notes={snapshot.notes} stats={snapshot.stats} onRefresh={refresh} />;
+  redirect("/painel");
 }

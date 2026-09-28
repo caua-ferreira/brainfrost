@@ -72,7 +72,17 @@ export default function AnalisandoPage() {
       if (!imp.raw_text) throw new Error("import sem conteúdo (raw_text vazio)");
 
       const sanitized = sanitize(imp.raw_text);
-      const rawSuggestions = await analyzeLocally(sanitized.cleanText, webLlmModel, (p) => setModelProgress(p));
+      const { data: existingNotes } = await supabase
+        .from("vault_notes")
+        .select("slug, title, category")
+        .order("updated_at", { ascending: false })
+        .limit(200);
+      const rawSuggestions = await analyzeLocally(
+        sanitized.cleanText,
+        webLlmModel,
+        (p) => setModelProgress(p),
+        existingNotes ?? []
+      );
 
       const rows = rawSuggestions
         .filter((s) => s.title && s.body)
@@ -81,6 +91,20 @@ export default function AnalisandoPage() {
           title: s.title.slice(0, 200),
           body: s.body,
           category: isCategory(s.category) ? s.category : "projeto",
+          category_reason: s.category_reason?.slice(0, 300) ?? null,
+          category_confidence:
+            typeof s.category_confidence === "number" && Number.isFinite(s.category_confidence)
+              ? Math.max(0, Math.min(1, s.category_confidence))
+              : null,
+          concepts: Array.isArray(s.concepts)
+            ? s.concepts.filter((concept): concept is string => typeof concept === "string").map((concept) => concept.trim()).filter(Boolean).slice(0, 5)
+            : [],
+          suggested_links: Array.isArray(s.links)
+            ? s.links
+                .filter((link) => link && typeof link.slug === "string" && existingNotes?.some((note) => note.slug === link.slug))
+                .slice(0, 5)
+                .map((link) => ({ slug: link.slug, reason: typeof link.reason === "string" ? link.reason.slice(0, 240) : null }))
+            : [],
           evidence: s.evidence?.slice(0, 200) ?? null,
         }));
 

@@ -12,6 +12,28 @@ const slugify = (value: string) =>
     .replace(/^_+|_+$/g, "")
     .slice(0, 60);
 
+function conceptsOf(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value
+        .filter((concept): concept is string => typeof concept === "string")
+        .map((concept) => concept.trim())
+        .filter(Boolean)
+        .slice(0, 10)
+    : [];
+}
+
+function linksOf(value: unknown): Array<{ slug: string; reason: string | null }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((link): link is { slug: string; reason?: unknown } => Boolean(link) && typeof link === "object" && typeof (link as { slug?: unknown }).slug === "string")
+    .map((link) => ({
+      slug: link.slug.trim(),
+      reason: typeof link.reason === "string" ? link.reason.slice(0, 240) : null,
+    }))
+    .filter((link) => link.slug)
+    .slice(0, 10);
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   if (
@@ -26,6 +48,19 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+
+  const { data: suggestion, error: suggestionLoadError } = await supabase
+    .from("pattern_suggestions")
+    .select("id, category, concepts, suggested_links")
+    .eq("id", body.suggestion_id)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (suggestionLoadError || !suggestion) {
+    return NextResponse.json({ error: "sugestão não encontrada ou já revisada" }, { status: 404 });
+  }
+
+  const concepts = conceptsOf(body.concepts ?? suggestion.concepts);
+  const suggestedLinks = linksOf(body.links ?? suggestion.suggested_links);
 
   const [{ data: subscription }, { count: layerCount }] = await Promise.all([
     supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),
@@ -46,6 +81,7 @@ export async function POST(request: Request) {
       title: body.title.slice(0, 200),
       body: body.content,
       category: body.category,
+      concepts,
     })
     .select("id, slug")
     .single();
@@ -53,16 +89,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: noteError?.message ?? "Erro ao criar camada." }, { status: 500 });
   }
 
-  const { data: siblings } = await supabase
-    .from("vault_notes")
-    .select("slug")
-    .eq("category", body.category)
-    .neq("id", note.id)
-    .order("updated_at", { ascending: false })
-    .limit(8);
-  if (siblings && siblings.length > 0) {
+  const { data: linkedNotes } = suggestedLinks.length > 0
+    ? await supabase
+        .from("vault_notes")
+        .select("slug")
+        .in("slug", suggestedLinks.map((link) => link.slug))
+    : { data: [] as Array<{ slug: string }> };
+  const acceptedSlugs = new Set((linkedNotes ?? []).map((linked) => linked.slug));
+  const approvedLinks = suggestedLinks.filter((link) => acceptedSlugs.has(link.slug));
+
+  // Sugestões antigas ainda não têm ligações estruturadas; preservamos o
+  // comportamento anterior como fallback apenas nesses casos.
+  const { data: siblings } = approvedLinks.length === 0 && body.links === undefined
+    ? await supabase
+        .from("vault_notes")
+        .select("slug")
+        .eq("category", body.category)
+        .neq("id", note.id)
+        .order("updated_at", { ascending: false })
+        .limit(8)
+    : { data: [] as Array<{ slug: string }> };
+  // A tela de curadoria sempre envia `links`, inclusive quando o usuário
+  // removeu todas as sugestões. Nesse caso, não recriamos links escondidos
+  // por categoria: a decisão precisa continuar sendo do usuário.
+  const linksToInsert = approvedLinks.length > 0
+    ? approvedLinks
+    : body.links !== undefined
+      ? []
+      : siblings ?? [];
+  if (linksToInsert.length > 0) {
     await supabase.from("vault_links").insert(
-      siblings.map((sibling) => ({ from_note_id: note.id, to_slug: sibling.slug }))
+      linksToInsert.map((link) => ({ from_note_id: note.id, to_slug: link.slug }))
     );
   }
 

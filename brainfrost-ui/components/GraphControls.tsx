@@ -28,7 +28,7 @@ export function GraphControls({ onRecenter }: Props) {
       {/* Mobile: FAB grande no canto inferior direito, acima do BottomNav */}
       <button
         onClick={() => setOpen(true)}
-        aria-label="Controles do grafo"
+        aria-label="Controles do cérebro"
         className="pane pointer-events-auto absolute right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full text-arctic shadow-pane md:hidden"
         style={{ bottom: "calc(1rem + env(safe-area-inset-bottom))" }}
       >
@@ -42,7 +42,7 @@ export function GraphControls({ onRecenter }: Props) {
         >
           <SheetHeader className="mb-3">
             <SheetTitle className="text-sm font-semibold text-arctic">
-              Controles do grafo
+              Controles do cérebro
             </SheetTitle>
           </SheetHeader>
           <ControlsBody onRecenter={() => { onRecenter(); setOpen(false); }} showTitle={false} />
@@ -66,7 +66,7 @@ function ControlsBody({
       {showTitle && (
         <div className="mb-3 flex items-center justify-between">
           <p className="font-mono text-[11px] uppercase tracking-widest text-mute">
-            controles do grafo
+            controles do cérebro
           </p>
           <button
             onClick={reset}

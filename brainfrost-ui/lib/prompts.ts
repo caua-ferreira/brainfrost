@@ -23,6 +23,10 @@ export interface LlmSuggestion {
   title: string;
   body: string;
   category: string;
+  category_reason?: string;
+  category_confidence?: number;
+  concepts?: string[];
+  links?: Array<{ slug: string; reason?: string }>;
   evidence?: string;
 }
 
@@ -47,10 +51,27 @@ CATEGORIAS VÁLIDAS (use exatamente uma):
 - projeto                (contexto específico de um projeto)
 - log_aprendizados       (decisão tomada em uma data)
 
+CONCEITOS E LIGAÇÕES:
+- concepts deve conter de 1 a 5 conceitos curtos que a camada representa.
+- links só pode apontar para slugs da lista CAMADAS EXISTENTES enviada junto do texto.
+- Sugira no máximo 5 links e explique brevemente o motivo de cada ligação.
+- Se não houver uma ligação clara, use []. Nunca invente slug.
+- category_reason deve explicar por que a gaveta escolhida é adequada.
+- category_confidence deve ser um número entre 0 e 1.
+
 FORMATO DA RESPOSTA: só JSON válido, nada mais.
 {
   "suggestions": [
-    {"title": "...", "body": "...", "category": "...", "evidence": "..."}
+    {
+      "title": "...",
+      "body": "...",
+      "category": "...",
+      "category_reason": "...",
+      "category_confidence": 0.92,
+      "concepts": ["..."],
+      "links": [{"slug": "slug-existente", "reason": "..."}],
+      "evidence": "..."
+    }
   ]
 }
 
@@ -69,6 +90,19 @@ Entrada: "receita de bolo de cenoura: 2 ovos, 3 cenouras..."
 Saída: {"suggestions":[]}
 
 Nada de preâmbulo. Nada de markdown fence. Apenas o JSON.`;
+
+export function buildExtractionInput(
+  text: string,
+  existingNotes: Array<{ slug: string; title: string; category: string }> = []
+) {
+  const catalog = existingNotes.length === 0
+    ? "(nenhuma camada existente; não sugira links)"
+    : existingNotes
+        .map((note) => `- ${note.slug} | ${note.title} | categoria: ${note.category}`)
+        .join("\n");
+
+  return `${text}\n\nCAMADAS EXISTENTES (use somente estes slugs em links):\n${catalog}`;
+}
 
 export function parseSuggestionsJson(raw: string): LlmSuggestion[] {
   const jsonStart = raw.indexOf("{");
