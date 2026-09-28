@@ -8,6 +8,7 @@ import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
 import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "@/lib/github";
+import { announceNavigation } from "@/components/shared/NavigationLoader";
 
 const SANITIZED = [
   ".env*", "*.pem", "*.key", "id_rsa*", "credentials.json",
@@ -151,6 +152,7 @@ function TextPanel({ c }: { c: ReturnType<typeof palette> }) {
       alert(error?.message ?? "Não foi possível criar o import.");
       return;
     }
+    announceNavigation();
     router.push(`/analisando/${data.id}`);
   };
 
@@ -211,6 +213,7 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
       alert(error?.message ?? "Não foi possível criar o import.");
       return;
     }
+    announceNavigation();
     router.push(`/analisando/${data.id}`);
   };
 
@@ -335,6 +338,7 @@ function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
         alert(dbErr?.message ?? "Não foi possível criar o import.");
         return;
       }
+      announceNavigation();
       router.push(`/analisando/${data.id}`);
     } catch (e) {
       setBusy(false);

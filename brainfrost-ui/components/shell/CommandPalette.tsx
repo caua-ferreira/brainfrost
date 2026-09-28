@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { announceNavigation } from "@/components/shared/NavigationLoader";
 import { Layers, Sparkles } from "lucide-react";
 import {
   CommandDialog,
@@ -46,6 +47,7 @@ export function CommandPalette({ notes, open, onOpenChange }: Props) {
 
   function go(slug: string) {
     onOpenChange(false);
+    announceNavigation();
     router.push(`/grafo?camada=${slug}`);
   }
 

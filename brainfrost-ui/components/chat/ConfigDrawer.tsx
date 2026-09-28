@@ -89,13 +89,13 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border-glow/20 bg-card text-arctic">
+      <DialogContent className="max-w-md border-primary/20 bg-card text-foreground">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-arctic">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <span aria-hidden className="text-2xl">{preset.glyph}</span>
             Conectar {preset.label}
           </DialogTitle>
-          <p className="text-[13px] text-mute">{preset.tagline}</p>
+          <p className="text-[13px] text-muted-foreground">{preset.tagline}</p>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -103,7 +103,7 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
             const isSecret = field.type === "password";
             return (
               <label key={field.key} className="block">
-                <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-mute">
+                <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   {field.label}
                 </span>
                 <div className="relative">
@@ -115,7 +115,7 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
                     }
                     placeholder={field.placeholder}
                     className={cn(
-                      "h-10 border-glow/20 bg-abyss/60 text-sm text-arctic placeholder:text-mute/50 focus:border-glow/50",
+                      "h-10 border-primary/20 bg-background/60 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50",
                       isSecret && "pr-10 font-mono text-xs"
                     )}
                   />
@@ -123,7 +123,7 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
                     <button
                       type="button"
                       onClick={() => setShowKey((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-mute transition-colors hover:text-arctic"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                       aria-label={showKey ? "Esconder" : "Mostrar"}
                     >
                       {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -131,20 +131,20 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
                   )}
                 </div>
                 {field.hint && (
-                  <p className="mt-1.5 text-[11px] leading-relaxed text-mute/85">{field.hint}</p>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">{field.hint}</p>
                 )}
               </label>
             );
           })}
 
           {preset.warning && (
-            <div className="flex items-start gap-2 rounded-md border border-aurora/40 bg-aurora/5 p-3 text-[12px]">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-aurora" />
-              <p className="text-arctic/85">{preset.warning}</p>
+            <div className="flex items-start gap-2 rounded-md border border-accent/40 bg-accent/5 p-3 text-[12px]">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+              <p className="text-foreground/85">{preset.warning}</p>
             </div>
           )}
 
-          <p className="text-[11px] text-mute">
+          <p className="text-[11px] text-muted-foreground">
             Chave fica <strong>só no localStorage deste navegador</strong>. Nada é enviado
             pro backend do BrainFrost — o browser fala direto com o provedor.
           </p>
@@ -158,14 +158,14 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               onClick={() => onOpenChange(false)}
-              className="rounded-md px-3 py-2 text-xs text-mute transition-colors hover:text-arctic"
+              className="rounded-md px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               cancelar
             </button>
             <button
               onClick={testAndSave}
               disabled={status.kind === "testing"}
-              className="flex h-10 items-center gap-2 rounded-md border border-glow/40 bg-glow/10 px-4 text-sm text-arctic transition-colors hover:border-glow/70 disabled:opacity-60"
+              className="flex h-10 items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-4 text-sm text-foreground transition-colors hover:border-primary/70 disabled:opacity-60"
             >
               {status.kind === "testing" ? (
                 <>
@@ -173,7 +173,7 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
                 </>
               ) : status.kind === "ok" ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-glow" /> conectado
+                  <Check className="h-3.5 w-3.5 text-primary" /> conectado
                 </>
               ) : (
                 "conectar"

@@ -5,6 +5,7 @@ import type { PaletteNote } from "@/components/shell/CommandPalette";
 import { readVault } from "@/lib/vault";
 import { AuthGuard } from "@/components/saas/AuthGuard";
 import { ThemeApplicator } from "@/components/saas/ThemeApplicator";
+import { NavigationLoader } from "@/components/shared/NavigationLoader";
 
 const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
@@ -26,6 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <ThemeApplicator />
+      <NavigationLoader />
       <div className="flex h-[100dvh] overflow-hidden">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">

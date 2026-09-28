@@ -4,18 +4,13 @@ import { Suspense } from "react";
 import BrainFrostShell from "@/components/BrainFrostShell";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useVaultSnapshot } from "@/lib/supabase/useVault";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 
 export default function Page() {
   const { snapshot, loading, error } = useVaultSnapshot();
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center bg-abyss">
-        <div className="font-mono text-xs uppercase tracking-widest text-mute">
-          carregando cofre…
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="carregando cofre" />;
   }
 
   if (error) {
@@ -46,7 +41,7 @@ export default function Page() {
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoadingScreen message="abrindo grafo" />}>
       <BrainFrostShell snapshot={snapshot} />
     </Suspense>
   );

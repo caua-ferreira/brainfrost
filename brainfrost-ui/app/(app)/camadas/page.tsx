@@ -4,18 +4,13 @@ import Link from "next/link";
 import CamadasBrowser from "@/components/camadas/CamadasBrowser";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useVaultSnapshot } from "@/lib/supabase/useVault";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 
 export default function Page() {
   const { snapshot, loading, error, refresh } = useVaultSnapshot();
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center bg-abyss">
-        <div className="font-mono text-xs uppercase tracking-widest text-mute">
-          carregando cofre…
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="carregando cofre" />;
   }
 
   if (error) {
@@ -27,7 +22,7 @@ export default function Page() {
           action={
             <Link
               href="/"
-              className="rounded-md border border-glow/25 bg-rift/30 px-3 py-1.5 text-xs text-arctic transition-colors hover:border-glow/60"
+              className="rounded-md border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary/60"
             >
               voltar ao grafo
             </Link>

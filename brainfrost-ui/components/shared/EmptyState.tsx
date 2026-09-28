@@ -21,12 +21,12 @@ export function EmptyState({ title, description, action, className }: Props) {
         className
       )}
     >
-      <div aria-hidden className="text-6xl text-glow md:text-4xl">
+      <div aria-hidden className="text-6xl text-primary md:text-4xl">
         ❄
       </div>
-      <h3 className="text-xl font-semibold text-arctic md:text-lg">{title}</h3>
+      <h3 className="text-xl font-semibold text-foreground md:text-lg">{title}</h3>
       {description && (
-        <p className="max-w-md text-[15px] leading-relaxed text-mute md:max-w-sm md:text-sm">
+        <p className="max-w-md text-[15px] leading-relaxed text-muted-foreground md:max-w-sm md:text-sm">
           {description}
         </p>
       )}

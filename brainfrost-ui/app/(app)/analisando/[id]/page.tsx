@@ -7,6 +7,7 @@ import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { sanitize } from "@/lib/sanitize";
+import { announceNavigation } from "@/components/shared/NavigationLoader";
 import {
   analyzeLocally,
   DEFAULT_WEBLLM_MODEL,
@@ -104,7 +105,10 @@ export default function AnalisandoPage() {
         else await runServer();
         clearInterval(tick);
         setProgress(100);
-        setTimeout(() => router.replace("/curadoria"), 700);
+        setTimeout(() => {
+          announceNavigation();
+          router.replace("/curadoria");
+        }, 700);
       } catch (e) {
         clearInterval(tick);
         setStatus("erro");
@@ -193,14 +197,20 @@ export default function AnalisandoPage() {
         {status === "erro" && (
           <div className="mt-6 flex gap-3">
             <button
-              onClick={() => router.push("/config")}
+              onClick={() => {
+                announceNavigation();
+                router.push("/config");
+              }}
               className="rounded-full border px-4 py-2 text-[13px] font-medium"
               style={{ borderColor: c.border, color: c.text }}
             >
               Ver configurações
             </button>
             <button
-              onClick={() => router.push("/importar")}
+              onClick={() => {
+                announceNavigation();
+                router.push("/importar");
+              }}
               className="rounded-full px-4 py-2 text-[13px] font-medium"
               style={{ background: c.accent, color: c.onAccent }}
             >
