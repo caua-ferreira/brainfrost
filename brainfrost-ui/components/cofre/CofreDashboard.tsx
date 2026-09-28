@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, Sparkles, Trash2 } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -40,14 +40,58 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
   const c = palette(theme);
   const categories = useCategories();
   const [cleaning, setCleaning] = useState(false);
+  const [linkTarget, setLinkTarget] = useState<Record<string, string>>({});
+  const [linkBusy, setLinkBusy] = useState<string | null>(null);
   const [cleanupError, setCleanupError] = useState<string | null>(null);
 
   const totalTokens = tokenize(stats.words);
   const brokenCount = stats.broken.length;
   const brokenLinks = useMemo(
-    () => notes.flatMap((note) => note.broken.map((target) => ({ source: note.slug, target }))),
+    () =>
+      notes.flatMap((note) =>
+        note.broken.map((target) => ({
+          key: `${note.id ?? note.slug}:${target}`,
+          sourceId: note.id,
+          source: note.slug,
+          target,
+        }))
+      ),
     [notes]
   );
+
+  async function updateBrokenLink(
+    link: (typeof brokenLinks)[number],
+    nextTarget: string | null
+  ) {
+    if (!link.sourceId || linkBusy) return;
+
+    setLinkBusy(link.key);
+    setCleanupError(null);
+    const supabase = getSupabase();
+    const response = nextTarget
+      ? await supabase
+          .from("vault_links")
+          .update({ to_slug: nextTarget })
+          .eq("from_note_id", link.sourceId)
+          .eq("to_slug", link.target)
+      : await supabase
+          .from("vault_links")
+          .delete()
+          .eq("from_note_id", link.sourceId)
+          .eq("to_slug", link.target);
+
+    if (response.error) {
+      setCleanupError(`Não foi possível atualizar ${link.source}: ${response.error.message}`);
+    } else {
+      setLinkTarget((current) => {
+        const next = { ...current };
+        delete next[link.key];
+        return next;
+      });
+      await onRefresh();
+    }
+    setLinkBusy(null);
+  }
 
   async function cleanBrokenLinks() {
     if (brokenLinks.length === 0 || cleaning) return;
@@ -143,8 +187,72 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
                 {brokenLinks.length > 6 && ` … +${brokenLinks.length - 6}`}
               </p>
               <p className="mt-3 text-[11px]" style={{ color: c.dim }}>
-                A limpeza remove apenas as referências quebradas; as camadas permanecem intactas.
+                Escolha a camada correta para redirecionar uma referência ou remova só aquele link.
+                As camadas permanecem intactas.
               </p>
+              <div className="mt-3 space-y-2">
+                {brokenLinks.map((link) => {
+                  const selectedTarget = linkTarget[link.key] ?? "";
+                  const busy = linkBusy === link.key;
+                  return (
+                    <div
+                      key={link.key}
+                      className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center"
+                      style={{ borderColor: c.borderSoft, background: `${c.bg}80` }}
+                    >
+                      <div className="min-w-0 flex-1 font-mono text-[11px]" style={{ color: c.dim }}>
+                        <span style={{ color: c.text }}>{link.source}</span>
+                        <span className="px-1.5">→</span>
+                        <span style={{ color: c.aurora }}>{link.target}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={selectedTarget}
+                          onChange={(event) =>
+                            setLinkTarget((current) => ({ ...current, [link.key]: event.target.value }))
+                          }
+                          disabled={busy || !link.sourceId}
+                          className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-[11px] outline-none sm:w-56 sm:flex-none"
+                          style={{ color: c.text, borderColor: c.borderSoft, background: c.card }}
+                        >
+                          <option value="" style={{ background: c.card, color: c.dim }}>
+                            corrigir para…
+                          </option>
+                          {notes
+                            .filter((note) => note.slug !== link.source)
+                            .map((note) => (
+                              <option key={note.slug} value={note.slug} style={{ background: c.card, color: c.text }}>
+                                {note.title}
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => updateBrokenLink(link, selectedTarget)}
+                          disabled={busy || !selectedTarget || !link.sourceId}
+                          title="Redirecionar para a camada escolhida"
+                          className="flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
+                          style={{ borderColor: c.accent, color: c.accent }}
+                        >
+                          <Check className="h-3.5 w-3.5" strokeWidth={2.2} />
+                          {busy ? "…" : "corrigir"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateBrokenLink(link, null)}
+                          disabled={busy || !link.sourceId}
+                          title="Remover somente esta referência"
+                          className="flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
+                          style={{ borderColor: "#c2415a66", color: "#c2415a" }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.8} />
+                          remover
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               <button
                 type="button"
                 onClick={cleanBrokenLinks}
