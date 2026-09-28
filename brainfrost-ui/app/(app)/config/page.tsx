@@ -106,7 +106,10 @@ export default function ConfigPage() {
   const remove = async (provider: LlmProvider) => {
     if (!confirm(`Remover a chave do ${provider}? Isso não pode ser desfeito.`)) return;
     const res = await fetch(`/api/config/llm-key?provider=${provider}`, { method: "DELETE" });
-    if (res.ok) refresh();
+    if (res.ok) {
+      if (config.llmProvider === provider) setConfig({ llmProvider: "webllm" });
+      refresh();
+    }
   };
 
   const providerLabel = PROVIDERS.find((p) => p.id === config.llmProvider)?.label;
@@ -158,8 +161,8 @@ export default function ConfigPage() {
             style={{ background: c.card, borderColor: c.border }}
           >
             {PROVIDERS.map((p) => {
-              const active = config.llmProvider === p.id;
               const has = isStored(p.id);
+              const active = config.llmProvider === p.id && (p.local || has);
               const Icon = p.Icon;
               return (
                 <div
@@ -218,7 +221,7 @@ export default function ConfigPage() {
                     }}
                   >
                     {active && <Check className="h-3 w-3" strokeWidth={2.5} />}
-                    {active ? "Ativa" : !p.local && !isPro ? "Ver Pro" : "Ativar"}
+                    {active ? "Ativa" : !p.local && !isPro ? "Ver Pro" : !p.local && !has ? "Configurar" : "Ativar"}
                   </button>
                 </div>
               );
