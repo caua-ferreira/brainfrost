@@ -5,7 +5,9 @@
  * direto do browser pro provedor. Nada passa por servidor do BrainFrost.
  */
 
-export type ChatApi = "openai" | "anthropic" | "ollama" | "openrouter" | "gemini" | "cortex";
+import { chatLocally, DEFAULT_WEBLLM_MODEL } from "./webllm";
+
+export type ChatApi = "openai" | "anthropic" | "ollama" | "openrouter" | "gemini" | "cortex" | "webllm";
 
 export interface ChatConfig {
   /** Nome que o dono escolhe pra identificar essa config (ex.: "Claude Pessoal"). */
@@ -31,6 +33,14 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
+
+export const LOCAL_CHAT_CONFIG: ChatConfig = {
+  label: "Local (WebLLM)",
+  api: "webllm",
+  url: "",
+  model: DEFAULT_WEBLLM_MODEL,
+  apiKey: "",
+};
 
 export interface PresetField {
   key: "apiKey" | "extraKey" | "url" | "model";
@@ -69,6 +79,18 @@ const OPENROUTER_HEADERS = {
 
 /** Provedores que aparecem no seletor, na ordem exibida. */
 export const PROVIDER_PRESETS: ProviderPreset[] = [
+  {
+    key: "webllm",
+    label: "Local (WebLLM)",
+    tagline: "roda no seu navegador · sem chave · sem custo",
+    color: "#0E8EAD",
+    api: "webllm",
+    url: "",
+    model: DEFAULT_WEBLLM_MODEL,
+    browserFriendly: true,
+    warning: "No primeiro uso, o navegador baixa o modelo e guarda em cache. Requer WebGPU.",
+    needs: [],
+  },
   {
     key: "claude",
     label: "Claude",
@@ -368,6 +390,9 @@ function targetUrl(config: ChatConfig): string {
  * caller decide como mostrar.
  */
 export async function sendChat(config: ChatConfig, messages: ChatMessage[]): Promise<string> {
+  if (config.api === "webllm") {
+    return chatLocally(messages, config.model || DEFAULT_WEBLLM_MODEL);
+  }
   const url = targetUrl(config);
   let response: Response;
   try {

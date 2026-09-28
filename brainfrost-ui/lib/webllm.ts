@@ -56,6 +56,12 @@ export function isWebGPUAvailable(): boolean {
 
 let currentModelId: string | null = null;
 
+export const LOCAL_CHAT_SYSTEM_PROMPT = `Você é o assistente local do BrainFrost.
+Responda em português claro, com objetividade e contexto técnico quando necessário.
+Use somente o contexto enviado pelo usuário e o histórico da conversa.
+Se a resposta não estiver no contexto, diga que não encontrou essa informação no cérebro.
+Não invente camadas, ligações ou fatos.`;
+
 export async function getEngine(
   model: string = DEFAULT_WEBLLM_MODEL,
   onProgress?: (p: WebLlmProgress) => void
@@ -99,4 +105,20 @@ export async function analyzeLocally(
   });
   const raw = response.choices[0]?.message?.content ?? "";
   return parseSuggestionsJson(raw);
+}
+
+export async function chatLocally(
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  modelId: string = DEFAULT_WEBLLM_MODEL,
+  onProgress?: (p: WebLlmProgress) => void
+): Promise<string> {
+  const engine = await getEngine(modelId, onProgress);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = engine as any;
+  const response = await e.chat.completions.create({
+    messages: [{ role: "system", content: LOCAL_CHAT_SYSTEM_PROMPT }, ...messages],
+    temperature: 0.35,
+    max_tokens: 900,
+  });
+  return response.choices[0]?.message?.content?.trim() ?? "Não consegui gerar uma resposta.";
 }
