@@ -43,10 +43,9 @@ export interface PresetField {
 export interface ProviderPreset {
   key: string;
   label: string;
-  /** Uma linha, aparece embaixo do label no card. */
+  /** Uma linha, aparece embaixo do label na lista. */
   tagline: string;
-  /** Ícone visual (emoji ou glifo curto). */
-  glyph: string;
+  color: string;
   api: ChatApi;
   url: string;
   model: string;
@@ -68,13 +67,13 @@ const OPENROUTER_HEADERS = {
   "X-Title": "BrainFrost",
 };
 
-/** Cards que aparecem na grade do picker, na ordem exibida. */
+/** Provedores que aparecem no seletor, na ordem exibida. */
 export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     key: "claude",
     label: "Claude",
     tagline: "via OpenRouter — funciona no browser",
-    glyph: "🧠",
+    color: "#D97757",
     api: "openai",
     url: "https://openrouter.ai/api/v1/chat/completions",
     model: "anthropic/claude-sonnet-4.5",
@@ -94,7 +93,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "gpt",
     label: "ChatGPT",
     tagline: "GPT-4o via OpenRouter",
-    glyph: "💬",
+    color: "#10A37F",
     api: "openai",
     url: "https://openrouter.ai/api/v1/chat/completions",
     model: "openai/gpt-4o",
@@ -114,7 +113,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "gemini",
     label: "Gemini",
     tagline: "Google — API direta",
-    glyph: "✦",
+    color: "#4285F4",
     api: "gemini",
     url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
     model: "gemini-flash-latest",
@@ -133,7 +132,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "cortex",
     label: "Snowflake Cortex",
     tagline: "requer account URL + PAT",
-    glyph: "❄",
+    color: "#29B5E8",
     api: "cortex",
     url: "",
     model: "claude-sonnet-4-5",
@@ -167,7 +166,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "claude-direct",
     label: "Claude direto",
     tagline: "API Anthropic — avançado",
-    glyph: "🅰",
+    color: "#D97757",
     api: "anthropic",
     url: "https://api.anthropic.com/v1/messages",
     model: "claude-sonnet-4-5",
@@ -188,7 +187,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "ollama",
     label: "Ollama local",
     tagline: "modelo rodando na sua máquina",
-    glyph: "🦙",
+    color: "#111827",
     api: "ollama",
     url: "http://localhost:11434/api/chat",
     model: "llama3.1",
@@ -208,7 +207,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "lmstudio",
     label: "LM Studio local",
     tagline: "endpoint OpenAI-compatible",
-    glyph: "🖥",
+    color: "#7C3AED",
     api: "openai",
     url: "http://localhost:1234/v1/chat/completions",
     model: "",
@@ -226,7 +225,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     key: "custom",
     label: "Custom",
     tagline: "outro endpoint OpenAI-compatible",
-    glyph: "⚙",
+    color: "#64748B",
     api: "openai",
     url: "",
     model: "",

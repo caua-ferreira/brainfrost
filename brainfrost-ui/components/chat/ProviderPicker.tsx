@@ -1,21 +1,17 @@
 "use client";
 
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight } from "lucide-react";
 import { PROVIDER_PRESETS, type ProviderPreset } from "@/lib/chat-client";
 import { useChatStore } from "@/lib/chat-store";
 import { cn } from "@/lib/utils";
+import { ProviderLogo } from "./ProviderLogo";
 
 interface Props {
   onPick: (preset: ProviderPreset) => void;
-  /** Mostra "conectado" nos cards que já têm config salva. */
   compact?: boolean;
 }
 
-/**
- * Grade de cards de provedor. Um toque escolhe o preset e o pai (ChatRoom)
- * abre o modal simplificado. Nada de escolher `api`/`url` na mão — cada
- * card já traz tudo preenchido.
- */
+/** Lista compacta de provedores. Cada linha funciona como uma opção de seletor. */
 export function ProviderPicker({ onPick, compact }: Props) {
   const configs = useChatStore((s) => s.configs);
   const connectedKeys = new Set(configs.map((c) => c.label));
@@ -23,12 +19,12 @@ export function ProviderPicker({ onPick, compact }: Props) {
   return (
     <div
       className={cn(
-        "grid gap-3",
-        compact ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        "overflow-hidden rounded-2xl border border-primary/15 bg-card/45",
+        compact && "rounded-xl"
       )}
     >
       {PROVIDER_PRESETS.map((preset) => (
-        <ProviderCard
+        <ProviderRow
           key={preset.key}
           preset={preset}
           connected={connectedKeys.has(preset.label)}
@@ -39,7 +35,7 @@ export function ProviderPicker({ onPick, compact }: Props) {
   );
 }
 
-function ProviderCard({
+function ProviderRow({
   preset,
   connected,
   onPick,
@@ -50,37 +46,40 @@ function ProviderCard({
 }) {
   return (
     <button
+      type="button"
       onClick={() => onPick(preset)}
       className={cn(
-        "group relative flex min-h-[112px] flex-col gap-2 rounded-xl border p-4 text-left transition-all",
-        connected
-          ? "border-primary/50 bg-primary/[0.08]"
-          : "border-primary/15 bg-card/50 hover:border-primary/40 active:scale-[0.98]"
+        "group flex w-full items-center gap-3 border-b border-primary/10 px-4 py-3 text-left transition-colors last:border-b-0",
+        connected ? "bg-primary/[0.08]" : "hover:bg-primary/[0.05]"
       )}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <span aria-hidden className="text-2xl">
-            {preset.glyph}
-          </span>
-          <div>
-            <p className="text-[15px] font-semibold text-foreground">{preset.label}</p>
-            <p className="text-[11px] text-muted-foreground">{preset.tagline}</p>
-          </div>
-        </div>
-        {connected && (
-          <span className="flex h-5 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-1.5 font-mono text-[10px] text-primary">
-            <Check className="h-3 w-3" />
-            ok
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background/70"
+        style={{ borderColor: `${preset.color}45` }}
+      >
+        <ProviderLogo preset={preset} size={23} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="truncate text-[14px] font-semibold text-foreground">{preset.label}</span>
+          {connected && (
+            <span className="flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
+              <Check className="h-2.5 w-2.5" />
+              conectado
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{preset.tagline}</span>
+      </span>
+      <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
+        {!preset.browserFriendly && (
+          <span className="hidden items-center gap-1 font-mono text-[9px] uppercase tracking-wider text-accent/85 sm:flex">
+            <AlertTriangle className="h-3 w-3" />
+            CORS
           </span>
         )}
-      </div>
-      {!preset.browserFriendly && (
-        <div className="mt-auto flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-accent/85">
-          <AlertTriangle className="h-3 w-3" />
-          pode falhar por cors
-        </div>
-      )}
+        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+      </span>
     </button>
   );
 }
