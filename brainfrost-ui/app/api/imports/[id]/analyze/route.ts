@@ -4,63 +4,19 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { sanitize } from "@/lib/sanitize";
+import { EXTRACTION_SYSTEM_PROMPT, isCategory, type LlmSuggestion } from "@/lib/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const VALID_CATEGORIES = [
-  "padroes_codigo",
-  "padroes_arquitetura",
-  "contexto_trabalho",
-  "padrao_webapp",
-  "glossario",
-  "projeto",
-  "log_aprendizados",
-] as const;
-
-type Category = (typeof VALID_CATEGORIES)[number];
-const isCategory = (s: string): s is Category =>
-  (VALID_CATEGORIES as readonly string[]).includes(s);
-
 type Provider = "claude" | "gemini";
-
-interface LlmSuggestion {
-  title: string;
-  body: string;
-  category: string;
-  evidence?: string;
-}
-
-const SYSTEM_PROMPT = `Você é um extrator de padrões técnicos.
-Recebe um trecho de repositório (markdown, código, comentários) e devolve as
-regras/decisões/convenções que valem para o dono repetir em outros projetos.
-
-Regras:
-- Só extraia padrões DURÁVEIS (regra de projeto, decisão de arquitetura, armadilha conhecida).
-- NUNCA extraia código específico, nome de variável, ou coisa que não gera reuso.
-- Corte tudo que seja segredo/chave/senha — se aparecer, ignore.
-- Se não há nada de padrão real no texto, devolva array vazio.
-
-Devolva SOMENTE um JSON válido no formato:
-{
-  "suggestions": [
-    {
-      "title": "título curto imperativo",
-      "body": "explicação com o padrão, 2-4 linhas",
-      "category": "padroes_codigo | padroes_arquitetura | contexto_trabalho | padrao_webapp | glossario | projeto | log_aprendizados",
-      "evidence": "arquivo:linha ou trecho identificador (opcional)"
-    }
-  ]
-}
-
-Nada além do JSON. Sem preâmbulo, sem markdown fence.`;
 
 async function callClaude(apiKey: string, userText: string): Promise<string> {
   const anthropic = new Anthropic({ apiKey });
   const response = await anthropic.messages.create({
     model: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-6",
     max_tokens: 2000,
-    system: SYSTEM_PROMPT,
+    system: EXTRACTION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userText }],
   });
   const block = response.content[0];
@@ -71,7 +27,7 @@ async function callGemini(apiKey: string, userText: string): Promise<string> {
   const genai = new GoogleGenerativeAI(apiKey);
   const model = genai.getGenerativeModel({
     model: process.env.GEMINI_MODEL ?? "gemini-flash-latest",
-    systemInstruction: SYSTEM_PROMPT,
+    systemInstruction: EXTRACTION_SYSTEM_PROMPT,
     generationConfig: { responseMimeType: "application/json" },
   });
   const result = await model.generateContent(userText);

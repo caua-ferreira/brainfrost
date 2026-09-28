@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { sendChat, type ChatConfig, type ProviderPreset } from "@/lib/chat-client";
 import { useChatStore } from "@/lib/chat-store";
 import { cn } from "@/lib/utils";
+import { ProviderLogo } from "./ProviderLogo";
 
 interface Props {
   open: boolean;
@@ -92,7 +93,7 @@ export function ConfigDrawer({ open, onOpenChange, preset }: Props) {
       <DialogContent className="max-w-md border-primary/20 bg-card text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
-            <span aria-hidden className="text-2xl">{preset.glyph}</span>
+            <ProviderLogo preset={preset} size={24} />
             Conectar {preset.label}
           </DialogTitle>
           <p className="text-[13px] text-muted-foreground">{preset.tagline}</p>

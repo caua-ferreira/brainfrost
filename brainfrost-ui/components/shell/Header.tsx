@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Search, Snowflake } from "lucide-react";
+import { Search } from "lucide-react";
 import { CommandPalette, type PaletteNote } from "./CommandPalette";
 import { AccountMenu } from "@/components/saas/AccountMenu";
 
@@ -37,7 +38,13 @@ export function Header({ commit, notes }: Props) {
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/40 px-4 backdrop-blur md:h-14 md:px-6">
         <div className="flex min-w-0 items-center gap-2 md:gap-4">
           <Link href="/painel" className="flex shrink-0 items-center gap-2 md:hidden">
-            <Snowflake className="h-5 w-5 text-primary" strokeWidth={1.8} />
+            <Image
+              src="/mascot/yeti-icon.png"
+              alt="BrainFrost"
+              width={24}
+              height={24}
+              className="h-6 w-6 object-contain"
+            />
           </Link>
           <h1 className="truncate text-[17px] font-semibold tracking-tight text-foreground md:text-[15px]">
             {titleFor(pathname)}

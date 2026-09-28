@@ -110,8 +110,13 @@ export function AccountMenu() {
   const firstName = name.split(/\s+/)[0];
 
   const logout = async () => {
-    await getSupabase().auth.signOut();
-    router.replace("/login");
+    announceNavigation();
+    const { error } = await getSupabase().auth.signOut();
+    if (error) {
+      alert("Não foi possível sair agora. Tente novamente.");
+      return;
+    }
+    router.replace("/");
   };
 
   return (

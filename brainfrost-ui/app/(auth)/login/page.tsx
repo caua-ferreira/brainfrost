@@ -53,7 +53,7 @@ const PROVIDERS: {
 }[] = [
   { id: "google", label: "Entrar com Google", hint: "conta pessoal", Icon: GoogleLogo },
   { id: "github", label: "Entrar com GitHub", hint: "para importar repositórios", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
-  { id: "azure",  label: "Entrar com Microsoft", hint: "em breve", scopes: "email", soon: true, Icon: MicrosoftLogo },
+  { id: "azure",  label: "Entrar com Microsoft", hint: "conta Microsoft", scopes: "email", Icon: MicrosoftLogo },
 ];
 
 export default function LoginPage() {

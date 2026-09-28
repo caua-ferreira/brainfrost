@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import {
   Download,
   Home,
@@ -12,7 +13,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
-  Snowflake,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -47,7 +47,13 @@ export function SidebarNav({ onNavigate }: Props) {
         onClick={onNavigate}
         className={cn("mb-6 flex items-center gap-2", collapsed ? "justify-center px-2" : "px-4")}
       >
-        <Snowflake className="h-5 w-5 shrink-0 text-primary" strokeWidth={1.8} />
+        <Image
+          src="/mascot/yeti-icon.png"
+          alt="BrainFrost"
+          width={24}
+          height={24}
+          className="h-6 w-6 shrink-0 object-contain"
+        />
         {!collapsed && (
           <span className="text-sm font-semibold tracking-tight text-foreground">BrainFrost</span>
         )}

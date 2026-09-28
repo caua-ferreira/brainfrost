@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileArchive, GitBranch, Lock, Search, ShieldCheck, Type } from "lucide-react";
+import { FileArchive, FileText, FolderOpen, GitBranch, Lock, Search, ShieldCheck, Type } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
 import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "@/lib/github";
+import { LOCAL_FILE_ACCEPT, readLocalTextFiles, readZipTextFiles } from "@/lib/import-files";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
 
 const SANITIZED = [
@@ -16,7 +17,7 @@ const SANITIZED = [
   "binários", "PII em seeds",
 ];
 
-type Tab = "text" | "zip" | "github";
+type Tab = "text" | "files" | "zip" | "github";
 
 export default function ImportarPage() {
   const theme = useSaas((s) => s.theme);
@@ -57,6 +58,9 @@ export default function ImportarPage() {
           <TabTrigger c={c} icon={<Type className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "text"} onClick={() => setTab("text")}>
             Colar texto
           </TabTrigger>
+          <TabTrigger c={c} icon={<FileText className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "files"} onClick={() => setTab("files")}>
+            Arquivos
+          </TabTrigger>
           <TabTrigger c={c} icon={<FileArchive className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "zip"} onClick={() => setTab("zip")}>
             Arquivo ZIP
           </TabTrigger>
@@ -67,6 +71,7 @@ export default function ImportarPage() {
 
         <div className="mt-6">
           {tab === "text" && <TextPanel c={c} />}
+          {tab === "files" && <FilesPanel c={c} />}
           {tab === "zip" && <ZipPanel c={c} />}
           {tab === "github" && <GitHubPanel c={c} />}
         </div>
@@ -90,6 +95,120 @@ export default function ImportarPage() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function FilesPanel({ c }: { c: ReturnType<typeof palette> }) {
+  const router = useRouter();
+  const filesInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    folderInputRef.current?.setAttribute("webkitdirectory", "");
+    folderInputRef.current?.setAttribute("directory", "");
+  }, []);
+
+  const chooseFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFiles(Array.from(event.target.files ?? []));
+  };
+
+  const submit = async () => {
+    if (files.length === 0 || busy) return;
+    setBusy(true);
+    try {
+      const contextFiles = await readLocalTextFiles(files);
+      if (contextFiles.length === 0) {
+        throw new Error("Nenhum arquivo de texto compatível foi encontrado.");
+      }
+      const rawText = buildRawTextFromFiles("arquivos locais", contextFiles);
+      const { data, error } = await getSupabase()
+        .from("imports")
+        .insert({
+          source: "files",
+          label: `Arquivos locais · ${contextFiles.length} arquivos`,
+          file_count: contextFiles.length,
+          raw_text: rawText,
+        })
+        .select("id")
+        .single();
+      if (error || !data) throw new Error(error?.message ?? "Não foi possível criar o import.");
+      announceNavigation();
+      router.push(`/analisando/${data.id}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Não foi possível ler os arquivos.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ background: c.card, borderColor: c.border }}>
+      <div
+        className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center"
+        style={{ background: c.bgSoft, borderColor: c.border }}
+      >
+        <FolderOpen className="h-10 w-10" strokeWidth={1.4} style={{ color: c.accent }} />
+        <p className="text-[15px]" style={{ color: c.text }}>
+          {files.length > 0 ? `${files.length} arquivo(s) selecionado(s)` : "Escolha arquivos ou uma pasta"}
+        </p>
+        <p className="max-w-md font-mono text-[11px] leading-relaxed" style={{ color: c.dim }}>
+          Markdown, texto, código e arquivos de configuração. Ignoramos binários, segredos,
+          node_modules e arquivos acima do limite.
+        </p>
+        <input
+          ref={filesInputRef}
+          type="file"
+          multiple
+          accept={LOCAL_FILE_ACCEPT}
+          className="hidden"
+          onChange={chooseFiles}
+        />
+        <input
+          ref={folderInputRef}
+          type="file"
+          multiple
+          accept={LOCAL_FILE_ACCEPT}
+          className="hidden"
+          onChange={chooseFiles}
+        />
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            className="rounded-full border px-5 py-2 text-[12px] font-medium transition-colors"
+            style={{ borderColor: c.border, color: c.text }}
+            onClick={() => filesInputRef.current?.click()}
+          >
+            Escolher arquivos
+          </button>
+          <button
+            type="button"
+            className="rounded-full border px-5 py-2 text-[12px] font-medium transition-colors"
+            style={{ borderColor: c.border, color: c.text }}
+            onClick={() => folderInputRef.current?.click()}
+          >
+            Escolher pasta
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <span className="font-mono text-[11px]" style={{ color: c.dim }}>
+          {files.length > 0 ? `${(totalSize / 1024).toFixed(1)} KB selecionados` : "até 50 arquivos e 200 KB de texto"}
+        </span>
+        <button
+          disabled={files.length === 0 || busy}
+          className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ background: c.accent, color: c.onAccent }}
+          onClick={submit}
+        >
+          {busy ? "lendo…" : "Importar & analisar"}
+        </button>
       </div>
     </div>
   );
@@ -195,26 +314,35 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!file) return;
+    if (!file || busy) return;
     setBusy(true);
-    const { data, error } = await getSupabase()
-      .from("imports")
-      .insert({
-        source: "zip",
-        label: file.name,
-        file_count: Math.max(1, Math.round(file.size / 4096)),
-      })
-      .select("id")
-      .single();
-    setBusy(false);
-    if (error || !data) {
-      alert(error?.message ?? "Não foi possível criar o import.");
-      return;
+    setStatus("lendo arquivos do ZIP…");
+    try {
+      const contextFiles = await readZipTextFiles(file);
+      const rawText = buildRawTextFromFiles(file.name, contextFiles);
+      setStatus(`criando import com ${contextFiles.length} arquivos…`);
+      const { data, error } = await getSupabase()
+        .from("imports")
+        .insert({
+          source: "zip",
+          label: file.name,
+          file_count: contextFiles.length,
+          raw_text: rawText,
+        })
+        .select("id")
+        .single();
+      if (error || !data) throw new Error(error?.message ?? "Não foi possível criar o import.");
+      announceNavigation();
+      router.push(`/analisando/${data.id}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Não foi possível ler o ZIP.");
+    } finally {
+      setBusy(false);
+      setStatus(null);
     }
-    announceNavigation();
-    router.push(`/analisando/${data.id}`);
   };
 
   return (
@@ -249,6 +377,7 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
       </div>
 
       <div className="mt-4 flex justify-end">
+        {status && <p className="mr-auto self-center font-mono text-[11px]" style={{ color: c.dim }}>{status}</p>}
         <button
           disabled={!file || busy}
           className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"

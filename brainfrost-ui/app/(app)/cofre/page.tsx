@@ -7,7 +7,7 @@ import { useVaultSnapshot } from "@/lib/supabase/useVault";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 
 export default function Page() {
-  const { snapshot, loading, error } = useVaultSnapshot();
+  const { snapshot, loading, error, refresh } = useVaultSnapshot();
 
   if (loading) {
     return <LoadingScreen message="carregando cofre" />;
@@ -43,5 +43,5 @@ export default function Page() {
     );
   }
 
-  return <CofreDashboard notes={snapshot.notes} stats={snapshot.stats} />;
+  return <CofreDashboard notes={snapshot.notes} stats={snapshot.stats} onRefresh={refresh} />;
 }

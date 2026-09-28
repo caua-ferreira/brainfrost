@@ -289,8 +289,19 @@ function EditRow({
     if (!note.id) return;
     if (!confirm(`Remover "${note.title}"? A camada será apagada e não pode ser desfeita.`)) return;
     setBusy(true);
-    await getSupabase().from("vault_notes").delete().eq("id", note.id);
+    const supabase = getSupabase();
+    const { error: linksError } = await supabase.from("vault_links").delete().eq("to_slug", note.slug);
+    if (linksError) {
+      setBusy(false);
+      alert(linksError.message);
+      return;
+    }
+    const { error: noteError } = await supabase.from("vault_notes").delete().eq("id", note.id);
     setBusy(false);
+    if (noteError) {
+      alert(noteError.message);
+      return;
+    }
     await onSaved();
   };
 
