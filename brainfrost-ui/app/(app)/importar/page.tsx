@@ -7,6 +7,7 @@ import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
+import { useBilling } from "@/components/saas/BillingProvider";
 import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "@/lib/github";
 import { LOCAL_FILE_ACCEPT, readLocalTextFiles, readZipTextFiles } from "@/lib/import-files";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
@@ -18,6 +19,24 @@ const SANITIZED = [
 ];
 
 type Tab = "text" | "files" | "zip" | "github";
+
+async function createImport(input: {
+  source: "text" | "files" | "zip" | "github";
+  label: string;
+  file_count: number;
+  raw_text: string;
+}) {
+  const response = await fetch("/api/imports", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.id) {
+    throw new Error(body.error ?? "Não foi possível criar o import.");
+  }
+  return body.id as string;
+}
 
 export default function ImportarPage() {
   const theme = useSaas((s) => s.theme);
@@ -125,19 +144,14 @@ function FilesPanel({ c }: { c: ReturnType<typeof palette> }) {
         throw new Error("Nenhum arquivo de texto compatível foi encontrado.");
       }
       const rawText = buildRawTextFromFiles("arquivos locais", contextFiles);
-      const { data, error } = await getSupabase()
-        .from("imports")
-        .insert({
-          source: "files",
-          label: `Arquivos locais · ${contextFiles.length} arquivos`,
-          file_count: contextFiles.length,
-          raw_text: rawText,
-        })
-        .select("id")
-        .single();
-      if (error || !data) throw new Error(error?.message ?? "Não foi possível criar o import.");
+      const id = await createImport({
+        source: "files",
+        label: `Arquivos locais · ${contextFiles.length} arquivos`,
+        file_count: contextFiles.length,
+        raw_text: rawText,
+      });
       announceNavigation();
-      router.push(`/analisando/${data.id}`);
+      router.push(`/analisando/${id}`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Não foi possível ler os arquivos.");
     } finally {
@@ -256,23 +270,20 @@ function TextPanel({ c }: { c: ReturnType<typeof palette> }) {
 
   const submit = async () => {
     setBusy(true);
-    const { data, error } = await getSupabase()
-      .from("imports")
-      .insert({
+    try {
+      const id = await createImport({
         source: "text",
         label: `Texto colado · ${text.length} caracteres`,
         file_count: 1,
         raw_text: text,
-      })
-      .select("id")
-      .single();
-    setBusy(false);
-    if (error || !data) {
-      alert(error?.message ?? "Não foi possível criar o import.");
-      return;
+      });
+      announceNavigation();
+      router.push(`/analisando/${id}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Não foi possível criar o import.");
+    } finally {
+      setBusy(false);
     }
-    announceNavigation();
-    router.push(`/analisando/${data.id}`);
   };
 
   return (
@@ -324,19 +335,14 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
       const contextFiles = await readZipTextFiles(file);
       const rawText = buildRawTextFromFiles(file.name, contextFiles);
       setStatus(`criando import com ${contextFiles.length} arquivos…`);
-      const { data, error } = await getSupabase()
-        .from("imports")
-        .insert({
-          source: "zip",
-          label: file.name,
-          file_count: contextFiles.length,
-          raw_text: rawText,
-        })
-        .select("id")
-        .single();
-      if (error || !data) throw new Error(error?.message ?? "Não foi possível criar o import.");
+      const id = await createImport({
+        source: "zip",
+        label: file.name,
+        file_count: contextFiles.length,
+        raw_text: rawText,
+      });
       announceNavigation();
-      router.push(`/analisando/${data.id}`);
+      router.push(`/analisando/${id}`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Não foi possível ler o ZIP.");
     } finally {
@@ -394,6 +400,7 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
 function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
   const router = useRouter();
   const { session } = useSession();
+  const { isPro } = useBilling();
   const providerToken = session?.provider_token ?? null;
 
   const [repos, setRepos] = useState<Repo[] | null>(null);
@@ -451,30 +458,43 @@ function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
       }
       setStatus(`Criando import com ${files.length} arquivos…`);
       const rawText = buildRawTextFromFiles(chosen.full_name, files);
-      const { data, error: dbErr } = await getSupabase()
-        .from("imports")
-        .insert({
-          source: "github",
-          label: chosen.full_name,
-          file_count: files.length,
-          raw_text: rawText,
-        })
-        .select("id")
-        .single();
+      const id = await createImport({
+        source: "github",
+        label: chosen.full_name,
+        file_count: files.length,
+        raw_text: rawText,
+      });
       setBusy(false);
       setStatus(null);
-      if (dbErr || !data) {
-        alert(dbErr?.message ?? "Não foi possível criar o import.");
-        return;
-      }
       announceNavigation();
-      router.push(`/analisando/${data.id}`);
+      router.push(`/analisando/${id}`);
     } catch (e) {
       setBusy(false);
       setStatus(null);
       alert(e instanceof Error ? e.message : "Erro ao importar.");
     }
   };
+
+  if (!isPro) {
+    return (
+      <div className="rounded-2xl border p-6 text-center" style={{ background: c.card, borderColor: c.border }}>
+        <Lock className="mx-auto h-8 w-8" strokeWidth={1.6} style={{ color: c.accent }} />
+        <p className="mt-3 text-[14px]" style={{ color: c.text }}>
+          Importação pelo GitHub é um recurso Pro.
+        </p>
+        <p className="mx-auto mt-2 max-w-sm text-[12px]" style={{ color: c.dim }}>
+          Faça upgrade para importar repositórios privados ou públicos diretamente para o cofre.
+        </p>
+        <button
+          onClick={() => router.push("/assinatura")}
+          className="mt-4 rounded-full px-5 py-2 text-[13px] font-medium"
+          style={{ background: c.accent, color: c.onAccent }}
+        >
+          Ver plano Pro
+        </button>
+      </div>
+    );
+  }
 
   if (!providerToken) {
     return (

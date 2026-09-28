@@ -21,6 +21,15 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (subscription?.status !== "active" && subscription?.status !== "trialing") {
+    return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
+  }
+
   const cipher = encrypt(body.api_key.trim());
 
   const { error } = await supabase

@@ -51,6 +51,13 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "import sem conteúdo (raw_text vazio)" }, { status: 400 });
   }
 
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const isPro = subscription?.status === "active" || subscription?.status === "trialing";
+
   const { data: creds } = await supabase
     .from("llm_credentials")
     .select("provider, api_key_cipher, updated_at")
@@ -77,6 +84,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   const sanitized = sanitize(imp.raw_text);
   const provider = chosen.provider as Provider;
+  if (!isPro) {
+    return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
+  }
 
   let raw: string;
   try {

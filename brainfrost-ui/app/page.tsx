@@ -60,12 +60,16 @@ export default function LandingPage() {
 
   // Autenticado → vai direto pro painel.
   useEffect(() => {
-    if (!loading && session) router.replace("/painel");
+    if (!loading && session) {
+      const q = new URLSearchParams(window.location.search);
+      const checkout = q.get("checkout") === "1" && (q.get("plan") === "monthly" || q.get("plan") === "annual");
+      if (!checkout) router.replace("/painel");
+    }
   }, [loading, session, router]);
 
-  const subscribe = async () => {
+  const subscribe = async (selectedPlan: Plan = plan) => {
     if (!session) {
-      router.push(`/login?next=${encodeURIComponent(`/?plan=${plan}&checkout=1`)}`);
+      router.push(`/login?next=${encodeURIComponent(`/?plan=${selectedPlan}&checkout=1`)}`);
       return;
     }
     setChecking(true);
@@ -73,7 +77,7 @@ export default function LandingPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan: selectedPlan }),
       });
       const json = await res.json();
       if (!res.ok || !json.url) {
@@ -94,7 +98,7 @@ export default function LandingPage() {
     const p = q.get("plan");
     if (p === "monthly" || p === "annual") {
       setPlan(p);
-      subscribe();
+      subscribe(p);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, session]);
@@ -477,7 +481,7 @@ export default function LandingPage() {
             </ul>
 
             <button
-              onClick={subscribe}
+              onClick={() => subscribe()}
               disabled={checking}
               className="mt-8 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-medium hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
               style={{ background: LIGHT.fg, color: LIGHT.bg }}

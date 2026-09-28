@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceFor(body.plan), quantity: 1 }],
-    success_url: `${origin}/painel?paid=1`,
+    success_url: `${origin}/assinatura?paid=1`,
     cancel_url: `${origin}/?checkout=cancelado`,
     allow_promotion_codes: true,
   });
