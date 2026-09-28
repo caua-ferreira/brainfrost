@@ -1,6 +1,11 @@
 "use client";
 
-import { EXTRACTION_SYSTEM_PROMPT, parseSuggestionsJson, type LlmSuggestion } from "./prompts";
+import {
+  EXTRACTION_SYSTEM_PROMPT,
+  buildExtractionInput,
+  parseSuggestionsJson,
+  type LlmSuggestion,
+} from "./prompts";
 
 /**
  * Roda o extrator de padrões no browser via @mlc-ai/web-llm.
@@ -75,7 +80,8 @@ export async function getEngine(
 export async function analyzeLocally(
   text: string,
   modelId: string = DEFAULT_WEBLLM_MODEL,
-  onProgress?: (p: WebLlmProgress) => void
+  onProgress?: (p: WebLlmProgress) => void,
+  existingNotes: Array<{ slug: string; title: string; category: string }> = []
 ): Promise<LlmSuggestion[]> {
   const engine = await getEngine(modelId, onProgress);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,7 +92,7 @@ export async function analyzeLocally(
   const response = await e.chat.completions.create({
     messages: [
       { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
-      { role: "user", content: text },
+      { role: "user", content: buildExtractionInput(text, existingNotes) },
     ],
     temperature: 0.2,
     max_tokens: 1500,

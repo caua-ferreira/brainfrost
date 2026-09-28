@@ -90,10 +90,14 @@ export type Database = {
           accepted_note_id: string | null
           body: string
           category: string
+          category_confidence: number | null
+          category_reason: string | null
+          concepts: string[]
           created_at: string
           evidence: string | null
           id: string
           import_id: string
+          suggested_links: Json
           status: string
           title: string
           user_id: string
@@ -102,10 +106,14 @@ export type Database = {
           accepted_note_id?: string | null
           body: string
           category: string
+          category_confidence?: number | null
+          category_reason?: string | null
+          concepts?: string[]
           created_at?: string
           evidence?: string | null
           id?: string
           import_id: string
+          suggested_links?: Json
           status?: string
           title: string
           user_id?: string
@@ -114,10 +122,14 @@ export type Database = {
           accepted_note_id?: string | null
           body?: string
           category?: string
+          category_confidence?: number | null
+          category_reason?: string | null
+          concepts?: string[]
           created_at?: string
           evidence?: string | null
           id?: string
           import_id?: string
+          suggested_links?: Json
           status?: string
           title?: string
           user_id?: string
@@ -167,6 +179,7 @@ export type Database = {
         Row: {
           body: string
           category: string
+          concepts: string[]
           created_at: string
           id: string
           layer: string
@@ -179,6 +192,7 @@ export type Database = {
         Insert: {
           body: string
           category: string
+          concepts?: string[]
           created_at?: string
           id?: string
           layer?: string
@@ -191,6 +205,7 @@ export type Database = {
         Update: {
           body?: string
           category?: string
+          concepts?: string[]
           created_at?: string
           id?: string
           layer?: string

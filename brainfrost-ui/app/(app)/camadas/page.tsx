@@ -24,7 +24,7 @@ export default function Page() {
               href="/"
               className="rounded-md border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary/60"
             >
-              voltar ao grafo
+              voltar ao cérebro
             </Link>
           }
         />

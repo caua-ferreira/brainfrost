@@ -34,14 +34,14 @@ export default function Page() {
       <div className="h-full overflow-auto p-6">
         <EmptyState
           title="Cérebro vazio"
-          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria pra começar a preencher o cérebro e ver o grafo."
+          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria pra começar a preencher o cérebro."
         />
       </div>
     );
   }
 
   return (
-    <Suspense fallback={<LoadingScreen message="abrindo grafo" />}>
+    <Suspense fallback={<LoadingScreen message="abrindo cérebro" />}>
       <BrainFrostShell snapshot={snapshot} />
     </Suspense>
   );

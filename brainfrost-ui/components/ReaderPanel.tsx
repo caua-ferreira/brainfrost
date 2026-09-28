@@ -30,7 +30,8 @@ function formatDate(iso: string) {
 
 function buildPrompt(note: Note) {
   const tagLine = note.tags.length > 0 ? `tags: ${note.tags.join(", ")}\n` : "";
-  return `# Contexto: ${note.title}\n${tagLine}\n${note.raw}\n`;
+  const conceptLine = note.concepts.length > 0 ? `conceitos: ${note.concepts.join(", ")}\n` : "";
+  return `# Contexto: ${note.title}\n${tagLine}${conceptLine}\n${note.raw}\n`;
 }
 
 export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props) {
@@ -96,6 +97,20 @@ export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props)
                   className="border-primary/20 bg-primary/5 font-mono text-[10px] text-muted-foreground"
                 >
                   {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {note.concepts.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">conceitos</span>
+              {note.concepts.map((concept) => (
+                <Badge
+                  key={concept}
+                  variant="outline"
+                  className="border-aurora/30 bg-aurora/5 font-mono text-[10px] text-foreground/80"
+                >
+                  {concept}
                 </Badge>
               ))}
             </div>

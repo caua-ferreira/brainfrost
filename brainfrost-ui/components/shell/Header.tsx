@@ -9,7 +9,7 @@ import { CommandPalette, type PaletteNote } from "./CommandPalette";
 import { AccountMenu } from "@/components/saas/AccountMenu";
 
 const TITLE: Record<string, string> = {
-  "/grafo": "Grafo",
+  "/grafo": "Cérebro",
   "/painel": "Painel",
   "/importar": "Importar",
   "/curadoria": "Curadoria",

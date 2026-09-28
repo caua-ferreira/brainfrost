@@ -108,6 +108,7 @@ export function readVault(): VaultSnapshot {
       file,
       title: titleFrom(data, body, slug),
       tags,
+      concepts: [],
       layer: (data.layer as string) === "core" ? "core" : "growth",
       content: linkifyWikiLinks(body.trim()),
       raw: body.trim(),

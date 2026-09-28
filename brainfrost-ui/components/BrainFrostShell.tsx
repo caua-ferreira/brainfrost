@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Boxes, List } from "lucide-react";
+import { Boxes, List, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import GraphCanvas from "./GraphCanvas";
 import ReaderPanel from "./ReaderPanel";
@@ -18,11 +19,13 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
   const router = useRouter();
   const pathname = usePathname();
   const initialSlug = searchParams.get("camada");
+  const initialView: "groups" | "notes" =
+    searchParams.get("visao") === "camadas" ? "notes" : initialSlug ? "notes" : "groups";
   const initialValid = initialSlug && notes.some((n) => n.slug === initialSlug) ? initialSlug : null;
   const initialGroup = initialValid
     ? groups.find((group) => group.key === groupKey(notes.find((note) => note.slug === initialValid)!))?.id ?? null
     : null;
-  const [view, setView] = useState<"groups" | "notes">(initialValid ? "notes" : "groups");
+  const [view, setView] = useState<"groups" | "notes">(initialView);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroup);
   const [selectedNoteSlug, setSelectedNoteSlug] = useState<string | null>(initialValid);
   const [query, setQuery] = useState("");
@@ -215,6 +218,14 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
             <List className="h-3.5 w-3.5" />
             Camadas
           </button>
+          <Link
+            href="/camadas"
+            className="pointer-events-auto ml-1 inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            title="Editar camadas manualmente"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            editar
+          </Link>
         </div>
         <GraphCanvas
           data={view === "groups" ? groupGraph : graph}

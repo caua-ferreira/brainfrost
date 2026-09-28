@@ -6,6 +6,7 @@ export interface Note {
   file: string;
   title: string;
   tags: string[];
+  concepts: string[];
   layer: Layer;
   category?: string;
   content: string;
