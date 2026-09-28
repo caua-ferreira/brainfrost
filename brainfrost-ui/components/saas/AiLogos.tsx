@@ -1,9 +1,10 @@
 /**
- * Logos SVG dos LLMs e IAs de destino. Monocromáticos por padrão para
- * respeitar o tema — passar `color` fixa a cor original da marca.
+ * Logos dos LLMs e IAs de destino. As marcas que possuem assets aprovados
+ * usam os arquivos locais da pasta mascot; as demais continuam em SVG.
  */
 
-import { siAnthropic, siGooglegemini, siSnowflake } from "simple-icons";
+import Image from "next/image";
+import { siSnowflake } from "simple-icons";
 import type { SimpleIcon } from "simple-icons";
 
 interface LogoProps {
@@ -13,7 +14,7 @@ interface LogoProps {
 }
 
 export function ClaudeLogo({ size = 20, className, color }: LogoProps) {
-  return <BrandLogo icon={siAnthropic} size={size} className={className} color={color} label="Claude Code / Anthropic" />;
+  return <AssetLogo src="/mascot/claude-code-icon.webp" size={size} className={className} label="Claude Code" />;
 }
 
 export function CursorLogo({ size = 20, className, color }: LogoProps) {
@@ -24,14 +25,8 @@ export function CursorLogo({ size = 20, className, color }: LogoProps) {
   );
 }
 
-export function CopilotLogo({ size = 20, className, color }: LogoProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color ?? "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-label="GitHub Copilot">
-      <path d="M4 14a8 8 0 0 1 16 0v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3z" />
-      <path d="M8 13v3M16 13v3" />
-      <path d="M9 8l3-3 3 3" />
-    </svg>
-  );
+export function CopilotLogo({ size = 20, className }: LogoProps) {
+  return <AssetLogo src="/mascot/github-copilot-icon.webp" size={size} className={className} label="GitHub Copilot" />;
 }
 
 export function CortexLogo({ size = 20, className, color }: LogoProps) {
@@ -39,7 +34,11 @@ export function CortexLogo({ size = 20, className, color }: LogoProps) {
 }
 
 export function GeminiLogo({ size = 20, className, color }: LogoProps) {
-  return <BrandLogo icon={siGooglegemini} size={size} className={className} color={color} label="Google Gemini" />;
+  return <AssetLogo src="/mascot/gemini-icon.webp" size={size} className={className} label="Google Gemini" />;
+}
+
+function AssetLogo({ src, size, className, label }: { src: string; size: number; className?: string; label: string }) {
+  return <Image src={src} alt={label} width={size} height={size} unoptimized className={className} style={{ objectFit: "contain" }} />;
 }
 
 function BrandLogo({
@@ -72,11 +71,7 @@ function BrandLogo({
 }
 
 export function ChatGPTLogo({ size = 20, className, color }: LogoProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color ?? "currentColor"} strokeWidth="1.6" strokeLinejoin="round" className={className} aria-label="ChatGPT">
-      <path d="M12 3.6c1.5-1.1 3.6-1.1 5.1 0 1.5 1.1 2.1 3.1 1.5 4.9 1.8.6 3 2.4 3 4.3 0 1.9-1.2 3.6-3 4.3.6 1.8 0 3.7-1.5 4.9-1.5 1.1-3.6 1.1-5.1 0-1.5 1.1-3.6 1.1-5.1 0-1.5-1.1-2.1-3.1-1.5-4.9-1.8-.6-3-2.4-3-4.3 0-1.9 1.2-3.6 3-4.3-.6-1.8 0-3.7 1.5-4.9 1.5-1.1 3.6-1.1 5.1 0z" />
-    </svg>
-  );
+  return <AssetLogo src="/mascot/chatgpt-icon.png" size={size} className={className} label="ChatGPT" />;
 }
 
 export const AI_TARGETS = [
