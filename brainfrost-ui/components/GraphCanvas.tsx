@@ -92,6 +92,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
   );
 
   const focus = hovered ?? selected;
+  const isGroupGraph = data.nodes.some((node) => node.kind === "group");
 
   const neighbours = useMemo(() => {
     if (!focus) return null;
@@ -105,8 +106,14 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
     return set;
   }, [focus, data.links]);
 
-  // Raio maior escala visualmente o peso dos nós no cofre atual (11 camadas).
-  const radius = useCallback((node: GraphNode) => 7 + Math.sqrt(node.degree) * 3.6, []);
+  // Gavetas são maiores pelo número de camadas; camadas individuais seguem
+  // crescendo pelo número de conexões.
+  const radius = useCallback(
+    (node: GraphNode) => node.kind === "group"
+      ? 15 + Math.sqrt(node.count ?? 1) * 4.5
+      : 7 + Math.sqrt(node.degree) * 3.6,
+    []
+  );
 
   // Decay linear entre 7 e 120 dias: fresco brilha inteiro, velho cai a 35%.
   // A curva é sutil de propósito — só quer sugerir "isto está esfriando", não esconder.
@@ -151,7 +158,9 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       const r = radius(node);
       const dimmed = neighbours ? !neighbours.has(node.id) : false;
       const isFocus = node.id === focus;
-      const tone = node.layer === "core" ? colors.core : colors.growth;
+      const tone = node.kind === "group"
+        ? colors.core
+        : node.layer === "core" ? colors.core : colors.growth;
       // Foco não sofre o decay temporal — quando você está lendo/hovering, brilha.
       const alpha = (dimmed ? 0.18 : 1) * (isFocus ? 1 : ageFactor(node.updatedAt));
 
@@ -171,8 +180,9 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       ctx.strokeStyle = `rgba(${colors.label}, ${(isFocus ? 0.9 : 0.35) * alpha})`;
       ctx.stroke();
 
-      // Rótulo aparece se o usuário forçou, se estamos em zoom razoável ou se é o foco.
-      if (showLabels || scale > 0.55 || isFocus) {
+      // Gavetas sempre mostram o nome. Nas camadas, o rótulo entra só quando
+      // há zoom/foco para não transformar o mapa em uma parede de texto.
+      if (node.kind === "group" || showLabels || scale > 0.55 || isFocus) {
         const fontSize = Math.max(11 / scale, 3.8);
         ctx.font = `500 ${fontSize}px var(--font-plex-mono), monospace`;
         ctx.textAlign = "center";
@@ -198,16 +208,25 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const linkColor = useCallback(
     (link: any) => {
-      if (!neighbours) return `rgba(${colors.link}, ${theme === "light" ? 0.34 : 0.22})`;
+      const weight = typeof link.weight === "number" ? link.weight : 1;
+      const baseAlpha = theme === "light" ? 0.34 : 0.22;
+      if (!neighbours) return `rgba(${colors.link}, ${Math.min(0.72, baseAlpha + Math.log2(weight) * 0.08)})`;
       const source = typeof link.source === "string" ? link.source : link.source.id;
       const target = typeof link.target === "string" ? link.target : link.target.id;
       const active = neighbours.has(source) && neighbours.has(target);
       return active
-        ? `rgba(${colors.link}, 0.78)`
+        ? `rgba(${colors.link}, ${Math.min(0.9, 0.62 + Math.log2(weight) * 0.08)})`
         : `rgba(${colors.link}, ${theme === "light" ? 0.14 : 0.07})`;
     },
     [colors, neighbours, theme]
   );
+
+  // Relações entre gavetas ficam naturalmente mais fortes quando agregam
+  // várias ligações de camadas internas.
+  const linkWidth = useCallback((link: { weight?: number }) => {
+    const weight = link.weight ?? 1;
+    return Math.min(4, 1 + Math.log2(weight) * 0.55);
+  }, []);
 
   return (
     <div ref={wrapper} className="relative h-full w-full">
@@ -222,7 +241,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
           nodeCanvasObject={paintNode}
           nodePointerAreaPaint={paintPointerArea}
           linkColor={linkColor}
-          linkWidth={1}
+          linkWidth={linkWidth}
           cooldownTicks={110}
           warmupTicks={50}
           minZoom={0.4}
@@ -237,20 +256,35 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
 
       <GraphControls onRecenter={recenter} />
 
-      {/* Legenda no canto inferior esquerdo — cor por camada, tamanho por conexões. */}
+      {/* Legenda no canto inferior esquerdo — muda conforme o nível exibido. */}
       <div className="pointer-events-none absolute bottom-3 left-4 flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-primary" />
-            core
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />
-            growth
-          </span>
-          <span>· tamanho = conexões</span>
-        </div>
-        <span className="opacity-70">arraste para mover · clique num nó para ler</span>
+        {isGroupGraph ? (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden className="h-2 w-2 rounded-full bg-primary" />
+                gavetas
+              </span>
+              <span>· tamanho = camadas</span>
+            </div>
+            <span className="opacity-70">clique numa gaveta para abrir o conteúdo</span>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden className="h-2 w-2 rounded-full bg-primary" />
+                core
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />
+                growth
+              </span>
+              <span>· tamanho = conexões</span>
+            </div>
+            <span className="opacity-70">arraste para mover · clique numa camada para ler</span>
+          </>
+        )}
       </div>
     </div>
   );
