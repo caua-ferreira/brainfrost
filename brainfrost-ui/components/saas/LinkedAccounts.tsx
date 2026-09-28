@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Unlink } from "lucide-react";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "./SessionProvider";
@@ -24,10 +24,30 @@ export function LinkedAccounts() {
   const { session } = useSession();
   const [busy, setBusy] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [identities, setIdentities] = useState(session?.user.identities ?? []);
+
+  useEffect(() => {
+    let active = true;
+    if (!session) {
+      setIdentities([]);
+      return () => {
+        active = false;
+      };
+    }
+
+    getSupabase()
+      .auth.getUserIdentities()
+      .then(({ data, error: identitiesError }) => {
+        if (active && !identitiesError) setIdentities(data?.identities ?? []);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [session?.user.id]);
 
   if (!session) return null;
 
-  const identities = session.user.identities ?? [];
   const linked = new Set(identities.map((i) => i.provider));
 
   const link = async (provider: Provider) => {
@@ -61,7 +81,11 @@ export function LinkedAccounts() {
     if (!identity) return;
     const { error: err } = await getSupabase().auth.unlinkIdentity(identity);
     setBusy(null);
-    if (err) setError(err.message);
+    if (err) {
+      setError(err.message);
+    } else {
+      setIdentities((current) => current.filter((item) => item.identity_id !== identity.identity_id));
+    }
   };
 
   return (

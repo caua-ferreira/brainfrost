@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import {
   Bar,
@@ -13,12 +13,14 @@ import {
 } from "recharts";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
+import { getSupabase } from "@/lib/supabase/client";
 import { useCategories } from "@/lib/supabase/hooks";
 import type { Note, VaultStats } from "@/lib/types";
 
 interface Props {
   notes: Note[];
   stats: VaultStats;
+  onRefresh: () => Promise<void>;
 }
 
 function formatDate(iso: string) {
@@ -33,13 +35,38 @@ function tokenize(words: number) {
   return Math.round(words * 1.33);
 }
 
-export default function CofreDashboard({ notes, stats }: Props) {
+export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
   const theme = useSaas((s) => s.theme);
   const c = palette(theme);
   const categories = useCategories();
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanupError, setCleanupError] = useState<string | null>(null);
 
   const totalTokens = tokenize(stats.words);
   const brokenCount = stats.broken.length;
+  const brokenLinks = useMemo(
+    () => notes.flatMap((note) => note.broken.map((target) => ({ source: note.slug, target }))),
+    [notes]
+  );
+
+  async function cleanBrokenLinks() {
+    if (brokenLinks.length === 0 || cleaning) return;
+    const confirmed = window.confirm(
+      `Remover ${brokenLinks.length} referência(s) para camadas inexistentes?\n\nNenhuma camada será apagada.`
+    );
+    if (!confirmed) return;
+
+    setCleaning(true);
+    setCleanupError(null);
+    const targets = [...new Set(brokenLinks.map((link) => link.target))];
+    const { error } = await getSupabase().from("vault_links").delete().in("to_slug", targets);
+    if (error) {
+      setCleanupError(error.message);
+    } else {
+      await onRefresh();
+    }
+    setCleaning(false);
+  }
 
   const perCategory = useMemo(() => {
     const map = new Map<string, number>();
@@ -111,10 +138,27 @@ export default function CofreDashboard({ notes, stats }: Props) {
               <p className="text-[13px] font-medium" style={{ color: c.text }}>
                 {brokenCount} {brokenCount === 1 ? "link aponta" : "links apontam"} para camada inexistente
               </p>
-              <p className="mt-1 font-mono text-[11px]" style={{ color: c.dim }}>
-                {stats.broken.slice(0, 6).join(" · ")}
-                {stats.broken.length > 6 && ` … +${stats.broken.length - 6}`}
+              <p className="mt-1 max-w-3xl font-mono text-[11px] leading-relaxed" style={{ color: c.dim }}>
+                {brokenLinks.slice(0, 6).map((link) => `${link.source} → ${link.target}`).join(" · ")}
+                {brokenLinks.length > 6 && ` … +${brokenLinks.length - 6}`}
               </p>
+              <p className="mt-3 text-[11px]" style={{ color: c.dim }}>
+                A limpeza remove apenas as referências quebradas; as camadas permanecem intactas.
+              </p>
+              <button
+                type="button"
+                onClick={cleanBrokenLinks}
+                disabled={cleaning}
+                className="mt-3 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-wait disabled:opacity-50"
+                style={{ borderColor: c.aurora, color: c.text }}
+              >
+                {cleaning ? "limpando…" : "limpar links quebrados"}
+              </button>
+              {cleanupError && (
+                <p className="mt-2 font-mono text-[11px]" style={{ color: "#c2415a" }}>
+                  Não foi possível limpar: {cleanupError}
+                </p>
+              )}
             </div>
           </div>
         )}
