@@ -8,6 +8,7 @@ import { useSession } from "@/components/saas/SessionProvider";
 import { palette } from "@/lib/saas-theme";
 import { useImports, useSuggestions, useVaultNotes } from "@/lib/supabase/hooks";
 import { AI_TARGETS } from "@/components/saas/AiLogos";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 
 const relative = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
@@ -22,9 +23,19 @@ export default function PainelPage() {
   const { session } = useSession();
   const theme = useSaas((s) => s.theme);
   const c = palette(theme);
-  const { imports } = useImports();
-  const { suggestions } = useSuggestions("pending");
-  const { notes } = useVaultNotes();
+  const { imports, loading: importsLoading } = useImports();
+  const { suggestions, loading: suggestionsLoading } = useSuggestions("pending");
+  const { notes, loading: notesLoading } = useVaultNotes();
+
+  if (importsLoading || suggestionsLoading || notesLoading) {
+    return (
+      <LoadingScreen
+        message="carregando painel"
+        mascot="/mascot/yeti-laptop-ezgif.com-crop.gif"
+      />
+    );
+  }
+
   const pending = suggestions.length;
   const vaultLayers = notes.length;
 
