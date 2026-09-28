@@ -17,7 +17,7 @@ const PROVIDERS: {
 }[] = [
   { id: "google", label: "Google", hint: "e-mail pessoal", Icon: GoogleLogo },
   { id: "github", label: "GitHub", hint: "importar repositórios privados", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
-  { id: "azure", label: "Microsoft", hint: "conta corporativa Azure AD", Icon: MicrosoftLogo },
+  { id: "azure", label: "Microsoft", hint: "conta Microsoft / Azure AD", scopes: "email", Icon: MicrosoftLogo },
 ];
 
 export function LinkedAccounts() {
