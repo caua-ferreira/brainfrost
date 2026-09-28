@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Check, Copy, Cpu, Eye, EyeOff, ShieldCheck, Sparkles, Terminal, Trash2 } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { useSession } from "@/components/saas/SessionProvider";
-import { LinkedAccounts } from "@/components/saas/LinkedAccounts";
 import { palette } from "@/lib/saas-theme";
 import type { LlmProvider } from "@/lib/saas-types";
 import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
@@ -144,8 +143,6 @@ export default function ConfigPage() {
           Comece com o LLM local — sem chave, sem custo, roda no seu navegador. Se quiser
           qualidade maior, adicione sua chave do Claude ou Gemini. Ativa apenas um por vez.
         </p>
-
-        <LinkedAccounts />
 
         {/* Provedor — lista vertical estilo tabela, só um ativo */}
         <section className="mt-14 border-t pt-8" style={{ borderColor: c.borderSoft }}>

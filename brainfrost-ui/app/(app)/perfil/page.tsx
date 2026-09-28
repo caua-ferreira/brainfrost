@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, Check, Settings2, UserRound } from "lucide-react";
 import { useSession } from "@/components/saas/SessionProvider";
+import { LinkedAccounts } from "@/components/saas/LinkedAccounts";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
@@ -171,7 +172,7 @@ export default function PerfilPage() {
         </h1>
         <p className="mt-6 max-w-xl text-[15px] leading-relaxed" style={{ color: c.dim }}>
           Atualize seus dados de conta e a foto que aparece no BrainFrost.
-          As contas conectadas, provedores, chaves de API e análise profunda continuam em Configurações.
+          As contas conectadas ficam aqui. Provedores, chaves de API e análise profunda continuam em Configurações.
         </p>
 
         <section className="mt-12 rounded-2xl border p-6" style={{ background: c.card, borderColor: c.border }}>
@@ -223,6 +224,8 @@ export default function PerfilPage() {
             </button>
           </div>
         </section>
+
+        <LinkedAccounts />
 
         <section className="mt-8 flex items-center justify-between gap-4 rounded-2xl border p-5" style={{ background: c.card, borderColor: c.border }}>
           <div className="flex items-start gap-3">
