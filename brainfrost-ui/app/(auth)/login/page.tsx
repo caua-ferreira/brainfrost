@@ -11,23 +11,56 @@ import { GitHubBrandLogo, GoogleLogo, MicrosoftLogo } from "@/components/saas/OA
 
 type OAuthProvider = "google" | "github" | "azure";
 
+const WELCOMES = ["Welcome", "Bem-vindo", "Bienvenido", "Benvenuto", "欢迎", "Willkommen", "स्वागत है", "Bienvenue"];
+
+function TypewriterWelcome() {
+  const [wordIdx, setWordIdx] = useState(0);
+  const [text, setText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const word = WELCOMES[wordIdx];
+    if (!deleting && text === word) {
+      const t = setTimeout(() => setDeleting(true), 1400);
+      return () => clearTimeout(t);
+    }
+    if (deleting && text === "") {
+      setDeleting(false);
+      setWordIdx((i) => (i + 1) % WELCOMES.length);
+      return;
+    }
+    const t = setTimeout(() => {
+      setText((cur) => (deleting ? cur.slice(0, -1) : word.slice(0, cur.length + 1)));
+    }, deleting ? 60 : 110);
+    return () => clearTimeout(t);
+  }, [text, deleting, wordIdx]);
+
+  return (
+    <span className="inline-flex items-center">
+      {text}
+      <span className="ml-0.5 inline-block w-[3px] animate-pulse bg-abyss" style={{ height: "0.85em" }} />
+    </span>
+  );
+}
+
 const PROVIDERS: {
   id: OAuthProvider;
   label: string;
   hint: string;
   scopes?: string;
+  soon?: boolean;
   Icon: React.ComponentType<{ size?: number; className?: string }>;
 }[] = [
   { id: "google", label: "Entrar com Google", hint: "conta pessoal", Icon: GoogleLogo },
   { id: "github", label: "Entrar com GitHub", hint: "para importar repositórios", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
-  { id: "azure",  label: "Entrar com Microsoft", hint: "conta de empresa", scopes: "email", Icon: MicrosoftLogo },
+  { id: "azure",  label: "Entrar com Microsoft", hint: "em breve", scopes: "email", soon: true, Icon: MicrosoftLogo },
 ];
 
 export default function LoginPage() {
   const router = useRouter();
   const { session } = useSession();
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<OAuthProvider | "anon" | null>(null);
+  const [busy, setBusy] = useState<OAuthProvider | null>(null);
 
   useEffect(() => {
     // Lê ?error direto da URL, evita useSearchParams (que força prerender bailout).
@@ -61,20 +94,6 @@ export default function LoginPage() {
     // Se der certo, o browser redireciona pro provedor; nada mais a fazer.
   };
 
-  const signInAnon = async () => {
-    setBusy("anon");
-    setError(null);
-    const { error: err } = await getSupabase().auth.signInAnonymously({
-      options: { data: { display_name: "Convidado", avatar_initials: "??", mock_provider: "anonymous" } },
-    });
-    setBusy(null);
-    if (err) {
-      setError(err.message);
-      return;
-    }
-    router.replace("/painel");
-  };
-
   return (
     <div className="flex min-h-[100dvh] items-center justify-center px-4 py-8" style={{ background: "#FCFCFB" }}>
       <div className="grid w-full max-w-5xl grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-16">
@@ -90,10 +109,10 @@ export default function LoginPage() {
               className="h-auto w-full"
             />
             <span
-              className="pointer-events-none absolute left-1/2 top-[6%] -translate-x-1/2 font-semibold uppercase tracking-[0.2em] text-abyss"
-              style={{ fontSize: 44 }}
+              className="pointer-events-none absolute left-1/2 top-[6%] -translate-x-1/2 whitespace-nowrap font-semibold uppercase tracking-[0.15em] text-abyss"
+              style={{ fontSize: 40 }}
             >
-              Login
+              <TypewriterWelcome />
             </span>
           </div>
         </div>
@@ -104,8 +123,8 @@ export default function LoginPage() {
           Seu segundo cérebro para qualquer IA.
         </h1>
         <p className="mt-2 text-[13px] leading-relaxed text-abyss/60">
-          Suba os seus repositórios, deixe o cofre aprender seus padrões, e leve o contexto
-          para o Claude, Cursor, Copilot ou qualquer outra IA que você usar para codar.
+          Suba os seus repositórios, deixe o cerebro aprender seus padrões e leve o contexto
+          para o Claude, Cursor, Copilot ou qualquer outra IA que você usa.
         </p>
 
         <div className="mt-8 flex flex-col gap-2">
@@ -113,11 +132,11 @@ export default function LoginPage() {
             <Button
               key={p.id}
               variant="outline"
-              disabled={busy !== null}
-              className="h-11 justify-between border-abyss/15 bg-white text-abyss hover:border-abyss/40 hover:bg-abyss/5"
-              onClick={() => signInWith(p.id, p.scopes)}
+              disabled={busy !== null || p.soon}
+              className={`h-11 justify-between border-abyss/15 bg-white text-abyss hover:border-abyss/40 hover:bg-abyss/5 ${p.soon ? "opacity-50" : ""}`}
+              onClick={() => !p.soon && signInWith(p.id, p.scopes)}
             >
-              <span className="flex items-center gap-2.5">
+              <span className={`flex items-center gap-2.5 ${p.soon ? "line-through decoration-abyss/40" : ""}`}>
                 <p.Icon size={18} />
                 {busy === p.id ? "…" : p.label}
               </span>
@@ -134,9 +153,6 @@ export default function LoginPage() {
           <CopilotLogo size={16} />
           <CortexLogo size={16} />
           <GeminiLogo size={16} />
-          <span className="ml-1 font-mono text-[10px] uppercase tracking-widest text-abyss/60">
-            leve o contexto pra qualquer uma
-          </span>
         </div>
 
         {error && (
@@ -144,17 +160,6 @@ export default function LoginPage() {
             {error}
           </p>
         )}
-
-        <div className="mt-8 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-abyss/50">
-          <button
-            onClick={signInAnon}
-            disabled={busy !== null}
-            className="underline underline-offset-4 hover:text-abyss disabled:opacity-40"
-          >
-            entrar em modo demo
-          </button>
-          <span>oauth via supabase</span>
-        </div>
         </div>
       </div>
     </div>

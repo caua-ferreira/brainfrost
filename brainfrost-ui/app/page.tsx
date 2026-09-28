@@ -145,29 +145,39 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero — dark pra impacto */}
+      {/* Hero — light, combina com o gif do Yeti */}
       <section
         className="relative overflow-hidden"
-        style={{ background: DARK.bg, color: DARK.fg }}
+        style={{ background: "#FDFEFE", color: LIGHT.fg }}
       >
         <div
-          className="pointer-events-none absolute -right-32 -top-32 h-[560px] w-[560px] rounded-full blur-3xl"
-          style={{ background: DARK.accent, opacity: 0.15 }}
+          className="pointer-events-none absolute -left-32 -top-32 h-[560px] w-[560px] rounded-full blur-3xl"
+          style={{ background: LIGHT.accent, opacity: 0.10 }}
         />
         <div
           className="pointer-events-none absolute -bottom-40 -left-24 h-[520px] w-[520px] rounded-full blur-3xl"
-          style={{ background: DARK.aurora, opacity: 0.12 }}
+          style={{ background: LIGHT.aurora, opacity: 0.08 }}
         />
 
-        <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 py-24 md:grid-cols-[1fr_auto] md:gap-14 md:py-32">
-          <div>
+        <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
+          {/* Yeti absoluto, atrás do texto */}
+          <Image
+            src="/mascot/yeti-waving-video-no-background.gif"
+            alt="Frostie, o mascote do BrainFrost"
+            width={720}
+            height={952}
+            priority
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 top-1/2 -z-0 hidden h-auto w-[800px] -translate-y-1/2 translate-x-[20%] select-none md:block"
+          />
+          <div className="relative z-10">
           <div
             className="mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1"
-            style={{ borderColor: DARK.border, color: DARK.dim }}
+            style={{ borderColor: LIGHT.border, color: LIGHT.dim }}
           >
             <span
               className="h-2 w-2 animate-pulse rounded-full"
-              style={{ background: DARK.aurora }}
+              style={{ background: LIGHT.aurora }}
             />
             <span className="font-mono text-[11px] uppercase tracking-widest">
               Beta gratuito — por tempo limitado
@@ -179,7 +189,7 @@ export default function LandingPage() {
             <br />
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: `linear-gradient(to right, ${DARK.accent}, ${DARK.aurora})` }}
+              style={{ backgroundImage: `linear-gradient(to right, ${LIGHT.accent}, ${LIGHT.aurora})` }}
             >
               vai com você
               <br />
@@ -189,20 +199,20 @@ export default function LandingPage() {
 
           <p
             className="mt-8 max-w-2xl text-[17px] leading-relaxed md:text-[19px]"
-            style={{ color: DARK.dim }}
+            style={{ color: LIGHT.dim }}
           >
             O BrainFrost é um segundo cérebro para desenvolvedores. Ele aprende como você escreve
             seus códigos, seus padrões, suas decisões de arquitetura e devolve isso empacotado no formato
-            que <span style={{ color: DARK.fg }}>Claude Code</span>,{" "}
-            <span style={{ color: DARK.fg }}>Cursor</span>,{" "}
-            <span style={{ color: DARK.fg }}>GitHub Copilot</span> e outras IAs entendem.
+            que <span style={{ color: LIGHT.fg }}>Claude Code</span>,{" "}
+            <span style={{ color: LIGHT.fg }}>Cursor</span>,{" "}
+            <span style={{ color: LIGHT.fg }}>GitHub Copilot</span> e outras IAs entendem.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
               href="/login"
               className="group inline-flex items-center gap-2 rounded-full px-6 py-3 text-[15px] font-medium transition-transform hover:scale-[1.02]"
-              style={{ background: DARK.accent, color: DARK.bg }}
+              style={{ background: LIGHT.fg, color: "#FDFEFE" }}
             >
               Teste agora — é grátis
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2.5} />
@@ -210,7 +220,7 @@ export default function LandingPage() {
             <a
               href="#como-funciona"
               className="text-[14px] font-medium hover:opacity-80"
-              style={{ color: DARK.dim }}
+              style={{ color: LIGHT.dim }}
             >
               Como funciona ↓
             </a>
@@ -219,7 +229,7 @@ export default function LandingPage() {
           <div className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-3">
             <p
               className="font-mono text-[10px] uppercase tracking-[0.28em]"
-              style={{ color: DARK.dim }}
+              style={{ color: LIGHT.dim }}
             >
               funciona com:
             </p>
@@ -234,7 +244,7 @@ export default function LandingPage() {
               <div
                 key={label}
                 className="flex items-center gap-1.5 opacity-70"
-                style={{ color: DARK.dim }}
+                style={{ color: LIGHT.dim }}
               >
                 <Icon size={16} />
                 <span className="text-[12px] font-medium">{label}</span>
@@ -243,18 +253,15 @@ export default function LandingPage() {
           </div>
           </div>
 
-          <div className="relative flex justify-center md:justify-end">
-            <div
-              className="absolute inset-0 -z-10 rounded-full blur-3xl"
-              style={{ background: DARK.accent, opacity: 0.18 }}
-            />
+          {/* Yeti visível também no mobile, empilhado abaixo do texto */}
+          <div className="mt-10 flex justify-center md:hidden">
             <Image
-              src="/mascot/yeti.png"
+              src="/mascot/yeti-waving-video-no-background.gif"
               alt="Frostie, o mascote do BrainFrost"
-              width={340}
-              height={450}
+              width={360}
+              height={476}
               priority
-              className="h-auto w-[240px] drop-shadow-[0_20px_60px_rgba(92,230,255,0.25)] md:w-[340px]"
+              className="h-auto w-[280px]"
             />
           </div>
         </div>
