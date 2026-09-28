@@ -28,6 +28,7 @@ export default function ChatRoom({ notes }: Props) {
   const configs = useChatStore((s) => s.configs);
   const activeConfigLabel = useChatStore((s) => s.activeConfigLabel);
   const setActiveConfig = useChatStore((s) => s.setActiveConfig);
+  const replaceAccountConfigs = useChatStore((s) => s.replaceAccountConfigs);
   const sessions = useChatStore((s) => s.sessions);
   const activeSessionId = useChatStore((s) => s.activeSessionId);
   const setActiveSession = useChatStore((s) => s.setActiveSession);
@@ -61,6 +62,25 @@ export default function ChatRoom({ notes }: Props) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/chat/configs")
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const data = await response.json().catch(() => null);
+        return Array.isArray(data?.configs) ? data.configs : null;
+      })
+      .then((accountConfigs) => {
+        if (!cancelled && accountConfigs) replaceAccountConfigs(accountConfigs);
+      })
+      .catch(() => {
+        // Usuários anônimos ou offline ainda podem usar WebLLM e configs locais.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [replaceAccountConfigs]);
 
   useEffect(() => {
     if (scroller.current) {
