@@ -54,8 +54,8 @@ function ProviderCard({
       className={cn(
         "group relative flex min-h-[112px] flex-col gap-2 rounded-xl border p-4 text-left transition-all",
         connected
-          ? "border-glow/50 bg-glow/[0.08]"
-          : "border-glow/15 bg-card/50 hover:border-glow/40 active:scale-[0.98]"
+          ? "border-primary/50 bg-primary/[0.08]"
+          : "border-primary/15 bg-card/50 hover:border-primary/40 active:scale-[0.98]"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -64,19 +64,19 @@ function ProviderCard({
             {preset.glyph}
           </span>
           <div>
-            <p className="text-[15px] font-semibold text-arctic">{preset.label}</p>
-            <p className="text-[11px] text-mute">{preset.tagline}</p>
+            <p className="text-[15px] font-semibold text-foreground">{preset.label}</p>
+            <p className="text-[11px] text-muted-foreground">{preset.tagline}</p>
           </div>
         </div>
         {connected && (
-          <span className="flex h-5 items-center gap-1 rounded-full border border-glow/40 bg-glow/10 px-1.5 font-mono text-[10px] text-glow">
+          <span className="flex h-5 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-1.5 font-mono text-[10px] text-primary">
             <Check className="h-3 w-3" />
             ok
           </span>
         )}
       </div>
       {!preset.browserFriendly && (
-        <div className="mt-auto flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-aurora/85">
+        <div className="mt-auto flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-accent/85">
           <AlertTriangle className="h-3 w-3" />
           pode falhar por cors
         </div>

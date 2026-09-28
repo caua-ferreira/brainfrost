@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "./SessionProvider";
 import { getSupabase } from "@/lib/supabase/client";
+import { announceNavigation } from "@/components/shared/NavigationLoader";
 
 interface Identity {
   provider?: string;
@@ -139,7 +140,7 @@ export function AccountMenu() {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/config")}>
+        <DropdownMenuItem onClick={() => { announceNavigation(); router.push("/config"); }}>
           <User className="mr-2 h-3.5 w-3.5" strokeWidth={1.8} />
           Configurações
         </DropdownMenuItem>

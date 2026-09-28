@@ -5,15 +5,15 @@ import { forceCollide } from "d3-force";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GraphData, GraphNode } from "@/lib/types";
 import { useGraphPrefs } from "@/lib/store";
+import { useSaas } from "@/lib/saas-mock";
+import { LoadingScreen } from "./shared/LoadingScreen";
 import { GraphControls } from "./GraphControls";
 
 // force-graph desenha em canvas e toca em `window`: só pode entrar no cliente.
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
   ssr: false,
   loading: () => (
-    <div className="grid h-full w-full place-items-center font-mono text-xs text-mute">
-      formando o gelo…
-    </div>
+    <LoadingScreen message="formando o gelo" />
   ),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
@@ -29,8 +29,20 @@ interface RenderNode extends GraphNode {
   y: number;
 }
 
-const GLOW = "90, 216, 255";
-const AURORA = "155, 255, 228";
+const GRAPH_COLORS = {
+  dark: {
+    core: "90, 216, 255",
+    growth: "155, 255, 228",
+    label: "233, 246, 255",
+    link: "90, 216, 255",
+  },
+  light: {
+    core: "11, 124, 168",
+    growth: "15, 179, 154",
+    label: "8, 36, 58",
+    link: "11, 124, 168",
+  },
+} as const;
 
 /**
  * O slider vai de 0 (compacto) a 100 (aberto). Traduzimos aqui para as três
@@ -56,6 +68,8 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
   const spacing = useGraphPrefs((s) => s.spacing);
   const showLabels = useGraphPrefs((s) => s.showLabels);
   const dimByAge = useGraphPrefs((s) => s.dimByAge);
+  const theme = useSaas((s) => s.theme);
+  const colors = GRAPH_COLORS[theme];
 
   useEffect(() => {
     const element = wrapper.current;
@@ -137,7 +151,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       const r = radius(node);
       const dimmed = neighbours ? !neighbours.has(node.id) : false;
       const isFocus = node.id === focus;
-      const tone = node.layer === "core" ? GLOW : AURORA;
+      const tone = node.layer === "core" ? colors.core : colors.growth;
       // Foco não sofre o decay temporal — quando você está lendo/hovering, brilha.
       const alpha = (dimmed ? 0.18 : 1) * (isFocus ? 1 : ageFactor(node.updatedAt));
 
@@ -154,7 +168,7 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       ctx.fillStyle = `rgba(${tone}, ${(isFocus ? 0.95 : 0.6) * alpha})`;
       ctx.fill();
       ctx.lineWidth = isFocus ? 1.8 / scale : 1 / scale;
-      ctx.strokeStyle = `rgba(233, 246, 255, ${(isFocus ? 0.9 : 0.35) * alpha})`;
+      ctx.strokeStyle = `rgba(${colors.label}, ${(isFocus ? 0.9 : 0.35) * alpha})`;
       ctx.stroke();
 
       // Rótulo aparece se o usuário forçou, se estamos em zoom razoável ou se é o foco.
@@ -163,11 +177,11 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
         ctx.font = `500 ${fontSize}px var(--font-plex-mono), monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = `rgba(233, 246, 255, ${(isFocus ? 0.95 : 0.78) * alpha})`;
+        ctx.fillStyle = `rgba(${colors.label}, ${(isFocus ? 0.95 : 0.86) * alpha})`;
         ctx.fillText(node.title, node.x, node.y + r + 5 / scale);
       }
     },
-    [focus, neighbours, radius, showLabels, ageFactor]
+    [colors, focus, neighbours, radius, showLabels, ageFactor]
   );
 
   const paintPointerArea = useCallback(
@@ -184,13 +198,15 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const linkColor = useCallback(
     (link: any) => {
-      if (!neighbours) return `rgba(${GLOW}, 0.22)`;
+      if (!neighbours) return `rgba(${colors.link}, ${theme === "light" ? 0.34 : 0.22})`;
       const source = typeof link.source === "string" ? link.source : link.source.id;
       const target = typeof link.target === "string" ? link.target : link.target.id;
       const active = neighbours.has(source) && neighbours.has(target);
-      return active ? `rgba(${GLOW}, 0.75)` : `rgba(${GLOW}, 0.07)`;
+      return active
+        ? `rgba(${colors.link}, 0.78)`
+        : `rgba(${colors.link}, ${theme === "light" ? 0.14 : 0.07})`;
     },
-    [neighbours]
+    [colors, neighbours, theme]
   );
 
   return (
@@ -222,14 +238,14 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
       <GraphControls onRecenter={recenter} />
 
       {/* Legenda no canto inferior esquerdo — cor por camada, tamanho por conexões. */}
-      <div className="pointer-events-none absolute bottom-3 left-4 flex flex-col gap-1 font-mono text-[11px] text-mute/80">
+      <div className="pointer-events-none absolute bottom-3 left-4 flex flex-col gap-1 font-mono text-[11px] text-muted-foreground">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-glow" />
+            <span aria-hidden className="h-2 w-2 rounded-full bg-primary" />
             core
           </span>
           <span className="flex items-center gap-1.5">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-aurora" />
+            <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />
             growth
           </span>
           <span>· tamanho = conexões</span>

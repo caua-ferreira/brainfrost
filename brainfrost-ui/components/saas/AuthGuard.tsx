@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "./SessionProvider";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,11 +14,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [loading, session, router]);
 
   if (loading || !session) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center bg-abyss">
-        <div className="text-xs font-mono uppercase tracking-widest text-mute">carregando…</div>
-      </div>
-    );
+    return <LoadingScreen fullScreen message="abrindo seu cofre" />;
   }
 
   return <>{children}</>;

@@ -66,9 +66,9 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="buscar camada"
-            className="h-8 border-glow/15 bg-abyss/60 font-mono text-xs text-arctic placeholder:text-mute/60 focus-visible:border-glow/50 focus-visible:ring-0"
+            className="h-8 border-primary/15 bg-background/70 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-primary/50 focus-visible:ring-0"
           />
-          <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-mute">
+          <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground">
             <Stat value={stats.notes} label="camadas" />
             <Stat value={stats.edges} label="conexões" />
             <Stat value={stats.words.toLocaleString("pt-BR")} label="palavras" />
@@ -86,18 +86,18 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
                   onClick={() => setSelected(item.slug)}
                   className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors ${
                     active
-                      ? "bg-glow/12 text-arctic"
-                      : "text-arctic/70 hover:bg-glow/5 hover:text-arctic"
+                      ? "bg-primary/10 text-foreground"
+                      : "text-foreground/70 hover:bg-primary/5 hover:text-foreground"
                   }`}
                 >
                   <span
                     aria-hidden
                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      item.layer === "core" ? "bg-glow" : "bg-aurora"
+                      item.layer === "core" ? "bg-primary" : "bg-accent"
                     } ${active ? "" : "opacity-60"}`}
                   />
                   <span className="truncate">{item.title}</span>
-                  <span className="ml-auto font-mono text-[10px] text-mute">
+                  <span className="ml-auto font-mono text-[10px] text-muted-foreground">
                     {item.links.length + item.backlinks.length}
                   </span>
                 </button>
@@ -105,9 +105,9 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
             );
           })}
           {matches.length === 0 && (
-            <li className="px-2 py-3 text-[13px] leading-relaxed text-mute">
+            <li className="px-2 py-3 text-[13px] leading-relaxed text-muted-foreground">
               Nada com esse termo. Grave uma camada nova com{" "}
-              <code className="font-mono text-arctic">bfrost learn</code>.
+              <code className="font-mono text-foreground">bfrost learn</code>.
             </li>
           )}
         </ul>
@@ -132,7 +132,7 @@ function Stat({ value, label, tone }: { value: string | number; label: string; t
   return (
     <div className="flex items-baseline gap-1.5">
       <dt className="sr-only">{label}</dt>
-      <dd className={tone === "aurora" ? "text-aurora" : "text-arctic"}>{value}</dd>
+      <dd className={tone === "aurora" ? "text-accent" : "text-foreground"}>{value}</dd>
       <span>{label}</span>
     </div>
   );
