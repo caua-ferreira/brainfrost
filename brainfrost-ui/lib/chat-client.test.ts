@@ -55,6 +55,21 @@ describe("PROVIDER_PRESETS", () => {
 });
 
 describe("sendChat — headers e body por api", () => {
+  test("account: usa o proxy sem enviar a chave ao browser", async () => {
+    const spy = mockFetchOnce({ body: { answer: "resposta protegida" } });
+    const cfg = baseConfig({
+      storage: "account",
+      providerKey: "claude",
+      apiKey: "",
+    });
+    const text = await sendChat(cfg, [{ role: "user", content: "oi" }]);
+    expect(text).toBe("resposta protegida");
+    expect(spy.mock.calls[0][0]).toBe("/api/chat");
+    const body = JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ provider_key: "claude", messages: [{ role: "user", content: "oi" }] });
+    expect(body.apiKey).toBeUndefined();
+  });
+
   test("openai: Authorization Bearer + messages passthrough", async () => {
     const spy = mockFetchOnce({
       body: { choices: [{ message: { content: "resposta" } }] },

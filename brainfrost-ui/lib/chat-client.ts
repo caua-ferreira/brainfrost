@@ -17,6 +17,15 @@ export interface ChatConfig {
   model: string;
   apiKey: string;
   /**
+   * Quando account, a chave fica no servidor criptografada e o browser chama
+   * /api/chat. Quando browser, a chamada segue direto pro provedor.
+   */
+  storage?: "account" | "browser";
+  /** Identificador do registro salvo na conta; nunca é um segredo. */
+  providerKey?: string;
+  /** O servidor devolve apenas este indicador, nunca a chave. */
+  hasApiKey?: boolean;
+  /**
    * Segundo segredo, usado pelo Cortex (PAT do Snowflake). Chave normal
    * fica em `apiKey`; account URL vai em `url`.
    */
@@ -397,6 +406,36 @@ export async function sendChat(config: ChatConfig, messages: ChatMessage[]): Pro
   if (config.api === "webllm") {
     return chatLocally(messages, config.model || DEFAULT_WEBLLM_MODEL);
   }
+
+  if (config.storage === "account" && config.providerKey) {
+    let response: Response;
+    try {
+      response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider_key: config.providerKey, messages }),
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Não consegui alcançar o servidor do BrainFrost. Detalhe: ${detail}`);
+    }
+
+    const raw = await response.text();
+    let data: unknown = null;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      // A mensagem abaixo cobre respostas inesperadas sem exibir qualquer segredo.
+    }
+    if (!response.ok) {
+      const error = data as { error?: string } | null;
+      throw new Error(error?.error ?? `BrainFrost respondeu ${response.status}`);
+    }
+    const answer = (data as { answer?: unknown } | null)?.answer;
+    if (typeof answer !== "string") throw new Error("Resposta inválida do servidor do BrainFrost.");
+    return answer;
+  }
+
   const url = targetUrl(config);
   let response: Response;
   try {

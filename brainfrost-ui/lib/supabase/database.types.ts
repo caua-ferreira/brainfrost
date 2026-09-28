@@ -85,6 +85,51 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_credentials: {
+        Row: {
+          api: string
+          api_key_cipher: string
+          dangerously_allow_browser: boolean
+          extra_key_cipher: string | null
+          headers: Json
+          id: string
+          label: string
+          model: string
+          provider_key: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          api: string
+          api_key_cipher: string
+          dangerously_allow_browser?: boolean
+          extra_key_cipher?: string | null
+          headers?: Json
+          id?: string
+          label: string
+          model: string
+          provider_key: string
+          updated_at?: string
+          url: string
+          user_id?: string
+        }
+        Update: {
+          api?: string
+          api_key_cipher?: string
+          dangerously_allow_browser?: boolean
+          extra_key_cipher?: string | null
+          headers?: Json
+          id?: string
+          label?: string
+          model?: string
+          provider_key?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pattern_suggestions: {
         Row: {
           accepted_note_id: string | null

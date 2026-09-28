@@ -19,6 +19,7 @@ interface ChatState {
   activeSessionId: string | null;
 
   saveConfig: (config: ChatConfig) => void;
+  replaceAccountConfigs: (configs: ChatConfig[]) => void;
   deleteConfig: (label: string) => void;
   setActiveConfig: (label: string | null) => void;
 
@@ -43,6 +44,22 @@ export const useChatStore = create<ChatState>()(
           return {
             configs: [...others, config],
             activeConfigLabel: state.activeConfigLabel ?? config.label,
+          };
+        }),
+
+      replaceAccountConfigs: (accountConfigs) =>
+        set((state) => {
+          const accountLabels = new Set(accountConfigs.map((config) => config.label));
+          const browserConfigs = state.configs.filter(
+            (config) => config.storage !== "account" && !accountLabels.has(config.label)
+          );
+          const nextConfigs = [...browserConfigs, ...accountConfigs];
+          const activeStillExists = nextConfigs.some((config) => config.label === state.activeConfigLabel);
+          return {
+            configs: nextConfigs,
+            activeConfigLabel: activeStillExists
+              ? state.activeConfigLabel
+              : state.activeConfigLabel ?? accountConfigs[0]?.label ?? null,
           };
         }),
 
@@ -95,7 +112,8 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: "brainfrost.chat.v1",
-      // Chaves de API vivem só aqui; nunca sobem pro repo, nunca vão pro backend.
+      // Configs browser-only continuam locais. Configs account não contêm segredos:
+      // o segredo fica criptografado no servidor e sai apenas numa chamada proxy.
     }
   )
 );
