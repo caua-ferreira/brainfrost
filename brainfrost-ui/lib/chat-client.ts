@@ -77,6 +77,10 @@ const OPENROUTER_HEADERS = {
   "X-Title": "BrainFrost",
 };
 
+// Limita o teto de geração no browser. Sem isso, o OpenRouter pode reservar o
+// limite máximo do modelo (por exemplo, 64k) e rejeitar chaves com poucos créditos.
+const MAX_BROWSER_CHAT_TOKENS = 1200;
+
 /** Provedores que aparecem no seletor, na ordem exibida. */
 export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
@@ -321,7 +325,7 @@ function buildBody(config: ChatConfig, messages: ChatMessage[]) {
       timeout: 60,
     };
   }
-  return { model, messages };
+  return { model, messages, max_tokens: MAX_BROWSER_CHAT_TOKENS };
 }
 
 function extractGemini(data: unknown): string {

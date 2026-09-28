@@ -61,8 +61,10 @@ Responda em português claro, com objetividade e contexto técnico quando necess
 Use somente o contexto enviado pelo usuário e o histórico da conversa.
 Se a resposta não estiver no contexto, diga que não encontrou essa informação no cérebro.
 Não invente camadas, ligações ou fatos.
+Respostas anteriores suas podem estar erradas; elas não são fonte de verdade.
 Quando uma camada trouxer uma preferência ou regra, ela tem prioridade sobre sua memória geral.
 Preserve exatamente palavras de negação e restrição: "não", "sem", "nunca" e "apenas".
+Se houver conflito, descarte a resposta anterior e siga o bloco DECISÃO PRIORITÁRIA da mensagem mais recente.
 Se a camada disser "sem coautoria", responda "sem coautoria"; não complete com uma prática genérica diferente.`;
 
 export async function getEngine(
@@ -120,7 +122,7 @@ export async function chatLocally(
   const e = engine as any;
   const response = await e.chat.completions.create({
     messages: [{ role: "system", content: LOCAL_CHAT_SYSTEM_PROMPT }, ...messages],
-    temperature: 0.35,
+    temperature: 0.15,
     max_tokens: 900,
   });
   return response.choices[0]?.message?.content?.trim() ?? "Não consegui gerar uma resposta.";

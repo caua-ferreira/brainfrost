@@ -69,6 +69,7 @@ describe("sendChat — headers e body por api", () => {
     const body = JSON.parse((call[1] as RequestInit).body as string);
     expect(body.model).toBe("test-model");
     expect(body.messages).toEqual([{ role: "user", content: "oi" }]);
+    expect(body.max_tokens).toBe(1200);
   });
 
   test("anthropic: x-api-key + version + max_tokens no body", async () => {

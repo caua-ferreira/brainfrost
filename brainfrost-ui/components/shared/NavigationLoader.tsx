@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { LoadingScreen } from "./LoadingScreen";
 
 const NAVIGATION_START_EVENT = "brainfrost:navigation-start";
-const MIN_VISIBLE_MS = 1500;
+const MIN_VISIBLE_MS = 1200;
 const MASCOTS = [
   "/mascot/yeti-video-ezgif.com-crop.gif",
   "/mascot/yeti-laptop-ezgif.com-crop.gif",

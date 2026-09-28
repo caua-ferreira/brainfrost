@@ -3,6 +3,9 @@
  * respeitar o tema — passar `color` fixa a cor original da marca.
  */
 
+import { siAnthropic, siGooglegemini, siSnowflake } from "simple-icons";
+import type { SimpleIcon } from "simple-icons";
+
 interface LogoProps {
   size?: number;
   className?: string;
@@ -10,11 +13,7 @@ interface LogoProps {
 }
 
 export function ClaudeLogo({ size = 20, className, color }: LogoProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color ?? "currentColor"} className={className} aria-label="Claude">
-      <path d="M4.7 15.6l4.4-11.4h2.8L7.5 15.6H4.7zm7.5 0l4.4-11.4h2.8L15 15.6h-2.8zM3.3 19.8h17.4v1.4H3.3v-1.4z" />
-    </svg>
-  );
+  return <BrandLogo icon={siAnthropic} size={size} className={className} color={color} label="Claude Code / Anthropic" />;
 }
 
 export function CursorLogo({ size = 20, className, color }: LogoProps) {
@@ -36,18 +35,38 @@ export function CopilotLogo({ size = 20, className, color }: LogoProps) {
 }
 
 export function CortexLogo({ size = 20, className, color }: LogoProps) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color ?? "currentColor"} className={className} aria-label="Snowflake Cortex">
-      <path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1" stroke={color ?? "currentColor"} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
-  );
+  return <BrandLogo icon={siSnowflake} size={size} className={className} color={color} label="Snowflake Cortex" />;
 }
 
 export function GeminiLogo({ size = 20, className, color }: LogoProps) {
+  return <BrandLogo icon={siGooglegemini} size={size} className={className} color={color} label="Google Gemini" />;
+}
+
+function BrandLogo({
+  icon,
+  size,
+  className,
+  color,
+  label,
+}: {
+  icon: SimpleIcon;
+  size: number;
+  className?: string;
+  color?: string;
+  label: string;
+}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color ?? "currentColor"} className={className} aria-label="Google Gemini">
-      <path d="M12 2c.7 4.7 3.3 7.3 8 8-4.7.7-7.3 3.3-8 8-.7-4.7-3.3-7.3-8-8 4.7-.7 7.3-3.3 8-8z" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      style={{ color: color ?? `#${icon.hex}` }}
+      role="img"
+      aria-label={label}
+    >
+      <path d={icon.path} />
     </svg>
   );
 }

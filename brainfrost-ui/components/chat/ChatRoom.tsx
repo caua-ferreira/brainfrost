@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowLeft, Bot, Loader2, MessagesSquare, Plus, Send, Sparkles, User } from "lucide-react";
+import { Bot, Loader2, Plus, Send, Sparkles, User } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConfigDrawer } from "./ConfigDrawer";
 import { ProviderPicker } from "./ProviderPicker";
@@ -14,6 +12,7 @@ import { useChatStore, type ChatSession } from "@/lib/chat-store";
 import { buildChatFollowup, buildChatOpener } from "@/lib/chat-prompt";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
+import { WEBLLM_MODELS } from "@/lib/webllm";
 import type { Note } from "@/lib/types";
 
 interface Props {
@@ -21,8 +20,9 @@ interface Props {
 }
 
 export default function ChatRoom({ notes }: Props) {
-  const router = useRouter();
   const theme = useSaas((s) => s.theme);
+  const localModel = useSaas((s) => s.config.webLlmModel ?? LOCAL_CHAT_CONFIG.model);
+  const setSaasConfig = useSaas((s) => s.setConfig);
   const c = palette(theme);
 
   const configs = useChatStore((s) => s.configs);
@@ -43,6 +43,13 @@ export default function ChatRoom({ notes }: Props) {
     () => availableConfigs.find((c) => c.label === activeConfigLabel) ?? LOCAL_CHAT_CONFIG,
     [availableConfigs, activeConfigLabel]
   );
+  const modelOptions = useMemo(
+    () => activeConfig.api === "webllm"
+      ? WEBLLM_MODELS.map((model) => ({ id: model.id, label: model.label }))
+      : [{ id: activeConfig.model, label: activeConfig.model || "modelo configurado" }],
+    [activeConfig]
+  );
+  const selectedModel = activeConfig.api === "webllm" ? localModel : activeConfig.model;
   const session = useMemo(
     () => sessions.find((s) => s.id === activeSessionId) ?? null,
     [sessions, activeSessionId]
@@ -68,12 +75,15 @@ export default function ChatRoom({ notes }: Props) {
     setError(null);
     setSending(true);
 
+    const requestConfig = activeConfig.api === "webllm"
+      ? { ...activeConfig, model: localModel }
+      : activeConfig;
     let currentSession = session;
     if (!currentSession) {
-      const id = newSession(activeConfig.label, null);
+      const id = newSession(requestConfig.label, null);
       currentSession = {
         id,
-        configLabel: activeConfig.label,
+        configLabel: requestConfig.label,
         layers: null,
         startedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -89,7 +99,7 @@ export default function ChatRoom({ notes }: Props) {
     appendMessage(currentSession.id, userMsg);
 
     try {
-      const answer = await sendChat(activeConfig, [...currentSession.messages, userMsg]);
+      const answer = await sendChat(requestConfig, [...currentSession.messages, userMsg]);
       appendMessage(currentSession.id, { role: "assistant", content: answer });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -118,23 +128,6 @@ export default function ChatRoom({ notes }: Props) {
         style={{ background: c.card + "80", borderColor: c.borderSoft }}
       >
         <div className="flex min-w-0 items-center gap-2">
-          <MessagesSquare className="h-4 w-4 shrink-0" style={{ color: c.accent }} />
-          <Image
-            src="/mascot/yeti-video-ezgif.com-crop.gif"
-            alt="Yeti digitando"
-            width={36}
-            height={36}
-            unoptimized
-            className="h-8 w-8 rounded-full object-contain"
-          />
-          <button
-            onClick={() => router.push("/painel")}
-            className="flex h-8 items-center gap-1 rounded-full border px-2.5 font-mono text-[11px]"
-            style={{ borderColor: c.borderSoft, color: c.dim }}
-            title="Voltar ao painel"
-          >
-            <ArrowLeft className="h-3 w-3" /> painel
-          </button>
           <select
             value={activeConfig.label}
             onChange={(e) => {
@@ -149,6 +142,25 @@ export default function ChatRoom({ notes }: Props) {
             {availableConfigs.map((cfg) => (
               <option key={cfg.label} value={cfg.label} style={{ background: c.card, color: c.text }}>
                 {cfg.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedModel}
+            onChange={(e) => {
+              if (activeConfig.api === "webllm") {
+                setSaasConfig({ webLlmModel: e.target.value });
+              }
+            }}
+            disabled={sending || modelOptions.length < 2}
+            className="max-w-[170px] min-w-0 rounded-md border bg-transparent px-2 py-1.5 text-[11px] outline-none focus:ring-2 disabled:cursor-default disabled:opacity-80"
+            style={{ color: c.text, borderColor: c.borderSoft, background: c.bgSoft }}
+            aria-label="Escolher modelo"
+            title="Escolher modelo"
+          >
+            {modelOptions.map((model) => (
+              <option key={model.id} value={model.id} style={{ background: c.card, color: c.text }}>
+                {model.label}
               </option>
             ))}
           </select>
@@ -173,11 +185,6 @@ export default function ChatRoom({ notes }: Props) {
                 </option>
               ))}
             </select>
-          )}
-          {activeConfig && (
-            <span className="hidden truncate font-mono text-[11px] sm:inline" style={{ color: c.dim }}>
-              {activeConfig.model}
-            </span>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">

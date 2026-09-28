@@ -8,7 +8,8 @@ contrariando e por quê.`;
 const FOLLOW_UP_HEADER = `Antes de responder, consulte as camadas relevantes abaixo.
 Elas são a fonte de verdade sobre preferências e regras pessoais.
 Preserve literalmente negações e restrições como "não", "sem", "nunca" e "apenas".
-Não transforme uma regra negativa em positiva e não invente uma preferência.`;
+Não transforme uma regra negativa em positiva e não invente uma preferência.
+Respostas anteriores do assistente podem estar erradas e nunca vencem uma regra literal do cérebro.`;
 
 /**
  * Espelho da lógica de brainfrost-cli/src/prompt.js. Mantido separado
@@ -58,6 +59,12 @@ function terms(text: string): string[] {
   )];
 }
 
+function sharesTerm(searchable: string[], wanted: string): boolean {
+  return searchable.some((candidate) =>
+    candidate === wanted || candidate.includes(wanted) || wanted.includes(candidate)
+  );
+}
+
 export function selectRelevantNotes(notes: Note[], question: string, limit = 4): Note[] {
   const wanted = terms(question);
   if (wanted.length === 0) return [];
@@ -71,13 +78,32 @@ export function selectRelevantNotes(notes: Note[], question: string, limit = 4):
         note.concepts.join(" "),
         note.raw,
       ].join(" "));
-      const score = wanted.reduce((total, term) => total + (searchable.includes(term) ? 1 : 0), 0);
+      const score = wanted.reduce((total, term) => total + (sharesTerm(searchable, term) ? 1 : 0), 0);
       return { note, score };
     })
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score || a.note.title.localeCompare(b.note.title))
     .slice(0, limit)
     .map(({ note }) => note);
+}
+
+function extractLiteralRules(notes: Note[]): string[] {
+  const seen = new Set<string>();
+  const rules: string[] = [];
+  for (const note of notes) {
+    const fragments = `${note.title}. ${note.raw}`
+      .replace(/\r/g, "")
+      .split(/[\n.!?]+/)
+      .map((fragment) => fragment.replace(/\s+/g, " ").trim())
+      .filter((fragment) => /\b(?:não|sem|nunca|apenas|somente|obrigad[oa]|proibid[oa])\b/i.test(fragment));
+    for (const fragment of fragments) {
+      const key = fragment.toLowerCase();
+      if (!fragment || seen.has(key)) continue;
+      seen.add(key);
+      rules.push(fragment);
+    }
+  }
+  return rules.slice(0, 8);
 }
 
 /**
@@ -105,8 +131,16 @@ export function buildChatFollowup(notes: Note[], question: string): string {
   const context = relevant.length > 0
     ? formatContextForChat(relevant)
     : "Nenhuma camada correspondeu claramente às palavras da pergunta.";
+  const literalRules = extractLiteralRules(relevant);
   return [
     FOLLOW_UP_HEADER,
+    "",
+    "## DECISÃO PRIORITÁRIA",
+    "",
+    "Se o histórico disser algo diferente, descarte o histórico e siga estas frases literais:",
+    literalRules.length > 0
+      ? literalRules.map((rule) => `- ${rule}`).join("\n")
+      : "- Não há uma regra negativa explícita nas camadas encontradas; não invente uma preferência.",
     "",
     "## REGRAS LITERAIS RELEVANTES",
     "",
