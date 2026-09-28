@@ -124,7 +124,7 @@ export default function AnalisandoPage() {
         <div className="mb-6 flex justify-center">
           {status === "erro" ? (
             <Image
-              src="/mascot/yeti-sad.png"
+              src="/mascot/yeti-sad-transparent.png"
               alt="Frostie triste"
               width={200}
               height={200}
