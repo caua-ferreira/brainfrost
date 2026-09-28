@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
 import { Layers, Sparkles } from "lucide-react";
@@ -33,17 +32,6 @@ interface Props {
  */
 export function CommandPalette({ notes, open, onOpenChange }: Props) {
   const router = useRouter();
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        onOpenChange(!open);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onOpenChange]);
 
   function go(slug: string) {
     onOpenChange(false);

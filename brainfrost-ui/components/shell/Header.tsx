@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -35,6 +35,17 @@ export function Header({ commit, notes }: Props) {
   const pathname = usePathname();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setPaletteOpen((current) => !current);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <>
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/40 px-4 backdrop-blur md:h-14 md:px-6">
@@ -54,24 +65,20 @@ export function Header({ commit, notes }: Props) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2 font-mono text-[11px] text-muted-foreground md:gap-3">
-          {notes.length > 0 && (
-            <button
-              onClick={() => setPaletteOpen(true)}
-              className="flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 text-muted-foreground transition-colors hover:text-foreground md:h-8 md:min-w-0 md:rounded-md md:px-2"
-              title="Buscar camada (Ctrl/Cmd+K)"
-              aria-label="Buscar camada"
-            >
-              <Search className="h-4 w-4 md:h-3 md:w-3" />
-              <span className="hidden tracking-widest md:inline">⌘K</span>
-            </button>
-          )}
+          <button
+            onClick={() => setPaletteOpen(true)}
+            className="flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 text-muted-foreground transition-colors hover:text-foreground md:h-8 md:min-w-0 md:rounded-md md:px-2"
+            title="Buscar camada (Ctrl/Cmd+K)"
+            aria-label="Buscar camada"
+          >
+            <Search className="h-4 w-4 md:h-3 md:w-3" />
+            <span className="hidden tracking-widest md:inline">⌘K / Ctrl+K</span>
+          </button>
           <AccountMenu />
         </div>
       </header>
 
-      {notes.length > 0 && (
-        <CommandPalette notes={notes} open={paletteOpen} onOpenChange={setPaletteOpen} />
-      )}
+      <CommandPalette notes={notes} open={paletteOpen} onOpenChange={setPaletteOpen} />
     </>
   );
 }
