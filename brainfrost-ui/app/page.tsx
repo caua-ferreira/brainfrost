@@ -151,19 +151,19 @@ export default function LandingPage() {
 
       {/* Hero — light, combina com o gif do Yeti */}
       <section
-        className="relative overflow-hidden"
-        style={{ background: "#FDFEFE", color: LIGHT.fg }}
+        className="relative overflow-hidden bg-white md:bg-[#FDFEFE]"
+        style={{ color: LIGHT.fg }}
       >
         <div
-          className="pointer-events-none absolute -left-32 -top-32 h-[560px] w-[560px] rounded-full blur-3xl"
+          className="pointer-events-none absolute -left-32 -top-32 hidden h-[560px] w-[560px] rounded-full blur-3xl md:block"
           style={{ background: LIGHT.accent, opacity: 0.10 }}
         />
         <div
-          className="pointer-events-none absolute -bottom-40 -left-24 h-[520px] w-[520px] rounded-full blur-3xl"
+          className="pointer-events-none absolute -bottom-40 -left-24 hidden h-[520px] w-[520px] rounded-full blur-3xl md:block"
           style={{ background: LIGHT.aurora, opacity: 0.08 }}
         />
 
-        <div className="relative mx-auto max-w-6xl px-6 py-24 md:py-32">
+        <div className="relative mx-auto max-w-6xl px-6 pb-12 pt-8 md:py-32">
           {/* Yeti absoluto, atrás do texto */}
           <Image
             src="/mascot/yeti-waving-video-no-background.gif"
@@ -174,7 +174,7 @@ export default function LandingPage() {
             aria-hidden="true"
             className="pointer-events-none absolute right-0 top-1/2 -z-0 hidden h-auto w-[800px] -translate-y-1/2 translate-x-[20%] select-none md:block"
           />
-          <div className="relative z-10">
+          <div className="relative z-10 pr-20 md:pr-0">
           <div
             className="mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1"
             style={{ borderColor: LIGHT.border, color: LIGHT.dim }}
@@ -188,7 +188,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <h1 className="text-[44px] font-semibold leading-[1.02] tracking-tight md:text-[62px]">
+          <h1 className="text-[34px] font-semibold leading-[1.04] tracking-tight md:text-[62px] md:leading-[1.02]">
             Seu contexto de trabalho
             <br />
             <span
@@ -202,7 +202,7 @@ export default function LandingPage() {
           </h1>
 
           <p
-            className="mt-8 max-w-2xl text-[17px] leading-relaxed md:text-[19px]"
+            className="mt-6 max-w-2xl text-[15px] leading-relaxed md:mt-8 md:text-[19px]"
             style={{ color: LIGHT.dim }}
           >
             O BrainFrost é um segundo cérebro para desenvolvedores. Ele aprende como você escreve
@@ -257,22 +257,22 @@ export default function LandingPage() {
           </div>
           </div>
 
-          {/* Yeti visível também no mobile, empilhado abaixo do texto */}
-          <div className="mt-10 flex justify-center md:hidden">
+          {/* No mobile, o Yeti acompanha o texto à direita. */}
+          <div className="pointer-events-none absolute right-[-190px] top-[160px] z-0 md:hidden">
             <Image
-              src="/mascot/yeti-waving-video-no-background.gif"
+              src="/mascot/yeti-waving-video-no-background-ezgif-crop.gif"
               alt="Frostie, o mascote do BrainFrost"
-              width={360}
-              height={476}
+              width={1280}
+              height={720}
               priority
-              className="h-auto w-[280px]"
+              className="h-auto w-[459px] select-none"
             />
           </div>
         </div>
       </section>
 
       {/* Como funciona */}
-      <section id="como-funciona" className="mx-auto max-w-5xl px-6 py-24">
+      <section id="como-funciona" className="mx-auto max-w-5xl px-6 py-12 md:py-24">
         <p
           className="font-bold text-[12px] uppercase tracking-[0.1em]"
           style={{ color: LIGHT.accent }}
@@ -312,7 +312,7 @@ export default function LandingPage() {
 
       {/* Diferenciais */}
       <section className="border-y" style={{ background: LIGHT.card, borderColor: LIGHT.border }}>
-        <div className="mx-auto max-w-5xl px-6 py-24">
+        <div className="mx-auto max-w-5xl px-6 py-12 md:py-24">
           <p
             className="font-bold text-[12px] uppercase tracking-[0.1em]"
             style={{ color: LIGHT.accent }}
@@ -356,7 +356,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="mx-auto max-w-5xl px-6 py-24">
+      <section id="pricing" className="mx-auto max-w-5xl px-6 py-12 md:py-24">
         <div className="text-center">
           <p
             className="font-bold text-[12px] uppercase tracking-[0.1em]"
@@ -380,40 +380,46 @@ export default function LandingPage() {
             className="relative overflow-hidden rounded-3xl border p-8"
             style={{ background: "#FCFCFB", borderColor: LIGHT.border }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/mascot/yeti-beta-flag.gif"
-              alt="Frostie avisando que estamos em beta"
-              aria-hidden="true"
-              className="pointer-events-none absolute bottom-36 right-2 h-48 w-auto select-none"
-            />
-            <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.dim }}>
-              Free
-            </p>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-[42px] font-bold">R$0</span>
-              <span style={{ color: LIGHT.dim }}>/pra sempre</span>
+            <picture>
+              <source media="(min-width: 768px)" srcSet="/mascot/yeti-beta-flag.gif" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/mascot/yeti-beta-flag-back.gif"
+                alt="Frostie avisando que estamos em beta"
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-20 right-10 z-0 h-[105px] w-auto select-none mix-blend-multiply md:bottom-36 md:right-2 md:z-auto md:h-48 md:mix-blend-normal"
+              />
+            </picture>
+            <div className="relative z-10 md:contents">
+              <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.dim }}>
+                Free
+              </p>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-[42px] font-bold">R$0</span>
+                <span style={{ color: LIGHT.dim }}>/pra sempre</span>
+              </div>
+              <p className="mt-3 text-[14px]" style={{ color: LIGHT.dim }}>
+                Pra experimentar sem cadastrar cartão
+              </p>
+
+              <ul className="mt-8 space-y-3 text-[14px]">
+                <Tick label="LLM local (WebLLM) ilimitada" />
+                <Tick label="Até 3 importações por mês" />
+                <Tick label="Até 50 camadas no cérebro" />
+                <Tick label="Export pra qualquer IA" />
+                <Tick label="CLI bfrost" />
+              </ul>
+
+              <br />
+
+              <Link
+                href="/login"
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[14px] font-medium hover:brightness-95"
+                style={{ borderColor: LIGHT.border, color: LIGHT.fg }}
+              >
+                Começar grátis
+              </Link>
             </div>
-            <p className="mt-3 text-[14px]" style={{ color: LIGHT.dim }}>
-              Pra experimentar sem cadastrar cartão
-            </p>
-
-            <ul className="mt-8 space-y-3 text-[14px]">
-              <Tick label="LLM local (WebLLM) ilimitada" />
-              <Tick label="Até 3 importações por mês" />
-              <Tick label="Até 50 camadas no cérebro" />
-              <Tick label="Export pra qualquer IA" />
-              <Tick label="CLI bfrost" />
-            </ul>
-            <br />
-
-            <Link
-              href="/login"
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[14px] font-medium hover:brightness-95"
-              style={{ borderColor: LIGHT.border, color: LIGHT.fg }}
-            >
-              Começar grátis
-            </Link>
           </div>
 
           {/* Pro — destaque */}
@@ -499,7 +505,7 @@ export default function LandingPage() {
         className="border-t"
         style={{ background: LIGHT.card, borderColor: LIGHT.border }}
       >
-        <div className="mx-auto max-w-3xl px-6 py-24">
+        <div className="mx-auto max-w-3xl px-6 pb-24 pt-12 md:pt-24">
           <p
             className="font-bold text-[12px] uppercase tracking-[0.1em]"
             style={{ color: LIGHT.accent }}
