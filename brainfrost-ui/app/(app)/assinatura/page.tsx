@@ -56,6 +56,8 @@ export default function AssinaturaPage() {
         return;
       }
       window.location.href = json.url;
+    } catch {
+      alert("Não foi possível conectar ao serviço de pagamento.");
     } finally {
       setBusy(null);
     }
@@ -71,6 +73,8 @@ export default function AssinaturaPage() {
         return;
       }
       window.location.href = json.url;
+    } catch {
+      alert("Não foi possível conectar ao portal de cobrança.");
     } finally {
       setBusy(null);
     }
