@@ -20,11 +20,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .select("stripe_customer_id")
+    .select("stripe_customer_id, status")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if (subscriptionError) {
+    return NextResponse.json({ error: "não foi possível consultar sua assinatura" }, { status: 502 });
+  }
+
+  const managedStatuses = new Set(["active", "trialing", "past_due", "unpaid", "paused", "incomplete"]);
+  if (existing?.stripe_customer_id && managedStatuses.has(existing.status)) {
+    const origin = new URL(request.url).origin;
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: existing.stripe_customer_id,
+      return_url: `${origin}/assinatura`,
+    });
+    return NextResponse.json({ url: portal.url, destination: "billing_portal" });
+  }
 
   const customerId = existing?.stripe_customer_id ??
     (await stripe.customers.create({
@@ -34,12 +48,27 @@ export async function POST(request: Request) {
 
   const origin = new URL(request.url).origin;
   const session = await stripe.checkout.sessions.create({
+    ui_mode: "hosted_page",
     mode: "subscription",
     customer: customerId,
+    billing_address_collection: "auto",
+    phone_number_collection: { enabled: true },
+    automatic_tax: { enabled: false },
+    allow_promotion_codes: true,
+    payment_method_collection: "always",
+    submit_type: "auto",
+    consent_collection: {
+      terms_of_service: "required",
+      promotions: "auto",
+    },
+    name_collection: {
+      individual: { enabled: true },
+    },
+    integration_identifier: "hosted_web_0001",
+    origin_context: "web",
     line_items: [{ price: priceFor(body.plan), quantity: 1 }],
     success_url: `${origin}/assinatura?paid=1`,
     cancel_url: `${origin}/?checkout=cancelado`,
-    allow_promotion_codes: true,
   });
 
   if (!session.url) {
