@@ -79,12 +79,14 @@ export default function LandingPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ plan: selectedPlan }),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.url) {
         alert(json.error ?? "Não consegui abrir o checkout.");
         return;
       }
       window.location.href = json.url;
+    } catch {
+      alert("Não consegui conectar ao serviço de pagamento.");
     } finally {
       setChecking(false);
     }
@@ -98,7 +100,7 @@ export default function LandingPage() {
     const p = q.get("plan");
     if (p === "monthly" || p === "annual") {
       setPlan(p);
-      subscribe(p);
+      void subscribe(p);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, session]);

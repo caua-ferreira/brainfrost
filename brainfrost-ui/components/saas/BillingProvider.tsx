@@ -59,16 +59,20 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const response = await fetch("/api/billing", { cache: "no-store" });
-    const json = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setError(json.error ?? "não foi possível consultar a assinatura");
+    try {
+      const response = await fetch("/api/billing", { cache: "no-store" });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(json.error ?? "não foi possível consultar a assinatura");
+        return;
+      }
+      setData(json as BillingData);
+      setError(null);
+    } catch {
+      setError("não foi possível conectar ao serviço de assinatura");
+    } finally {
       setLoading(false);
-      return;
     }
-    setData(json as BillingData);
-    setError(null);
-    setLoading(false);
   }, []);
 
   useEffect(() => {
