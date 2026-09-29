@@ -11,7 +11,7 @@ function isMissingCustomer(error: unknown) {
     && "code" in error
     && error.code === "resource_missing"
     && "param" in error
-    && error.param === "customer";
+    && (error.param === "customer" || error.param === "id");
 }
 
 export async function GET() {
