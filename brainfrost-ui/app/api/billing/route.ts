@@ -6,6 +6,14 @@ export const runtime = "nodejs";
 
 const PRO_STATUSES = new Set(["active", "trialing"]);
 
+function isMissingCustomer(error: unknown) {
+  return error instanceof Error
+    && "code" in error
+    && error.code === "resource_missing"
+    && "param" in error
+    && error.param === "customer";
+}
+
 export async function GET() {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -91,6 +99,14 @@ export async function GET() {
       usage: { importsThisMonth: importsThisMonth ?? 0, layers: layers ?? 0 },
     });
   } catch (error) {
+    if (isMissingCustomer(error)) {
+      return NextResponse.json({
+        subscription: null,
+        invoices: [],
+        paymentMethods: [],
+        usage: { importsThisMonth: importsThisMonth ?? 0, layers: layers ?? 0 },
+      });
+    }
     console.error("[billing] falha ao consultar Stripe", error);
     return NextResponse.json({ error: "não foi possível consultar os dados de pagamento" }, { status: 502 });
   }

@@ -8,6 +8,31 @@ function isPlan(s: unknown): s is PlanKey {
   return s === "monthly" || s === "annual";
 }
 
+function isMissingCustomer(error: unknown) {
+  return error instanceof Error
+    && "code" in error
+    && error.code === "resource_missing"
+    && "param" in error
+    && error.param === "customer";
+}
+
+async function resolveCustomer(customerId: string | null | undefined, email: string, userId: string) {
+  if (customerId) {
+    try {
+      const customer = await stripe.customers.retrieve(customerId);
+      if (!customer.deleted) return { id: customer.id, created: false };
+    } catch (error) {
+      if (!isMissingCustomer(error)) throw error;
+    }
+  }
+
+  const customer = await stripe.customers.create({
+    email,
+    metadata: { supabase_user_id: userId },
+  });
+  return { id: customer.id, created: true };
+}
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body || !isPlan(body.plan)) {
@@ -32,26 +57,22 @@ export async function POST(request: Request) {
 
   try {
     const managedStatuses = new Set(["active", "trialing", "past_due", "unpaid", "paused", "incomplete"]);
-    if (existing?.stripe_customer_id && managedStatuses.has(existing.status)) {
+    const customer = await resolveCustomer(existing?.stripe_customer_id, user.email, user.id);
+
+    if (!customer.created && existing?.stripe_customer_id && managedStatuses.has(existing.status)) {
       const origin = new URL(request.url).origin;
       const portal = await stripe.billingPortal.sessions.create({
-        customer: existing.stripe_customer_id,
+        customer: customer.id,
         return_url: `${origin}/assinatura`,
       });
       return NextResponse.json({ url: portal.url, destination: "billing_portal" });
     }
 
-    const customerId = existing?.stripe_customer_id ??
-      (await stripe.customers.create({
-        email: user.email,
-        metadata: { supabase_user_id: user.id },
-      })).id;
-
     const origin = new URL(request.url).origin;
     const session = await stripe.checkout.sessions.create({
       ui_mode: "hosted_page",
       mode: "subscription",
-      customer: customerId,
+      customer: customer.id,
       billing_address_collection: "auto",
       phone_number_collection: { enabled: true },
       automatic_tax: { enabled: false },
