@@ -600,6 +600,12 @@ export default function LandingPage() {
             <a href="https://github.com/caua-ferreira/brainfrost" target="_blank" rel="noreferrer" className="hover:opacity-70">
               GitHub
             </a>
+            <Link href="/termos" className="hover:opacity-70">
+              Termos
+            </Link>
+            <Link href="/privacidade" className="hover:opacity-70">
+              Privacidade
+            </Link>
             <Link href="/login" className="hover:opacity-70">
               Entrar
             </Link>

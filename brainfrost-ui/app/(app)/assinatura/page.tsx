@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ArrowUpRight, CalendarClock, CreditCard, Download, Receipt, ShieldCheck } from "lucide-react";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { useBilling } from "@/components/saas/BillingProvider";
@@ -183,6 +184,9 @@ export default function AssinaturaPage() {
                 <button onClick={() => checkout("annual")} disabled={busy !== null} className="rounded-full border px-4 py-2 text-[12px] font-medium disabled:opacity-50" style={{ borderColor: c.borderSoft, color: c.text }}>{busy === "annual" ? "abrindo…" : "Pro anual"}</button>
               </div>
             </div>
+            <p className="mt-5 text-[11px] leading-relaxed" style={{ color: c.dim }}>
+              Ao assinar, você concorda com os <Link href="/termos" className="underline underline-offset-2">Termos de Uso</Link> e a <Link href="/privacidade" className="underline underline-offset-2">Política de Privacidade</Link>.
+            </p>
           </section>
         )}
 
