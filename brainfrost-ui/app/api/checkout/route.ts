@@ -81,7 +81,6 @@ export async function POST(request: Request) {
       submit_type: "auto",
       consent_collection: {
         terms_of_service: "required",
-        promotions: "auto",
       },
       name_collection: {
         individual: { enabled: true },
