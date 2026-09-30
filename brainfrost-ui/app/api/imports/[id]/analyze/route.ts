@@ -17,11 +17,16 @@ export const maxDuration = 60;
 
 type Provider = "claude" | "gemini";
 
-async function callClaude(apiKey: string, userText: string, model?: string): Promise<string> {
+async function callClaude(
+  apiKey: string,
+  userText: string,
+  model?: string,
+  maxTokens = 2000
+): Promise<string> {
   const anthropic = new Anthropic({ apiKey });
   const response = await anthropic.messages.create({
     model: model ?? process.env.CLAUDE_MODEL ?? "claude-sonnet-4-6",
-    max_tokens: 2000,
+    max_tokens: maxTokens,
     system: EXTRACTION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userText }],
   });
@@ -29,18 +34,28 @@ async function callClaude(apiKey: string, userText: string, model?: string): Pro
   return block.type === "text" ? block.text : "";
 }
 
-async function callGemini(apiKey: string, userText: string, modelName?: string): Promise<string> {
+async function callGemini(
+  apiKey: string,
+  userText: string,
+  modelName?: string,
+  maxOutputTokens = 2000
+): Promise<string> {
   const genai = new GoogleGenerativeAI(apiKey);
   const model = genai.getGenerativeModel({
     model: modelName ?? process.env.GEMINI_MODEL ?? "gemini-flash-latest",
     systemInstruction: EXTRACTION_SYSTEM_PROMPT,
-    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 },
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens },
   });
   const result = await model.generateContent(userText);
   return result.response.text();
 }
 
-async function callOpenRouter(apiKey: string, model: string, userText: string): Promise<string> {
+async function callOpenRouter(
+  apiKey: string,
+  model: string,
+  userText: string,
+  maxTokens: number
+): Promise<string> {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -56,7 +71,7 @@ async function callOpenRouter(apiKey: string, model: string, userText: string): 
         { role: "user", content: userText },
       ],
       temperature: 0.2,
-      max_tokens: 2000,
+      max_tokens: maxTokens,
     }),
   });
   const payload = await response.json().catch(() => null) as {
@@ -154,11 +169,26 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
         ? await callClaude(userApiKey, analysisInput)
         : await callGemini(userApiKey, analysisInput);
     } else if (managed!.provider === "claude") {
-      raw = await callClaude(managed!.apiKey, analysisInput, managed!.model);
+      raw = await callClaude(
+        managed!.apiKey,
+        analysisInput,
+        managed!.model,
+        managed!.maxOutputTokens
+      );
     } else if (managed!.provider === "gemini") {
-      raw = await callGemini(managed!.apiKey, analysisInput, managed!.model);
+      raw = await callGemini(
+        managed!.apiKey,
+        analysisInput,
+        managed!.model,
+        managed!.maxOutputTokens
+      );
     } else {
-      raw = await callOpenRouter(managed!.apiKey, managed!.model, analysisInput);
+      raw = await callOpenRouter(
+        managed!.apiKey,
+        managed!.model,
+        analysisInput,
+        managed!.maxOutputTokens
+      );
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro no LLM";

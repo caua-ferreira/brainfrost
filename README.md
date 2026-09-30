@@ -450,6 +450,7 @@ no servidor da Vercel:
 BRAINFROST_MANAGED_LLM_API_KEY=<segredo do provedor>
 BRAINFROST_MANAGED_LLM_PROVIDER=openrouter # ou claude / gemini
 BRAINFROST_MANAGED_LLM_MODEL=<id exato do modelo>
+BRAINFROST_MANAGED_LLM_MAX_OUTPUT_TOKENS=1000 # opcional; permitido: 300 a 2000
 ```
 
 A chave nunca usa prefixo `NEXT_PUBLIC_`. O plano Free continua limitado a três importações

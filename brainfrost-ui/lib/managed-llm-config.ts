@@ -4,6 +4,7 @@ export interface ManagedLlmConfig {
   provider: ManagedLlmProvider;
   apiKey: string;
   model: string;
+  maxOutputTokens: number;
 }
 
 type ManagedEnv = Record<string, string | undefined>;
@@ -23,6 +24,10 @@ export function resolveManagedLlmConfig(env: ManagedEnv): ManagedLlmConfig | nul
     configured === "claude" || configured === "gemini" || configured === "openrouter"
       ? configured
       : inferred;
+  const configuredMax = Number.parseInt(env.BRAINFROST_MANAGED_LLM_MAX_OUTPUT_TOKENS ?? "", 10);
+  const maxOutputTokens = Number.isFinite(configuredMax)
+    ? Math.max(300, Math.min(2_000, configuredMax))
+    : 1_000;
 
-  return { provider, apiKey, model };
+  return { provider, apiKey, model, maxOutputTokens };
 }
