@@ -154,6 +154,30 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     );
   }
 
+  if (managed && isPro) {
+    const { data: quotaRows, error: quotaError } = await supabase.rpc("consume_managed_llm_quota");
+    if (quotaError) {
+      return NextResponse.json(
+        { error: "Não foi possível verificar sua franquia de análises. Tente novamente em instantes." },
+        { status: 503 }
+      );
+    }
+
+    const quota = quotaRows?.[0];
+    if (!quota?.allowed) {
+      return NextResponse.json(
+        {
+          error: `Você usou as ${quota?.quota_limit ?? 30} análises mensais incluídas no Pro. Cadastre sua própria chave de IA em Configurações para continuar sem limite.`,
+          code: "MANAGED_LLM_QUOTA_EXCEEDED",
+          usage: quota
+            ? { used: quota.used, limit: quota.quota_limit, resetsAt: quota.resets_at }
+            : undefined,
+        },
+        { status: 402 }
+      );
+    }
+  }
+
   const { data: existingNotes } = await supabase
     .from("vault_notes")
     .select("slug, title, category")
