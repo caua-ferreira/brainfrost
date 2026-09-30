@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { sanitize } from "@/lib/sanitize";
 import { resolveManagedLlmConfig } from "@/lib/managed-llm-config";
+import { sanitizeTelemetryMessage, writeErrorTelemetry } from "@/lib/error-telemetry";
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
@@ -17,6 +18,19 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 type Provider = "claude" | "gemini";
+
+function reportAnalysisError(input: {
+  stage: string;
+  message: unknown;
+  userId: string;
+  importId: string;
+  provider?: string;
+  metadata?: Record<string, string | number | boolean | null | undefined>;
+}) {
+  const errorId = crypto.randomUUID();
+  writeErrorTelemetry({ errorId, scope: "analysis", ...input });
+  return errorId;
+}
 
 async function callClaude(
   apiKey: string,
@@ -163,8 +177,18 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   if (managed && isPro) {
     const { data: quotaRows, error: quotaError } = await supabase.rpc("consume_managed_llm_quota");
     if (quotaError) {
+      const errorId = reportAnalysisError({
+        stage: "quota",
+        message: quotaError.message,
+        userId: user.id,
+        importId,
+        provider: managed.provider,
+      });
       return NextResponse.json(
-        { error: "Não foi possível verificar sua franquia de análises. Tente novamente em instantes." },
+        {
+          error: "Não foi possível verificar sua franquia de análises. Tente novamente em instantes.",
+          errorId,
+        },
         { status: 503 }
       );
     }
@@ -222,22 +246,47 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro no LLM";
-    await supabase.from("imports").update({ status: "erro", error: msg }).eq("id", importId);
-    return NextResponse.json({ error: msg }, { status: 502 });
+    const errorId = reportAnalysisError({
+      stage: "provider",
+      message: msg,
+      userId: user.id,
+      importId,
+      provider,
+    });
+    const publicMessage = msg.includes("interrompida pelo limite")
+      ? msg
+      : "A IA não conseguiu concluir a análise. Tente novamente em instantes.";
+    await supabase
+      .from("imports")
+      .update({ status: "erro", error: `${sanitizeTelemetryMessage(msg, 300)} [${errorId}]` })
+      .eq("id", importId);
+    return NextResponse.json({ error: publicMessage, errorId }, { status: 502 });
   }
 
   let suggestions: LlmSuggestion[];
   try {
     suggestions = parseSuggestionsJson(raw);
   } catch {
+    const errorId = reportAnalysisError({
+      stage: "parse",
+      message: "LLM não devolveu JSON válido",
+      userId: user.id,
+      importId,
+      provider,
+      metadata: {
+        responseLength: raw.length,
+        hasOpeningBrace: raw.includes("{"),
+        hasClosingBrace: raw.includes("}"),
+      },
+    });
     await supabase
       .from("imports")
-      .update({ status: "erro", error: "LLM não devolveu JSON válido" })
+      .update({ status: "erro", error: `LLM não devolveu JSON válido [${errorId}]` })
       .eq("id", importId);
     // Não devolvemos `raw` inteiro: em caso patológico o LLM pode ecoar
     // o system prompt ou pedaços de contexto que valem menos vazar.
     return NextResponse.json(
-      { error: "LLM não devolveu JSON válido", rawPreview: raw.slice(0, 200) },
+      { error: "A IA devolveu uma resposta incompleta. Tente analisar novamente.", errorId },
       { status: 502 }
     );
   }
@@ -272,7 +321,19 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   if (rows.length > 0) {
     const { error: insErr } = await supabase.from("pattern_suggestions").insert(rows);
-    if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+    if (insErr) {
+      const errorId = reportAnalysisError({
+        stage: "save_suggestions",
+        message: insErr.message,
+        userId: user.id,
+        importId,
+        provider,
+      });
+      return NextResponse.json(
+        { error: "Não foi possível salvar as sugestões da análise.", errorId },
+        { status: 500 }
+      );
+    }
   }
 
   await supabase

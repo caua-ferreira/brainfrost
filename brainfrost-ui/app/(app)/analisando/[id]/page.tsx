@@ -25,6 +25,12 @@ const STAGES = [
   { at: 80, label: "categorizando sugestões",detail: "sabendo onde cada uma cai" },
 ];
 
+class AnalysisRunError extends Error {
+  constructor(message: string, readonly errorId?: string) {
+    super(message);
+  }
+}
+
 export default function AnalisandoPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -55,7 +61,7 @@ export default function AnalisandoPage() {
         body: JSON.stringify({ provider: selectedProvider }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "erro desconhecido");
+      if (!res.ok) throw new AnalysisRunError(json.error ?? "erro desconhecido", json.errorId);
     };
 
     const runLocal = async () => {
@@ -149,7 +155,27 @@ export default function AnalisandoPage() {
       } catch (e) {
         clearInterval(tick);
         setStatus("erro");
-        setErrorMsg(e instanceof Error ? e.message : "erro de rede");
+        const message = e instanceof Error ? e.message : "erro de rede";
+        let errorId = e instanceof AnalysisRunError ? e.errorId : undefined;
+        if (!errorId) {
+          try {
+            const telemetryRes = await fetch("/api/telemetry/error", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                scope: "analysis",
+                stage: provider === "webllm" ? "browser_model" : "browser_request",
+                message,
+                importId: params.id,
+              }),
+            });
+            const telemetry = await telemetryRes.json();
+            errorId = telemetry.errorId;
+          } catch {
+            // O erro original continua visível mesmo se a telemetria falhar.
+          }
+        }
+        setErrorMsg(`${message}${errorId ? ` Código: ${errorId}` : ""}`);
       }
     })();
 
