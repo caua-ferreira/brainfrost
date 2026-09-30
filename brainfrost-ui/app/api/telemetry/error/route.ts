@@ -11,13 +11,27 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const errorId = crypto.randomUUID();
+  const scope = sanitizeTelemetryMessage(body?.scope ?? "client", 50);
+  const stage = sanitizeTelemetryMessage(body?.stage ?? "unknown", 50);
+  const message = sanitizeTelemetryMessage(body?.message);
+  const importId = typeof body?.importId === "string" ? body.importId.slice(0, 100) : undefined;
   writeErrorTelemetry({
     errorId,
-    scope: sanitizeTelemetryMessage(body?.scope ?? "client", 50),
-    stage: sanitizeTelemetryMessage(body?.stage ?? "unknown", 50),
-    message: body?.message,
+    scope,
+    stage,
+    message,
     userId: user.id,
-    importId: typeof body?.importId === "string" ? body.importId.slice(0, 100) : undefined,
+    importId,
+    metadata: { source: "browser" },
+  });
+
+  await supabase.from("error_events").insert({
+    error_id: errorId,
+    user_id: user.id,
+    import_id: importId && /^[0-9a-f-]{36}$/i.test(importId) ? importId : null,
+    scope,
+    stage,
+    message,
     metadata: { source: "browser" },
   });
 

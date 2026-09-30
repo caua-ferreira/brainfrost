@@ -450,11 +450,18 @@ no servidor da Vercel:
 BRAINFROST_MANAGED_LLM_API_KEY=<segredo do provedor>
 BRAINFROST_MANAGED_LLM_PROVIDER=openrouter # ou claude / gemini
 BRAINFROST_MANAGED_LLM_MODEL=<id exato do modelo>
-BRAINFROST_MANAGED_LLM_MAX_OUTPUT_TOKENS=1000 # opcional; permitido: 300 a 2000
+BRAINFROST_MANAGED_LLM_MAX_OUTPUT_TOKENS=1600 # opcional; permitido: 300 a 2000
+BRAINFROST_ADMIN_EMAILS=admin@exemplo.com # lista separada por vírgulas
+CRON_SECRET=<segredo aleatório para o teste sintético diário>
 ```
 
 A chave nunca usa prefixo `NEXT_PUBLIC_`. O plano Free continua limitado a três importações
 mensais; contas Pro com chave própria usam primeiro a credencial do usuário.
+
+O painel privado `/observabilidade` mostra usuários totais, DAU/WAU/MAU, pessoas
+ativas nos últimos cinco minutos, tempo ativo, rotas, importações e erros. O cron
+`/api/cron/import-smoke` executa diariamente uma análise real curta usando a LLM
+gerenciada e persiste o resultado em `synthetic_checks`.
 
 **Atenção no plano Hobby:** a Vercel bloqueia deploy via webhook do GitHub quando o email do
 commit author não bate com o dono do time. Ajuste com `git config user.email <email-da-sua-conta-vercel>`
