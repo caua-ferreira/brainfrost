@@ -308,7 +308,9 @@ export default function ConfigPage() {
           </p>
           <p className="mt-2 max-w-lg text-[13px] leading-relaxed" style={{ color: c.dim }}>
             Roda direto no navegador via WebGPU. Zero rede, zero chave, zero custo. Precisa de
-            Chrome/Edge 113+ ou Safari 26+. Modelo baixa uma vez e fica em cache pra sempre.
+            Chrome/Edge 113+ ou Safari 26+. Modelo baixa uma vez e fica em cache. Quando o
+            navegador não for compatível, o conteúdo sanitizado é enviado ao provedor
+            protegido do BrainFrost para concluir a análise.
           </p>
 
           <div
@@ -358,7 +360,7 @@ export default function ConfigPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {["seus dados não saem", "primeiro uso demora", "só extrai padrões técnicos"].map((t) => (
+            {["local quando compatível", "fallback sanitizado", "só extrai padrões técnicos"].map((t) => (
               <span
                 key={t}
                 className="rounded-full border px-2.5 py-0.5 font-mono text-[10px]"

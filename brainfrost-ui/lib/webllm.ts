@@ -50,6 +50,9 @@ export interface WebLlmProgress {
 }
 
 let engineSingleton: unknown | null = null;
+let engineInitPromise: Promise<unknown> | null = null;
+let engineInitModelId: string | null = null;
+let inferenceQueue: Promise<void> = Promise.resolve();
 const LOCAL_CONTEXT_WINDOW_SIZE = 8192;
 const MAX_EXISTING_NOTES_CHARS = 4_000;
 
@@ -72,6 +75,27 @@ function fitExistingNotesToPrompt(
 export function isWebGPUAvailable(): boolean {
   if (typeof navigator === "undefined") return false;
   return "gpu" in navigator;
+}
+
+export function isWebLlmCompatibilityError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /webgpu|gpu|adapter|device lost|out of memory|memory limit|shader|context window|token.*limit|already (?:been )?disposed|has already disposed/i.test(message);
+}
+
+export function isWebLlmDisposedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /already (?:been )?disposed|has already disposed/i.test(message);
+}
+
+function runInferenceExclusive<T>(task: () => Promise<T>): Promise<T> {
+  const run = inferenceQueue.then(task, task);
+  inferenceQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+function clearEngineReference() {
+  engineSingleton = null;
+  currentModelId = null;
 }
 
 let currentModelId: string | null = null;
@@ -98,16 +122,47 @@ export async function getEngine(
       "WebGPU não está disponível neste browser. Use Chrome/Edge 113+ ou Safari 26+."
     );
   }
+
+  // CreateMLCEngine não é seguro quando duas inicializações disputam a
+  // mesma GPU. Quem chegar durante o carregamento aguarda a mesma Promise.
+  if (engineInitPromise) {
+    if (engineInitModelId === model) return engineInitPromise;
+    await engineInitPromise.catch(() => undefined);
+    if (engineSingleton && currentModelId === model) return engineSingleton;
+  }
+
+  if (engineSingleton && currentModelId !== model) {
+    const previous = engineSingleton as { unload?: () => Promise<void> };
+    clearEngineReference();
+    try {
+      await previous.unload?.();
+    } catch {
+      // Uma engine perdida/descartada não precisa bloquear o novo modelo.
+    }
+  }
+
   const { CreateMLCEngine } = await import("@mlc-ai/web-llm");
-  engineSingleton = await CreateMLCEngine(model, {
-    initProgressCallback: (report) => {
-      onProgress?.({ progress: report.progress, text: report.text });
-    },
-  }, {
-    context_window_size: LOCAL_CONTEXT_WINDOW_SIZE,
-  });
-  currentModelId = model;
-  return engineSingleton;
+  const initPromise = CreateMLCEngine(model, {
+      initProgressCallback: (report) => {
+        onProgress?.({ progress: report.progress, text: report.text });
+      },
+    }, {
+      context_window_size: LOCAL_CONTEXT_WINDOW_SIZE,
+    });
+  engineInitPromise = initPromise;
+  engineInitModelId = model;
+
+  try {
+    const engine = await initPromise;
+    engineSingleton = engine;
+    currentModelId = model;
+    return engine;
+  } finally {
+    if (engineInitPromise === initPromise) {
+      engineInitPromise = null;
+      engineInitModelId = null;
+    }
+  }
 }
 
 export async function analyzeLocally(
@@ -116,30 +171,42 @@ export async function analyzeLocally(
   onProgress?: (p: WebLlmProgress) => void,
   existingNotes: Array<{ slug: string; title: string; category: string }> = []
 ): Promise<LlmSuggestion[]> {
-  const engine = await getEngine(modelId, onProgress);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const e = engine as any;
-  // response_format json_object dá "Cannot pass non-string to std::string"
-  // no WebLLM 0.2.85. O prompt já pede JSON estrito e parseSuggestionsJson
-  // extrai o objeto entre { e }, então dispensa.
-  const chunks = splitAnalysisText(text);
-  const catalog = fitExistingNotesToPrompt(existingNotes);
-  const suggestions: LlmSuggestion[] = [];
+  return runInferenceExclusive(async () => {
+    const attempt = async () => {
+      const engine = await getEngine(modelId, onProgress);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const e = engine as any;
+      // response_format json_object dá "Cannot pass non-string to std::string"
+      // no WebLLM 0.2.85. O prompt já pede JSON estrito e parseSuggestionsJson
+      // extrai o objeto entre { e }, então dispensa.
+      const chunks = splitAnalysisText(text);
+      const catalog = fitExistingNotesToPrompt(existingNotes);
+      const suggestions: LlmSuggestion[] = [];
 
-  for (const chunk of chunks) {
-    const response = await e.chat.completions.create({
-      messages: [
-        { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
-        { role: "user", content: buildExtractionInput(chunk, catalog) },
-      ],
-      temperature: 0.2,
-      max_tokens: 1200,
-    });
-    const raw = response.choices[0]?.message?.content ?? "";
-    suggestions.push(...parseSuggestionsJson(raw));
-  }
+      for (const chunk of chunks) {
+        const response = await e.chat.completions.create({
+          messages: [
+            { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
+            { role: "user", content: buildExtractionInput(chunk, catalog) },
+          ],
+          temperature: 0.2,
+          max_tokens: 1200,
+        });
+        const raw = response.choices[0]?.message?.content ?? "";
+        suggestions.push(...parseSuggestionsJson(raw));
+      }
 
-  return dedupeSuggestions(suggestions);
+      return dedupeSuggestions(suggestions);
+    };
+
+    try {
+      return await attempt();
+    } catch (error) {
+      if (!isWebLlmDisposedError(error)) throw error;
+      clearEngineReference();
+      return attempt();
+    }
+  });
 }
 
 export async function chatLocally(
@@ -147,13 +214,25 @@ export async function chatLocally(
   modelId: string = DEFAULT_WEBLLM_MODEL,
   onProgress?: (p: WebLlmProgress) => void
 ): Promise<string> {
-  const engine = await getEngine(modelId, onProgress);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const e = engine as any;
-  const response = await e.chat.completions.create({
-    messages: [{ role: "system", content: LOCAL_CHAT_SYSTEM_PROMPT }, ...messages],
-    temperature: 0.15,
-    max_tokens: 900,
+  return runInferenceExclusive(async () => {
+    const attempt = async () => {
+      const engine = await getEngine(modelId, onProgress);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const e = engine as any;
+      const response = await e.chat.completions.create({
+        messages: [{ role: "system", content: LOCAL_CHAT_SYSTEM_PROMPT }, ...messages],
+        temperature: 0.15,
+        max_tokens: 900,
+      });
+      return response.choices[0]?.message?.content?.trim() ?? "Não consegui gerar uma resposta.";
+    };
+
+    try {
+      return await attempt();
+    } catch (error) {
+      if (!isWebLlmDisposedError(error)) throw error;
+      clearEngineReference();
+      return attempt();
+    }
   });
-  return response.choices[0]?.message?.content?.trim() ?? "Não consegui gerar uma resposta.";
 }
