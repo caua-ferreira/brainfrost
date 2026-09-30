@@ -30,6 +30,58 @@ export interface LlmSuggestion {
   evidence?: string;
 }
 
+export const LOCAL_ANALYSIS_CHUNK_CHARS = 8_000;
+
+/**
+ * Divide importações grandes sem descartar conteúdo. Prioriza quebras de
+ * parágrafo/linha para não cortar uma regra no meio e usa corte rígido apenas
+ * quando um único bloco já é maior que o limite.
+ */
+export function splitAnalysisText(
+  text: string,
+  maxChars = LOCAL_ANALYSIS_CHUNK_CHARS
+): string[] {
+  const clean = text.trim();
+  if (!clean) return [];
+  if (clean.length <= maxChars) return [clean];
+
+  const chunks: string[] = [];
+  let remaining = clean;
+
+  while (remaining.length > maxChars) {
+    const window = remaining.slice(0, maxChars + 1);
+    const paragraphBreak = window.lastIndexOf("\n\n");
+    const lineBreak = window.lastIndexOf("\n");
+    const spaceBreak = window.lastIndexOf(" ");
+    const minimumUsefulBreak = Math.floor(maxChars * 0.6);
+    const candidates = [paragraphBreak, lineBreak, spaceBreak].filter(
+      (position) => position >= minimumUsefulBreak
+    );
+    const cutAt = candidates.length > 0 ? Math.max(...candidates) : maxChars;
+
+    chunks.push(remaining.slice(0, cutAt).trim());
+    remaining = remaining.slice(cutAt).trimStart();
+  }
+
+  if (remaining.trim()) chunks.push(remaining.trim());
+  return chunks;
+}
+
+export function dedupeSuggestions(suggestions: LlmSuggestion[]): LlmSuggestion[] {
+  const seen = new Set<string>();
+  return suggestions.filter((suggestion) => {
+    const key = `${suggestion.title}|${suggestion.body}`
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export const EXTRACTION_SYSTEM_PROMPT = `Você é um extrator de padrões TÉCNICOS de código e documentação.
 
 Seu ÚNICO domínio é engenharia de software: regras de projeto, decisões de
