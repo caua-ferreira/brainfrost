@@ -58,6 +58,27 @@ export type Database = {
         }
         Relationships: []
       }
+      managed_llm_usage: {
+        Row: {
+          period_start: string
+          updated_at: string
+          usage_count: number
+          user_id: string
+        }
+        Insert: {
+          period_start: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Update: {
+          period_start?: string
+          updated_at?: string
+          usage_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       llm_credentials: {
         Row: {
           api_key_cipher: string
@@ -264,7 +285,17 @@ export type Database = {
       }
     }
     Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
+    Functions: {
+      consume_managed_llm_quota: {
+        Args: Record<PropertyKey, never>
+        Returns: Array<{
+          allowed: boolean
+          quota_limit: number
+          resets_at: string
+          used: number
+        }>
+      }
+    }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
   }
