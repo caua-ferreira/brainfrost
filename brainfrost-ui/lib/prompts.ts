@@ -93,6 +93,8 @@ REGRAS ABSOLUTAS:
 - Só extraia padrões DURÁVEIS que o dono possa repetir em outros projetos.
 - NUNCA inclua código específico, nomes de variáveis, ou trivialidades.
 - Descarte segredos/chaves/senhas — se aparecerem, pule.
+- Retorne no máximo 5 sugestões, priorizando as mais úteis e recorrentes.
+- Seja conciso: title, body, category_reason, evidence e motivos dos links devem ter uma frase curta.
 
 CATEGORIAS VÁLIDAS (use exatamente uma):
 - padroes_codigo         (como escrever, lint, style, formato de commit)
