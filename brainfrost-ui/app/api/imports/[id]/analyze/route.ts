@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { decrypt } from "@/lib/crypto";
 import { sanitize } from "@/lib/sanitize";
+import { resolveManagedLlmConfig } from "@/lib/managed-llm-config";
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
@@ -16,10 +17,10 @@ export const maxDuration = 60;
 
 type Provider = "claude" | "gemini";
 
-async function callClaude(apiKey: string, userText: string): Promise<string> {
+async function callClaude(apiKey: string, userText: string, model?: string): Promise<string> {
   const anthropic = new Anthropic({ apiKey });
   const response = await anthropic.messages.create({
-    model: process.env.CLAUDE_MODEL ?? "claude-sonnet-4-6",
+    model: model ?? process.env.CLAUDE_MODEL ?? "claude-sonnet-4-6",
     max_tokens: 2000,
     system: EXTRACTION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userText }],
@@ -28,21 +29,51 @@ async function callClaude(apiKey: string, userText: string): Promise<string> {
   return block.type === "text" ? block.text : "";
 }
 
-async function callGemini(apiKey: string, userText: string): Promise<string> {
+async function callGemini(apiKey: string, userText: string, modelName?: string): Promise<string> {
   const genai = new GoogleGenerativeAI(apiKey);
   const model = genai.getGenerativeModel({
-    model: process.env.GEMINI_MODEL ?? "gemini-flash-latest",
+    model: modelName ?? process.env.GEMINI_MODEL ?? "gemini-flash-latest",
     systemInstruction: EXTRACTION_SYSTEM_PROMPT,
-    generationConfig: { responseMimeType: "application/json" },
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 2000 },
   });
   const result = await model.generateContent(userText);
   return result.response.text();
+}
+
+async function callOpenRouter(apiKey: string, model: string, userText: string): Promise<string> {
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+      "http-referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://brainfrost.vercel.app",
+      "x-title": "BrainFrost",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
+        { role: "user", content: userText },
+      ],
+      temperature: 0.2,
+      max_tokens: 2000,
+    }),
+  });
+  const payload = await response.json().catch(() => null) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    error?: { message?: string };
+  } | null;
+  if (!response.ok) {
+    throw new Error(payload?.error?.message ?? `OpenRouter respondeu ${response.status}`);
+  }
+  return payload?.choices?.[0]?.message?.content ?? "";
 }
 
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id: importId } = await ctx.params;
 
   const body = await request.json().catch(() => ({}));
+  const browserFallback = body?.provider === "browser-fallback";
   const providerPref: Provider | null =
     body?.provider === "claude" || body?.provider === "gemini" ? body.provider : null;
 
@@ -54,6 +85,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   if (!imp) return NextResponse.json({ error: "import não encontrado" }, { status: 404 });
   if (!imp.raw_text) {
     return NextResponse.json({ error: "import sem conteúdo (raw_text vazio)" }, { status: 400 });
+  }
+  if (imp.status === "pronto") {
+    return NextResponse.json({ ok: true, alreadyAnalyzed: true });
   }
 
   const { data: subscription } = await supabase
@@ -68,29 +102,41 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     .select("provider, api_key_cipher, updated_at")
     .order("updated_at", { ascending: false });
 
-  if (!creds || creds.length === 0) {
+  const sanitized = sanitize(imp.raw_text);
+  const chosen = creds && creds.length > 0
+    ? (providerPref && creds.find((c) => c.provider === providerPref)) ??
+      creds.find((c) => c.provider === "claude") ??
+      creds[0]
+    : null;
+
+  if (!browserFallback && !chosen) {
     return NextResponse.json(
       { error: "nenhuma chave de LLM configurada — vá em /config" },
       { status: 400 }
     );
   }
-
-  const chosen =
-    (providerPref && creds.find((c) => c.provider === providerPref)) ??
-    creds.find((c) => c.provider === "claude") ??
-    creds[0];
-
-  let apiKey: string;
-  try {
-    apiKey = decrypt(Buffer.from(chosen.api_key_cipher, "base64"));
-  } catch {
-    return NextResponse.json({ error: "falha ao decifrar chave — reconfigure em /config" }, { status: 500 });
+  if (!browserFallback && !isPro) {
+    return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
   }
 
-  const sanitized = sanitize(imp.raw_text);
-  const provider = chosen.provider as Provider;
-  if (!isPro) {
-    return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
+  // No fallback, contas Pro usam primeiro a própria chave. O Free usa a
+  // credencial gerenciada do BrainFrost e continua protegido pela cota de
+  // importações aplicada na criação do import.
+  const useUserCredential = !!chosen && (!browserFallback || isPro);
+  let userApiKey: string | null = null;
+  if (useUserCredential) {
+    try {
+      userApiKey = decrypt(Buffer.from(chosen.api_key_cipher, "base64"));
+    } catch {
+      return NextResponse.json({ error: "falha ao decifrar chave — reconfigure em /config" }, { status: 500 });
+    }
+  }
+  const managed = useUserCredential ? null : resolveManagedLlmConfig(process.env);
+  if (!userApiKey && !managed) {
+    return NextResponse.json(
+      { error: "análise compatível com este navegador ainda não foi configurada" },
+      { status: 503 }
+    );
   }
 
   const { data: existingNotes } = await supabase
@@ -101,11 +147,19 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const analysisInput = buildExtractionInput(sanitized.cleanText, existingNotes ?? []);
 
   let raw: string;
+  const provider = userApiKey ? chosen!.provider as Provider : managed!.provider;
   try {
-    raw =
-      provider === "claude"
-        ? await callClaude(apiKey, analysisInput)
-        : await callGemini(apiKey, analysisInput);
+    if (userApiKey) {
+      raw = provider === "claude"
+        ? await callClaude(userApiKey, analysisInput)
+        : await callGemini(userApiKey, analysisInput);
+    } else if (managed!.provider === "claude") {
+      raw = await callClaude(managed!.apiKey, analysisInput, managed!.model);
+    } else if (managed!.provider === "gemini") {
+      raw = await callGemini(managed!.apiKey, analysisInput, managed!.model);
+    } else {
+      raw = await callOpenRouter(managed!.apiKey, managed!.model, analysisInput);
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro no LLM";
     await supabase.from("imports").update({ status: "erro", error: msg }).eq("id", importId);
@@ -168,13 +222,13 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     .update({
       status: "pronto",
       finished_at: new Date().toISOString(),
-      provider_used: provider,
+      provider_used: managed ? `brainfrost:${managed.provider}` : provider,
     })
     .eq("id", importId);
 
   return NextResponse.json({
     ok: true,
-    provider,
+    provider: managed ? `brainfrost:${managed.provider}` : provider,
     suggestionsCreated: rows.length,
     redactions: sanitized.redactions,
   });

@@ -443,6 +443,18 @@ Este repositório já está publicado em `brainfrost.vercel.app`. Para hospedar 
    É ela que faz o `../.brainfrost` existir na hora do build.
 4. Deploy. Todo `bfrost learn` ou `bfrost sync` reconstrói o site sozinho.
 
+Para permitir análise em navegadores sem WebGPU, configure também estas variáveis somente
+no servidor da Vercel:
+
+```text
+BRAINFROST_MANAGED_LLM_API_KEY=<segredo do provedor>
+BRAINFROST_MANAGED_LLM_PROVIDER=openrouter # ou claude / gemini
+BRAINFROST_MANAGED_LLM_MODEL=<id exato do modelo>
+```
+
+A chave nunca usa prefixo `NEXT_PUBLIC_`. O plano Free continua limitado a três importações
+mensais; contas Pro com chave própria usam primeiro a credencial do usuário.
+
 **Atenção no plano Hobby:** a Vercel bloqueia deploy via webhook do GitHub quando o email do
 commit author não bate com o dono do time. Ajuste com `git config user.email <email-da-sua-conta-vercel>`
 no repo local.

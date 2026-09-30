@@ -74,6 +74,11 @@ export function isWebGPUAvailable(): boolean {
   return "gpu" in navigator;
 }
 
+export function isWebLlmCompatibilityError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /webgpu|gpu|adapter|device lost|out of memory|memory limit|shader|context window|token.*limit/i.test(message);
+}
+
 let currentModelId: string | null = null;
 
 export const LOCAL_CHAT_SYSTEM_PROMPT = `Você é o assistente local do BrainFrost.

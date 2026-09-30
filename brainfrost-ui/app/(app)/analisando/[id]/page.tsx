@@ -12,6 +12,7 @@ import {
   analyzeLocally,
   DEFAULT_WEBLLM_MODEL,
   isWebGPUAvailable,
+  isWebLlmCompatibilityError,
   WEBLLM_MODELS,
   type WebLlmProgress,
 } from "@/lib/webllm";
@@ -34,6 +35,7 @@ export default function AnalisandoPage() {
 
   const [progress, setProgress] = useState(5);
   const [modelProgress, setModelProgress] = useState<WebLlmProgress | null>(null);
+  const [usingBrowserFallback, setUsingBrowserFallback] = useState(false);
   const [status, setStatus] = useState<"rodando" | "erro">("rodando");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const startedRef = useRef(false);
@@ -46,11 +48,11 @@ export default function AnalisandoPage() {
       setProgress((p) => (p < 90 ? p + Math.random() * 4 + 1 : p));
     }, 400);
 
-    const runServer = async () => {
+    const runServer = async (selectedProvider: string = provider) => {
       const res = await fetch(`/api/imports/${params.id}/analyze`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ provider }),
+        body: JSON.stringify({ provider: selectedProvider }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "erro desconhecido");
@@ -125,8 +127,19 @@ export default function AnalisandoPage() {
 
     (async () => {
       try {
-        if (provider === "webllm") await runLocal();
-        else await runServer();
+        if (provider === "webllm" && !isWebGPUAvailable()) {
+          setUsingBrowserFallback(true);
+          await runServer("browser-fallback");
+        } else if (provider === "webllm") {
+          try {
+            await runLocal();
+          } catch (error) {
+            if (!isWebLlmCompatibilityError(error)) throw error;
+            setModelProgress(null);
+            setUsingBrowserFallback(true);
+            await runServer("browser-fallback");
+          }
+        } else await runServer();
         clearInterval(tick);
         setProgress(100);
         setTimeout(() => {
@@ -144,7 +157,7 @@ export default function AnalisandoPage() {
   }, [params.id, router, provider, webLlmModel]);
 
   const stage = [...STAGES].reverse().find((s) => progress >= s.at) ?? STAGES[0];
-  const showModelProgress = provider === "webllm" && modelProgress && modelProgress.progress < 1;
+  const showModelProgress = provider === "webllm" && !usingBrowserFallback && modelProgress && modelProgress.progress < 1;
 
   return (
     <div className="flex h-full items-center justify-center overflow-auto" style={{ background: c.bg }}>
@@ -173,17 +186,19 @@ export default function AnalisandoPage() {
           )}
         </div>
         <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.accent, opacity: 0.8 }}>
-          {status === "erro" ? "algo deu errado" : provider === "webllm" ? "analisando local" : "analisando"}
+          {status === "erro" ? "algo deu errado" : usingBrowserFallback ? "análise compatível" : provider === "webllm" ? "analisando local" : "analisando"}
         </p>
         <h1 className="mt-3 text-[36px] font-semibold leading-[1.05] tracking-tight md:text-[44px]" style={{ color: c.text }}>
-          {status === "erro" ? "Não deu." : showModelProgress ? "baixando modelo" : stage.label}
+          {status === "erro" ? "Não deu." : showModelProgress ? "baixando modelo" : usingBrowserFallback ? "analisando na nuvem" : stage.label}
           {status !== "erro" && <span className="animate-pulse" style={{ color: c.aurora }}>.</span>}
         </h1>
         <p className="mt-3 text-[14px]" style={{ color: c.dim }}>
           {status === "erro"
             ? errorMsg
-            : showModelProgress
+              : showModelProgress
               ? `primeiro uso baixa ${WEBLLM_MODELS.find((m) => m.id === webLlmModel)?.size ?? "o modelo"}. Fica em cache pra próximas.`
+              : usingBrowserFallback
+                ? "Seu navegador não concluiu o modelo local. O conteúdo sanitizado está sendo analisado com segurança no servidor."
               : stage.detail}
         </p>
 
