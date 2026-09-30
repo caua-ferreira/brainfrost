@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildExtractionInput,
   dedupeSuggestions,
+  parseSuggestionsJson,
   splitAnalysisText,
 } from "./prompts";
 
@@ -50,5 +51,32 @@ describe("dedupeSuggestions", () => {
     };
 
     expect(dedupeSuggestions([suggestion, { ...suggestion }])).toEqual([suggestion]);
+  });
+});
+
+describe("parseSuggestionsJson", () => {
+  test("aceita JSON cercado por texto ou markdown", () => {
+    const parsed = parseSuggestionsJson(`\`\`\`json
+      {"suggestions":[{"title":"Commits","body":"Use Conventional Commits."}]}
+      \`\`\``);
+
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].title).toBe("Commits");
+  });
+
+  test("corrige aspas tipográficas, chaves sem aspas e trailing comma", () => {
+    const parsed = parseSuggestionsJson(
+      `{suggestions: [{title: “Sem coautoria”, body: “Não adicionar coautoria.”,}],}`
+    );
+
+    expect(parsed).toEqual([
+      { title: "Sem coautoria", body: "Não adicionar coautoria." },
+    ]);
+  });
+
+  test("rejeita respostas sem um objeto JSON completo", () => {
+    expect(() => parseSuggestionsJson("resposta interrompida")).toThrow(
+      "LLM não devolveu JSON válido"
+    );
   });
 });

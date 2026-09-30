@@ -9,6 +9,7 @@ import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
   isCategory,
+  parseSuggestionsJson,
   type LlmSuggestion,
 } from "@/lib/prompts";
 
@@ -71,17 +72,22 @@ async function callOpenRouter(
         { role: "user", content: userText },
       ],
       temperature: 0.2,
+      response_format: { type: "json_object" },
       max_tokens: maxTokens,
     }),
   });
   const payload = await response.json().catch(() => null) as {
-    choices?: Array<{ message?: { content?: string } }>;
+    choices?: Array<{ finish_reason?: string; message?: { content?: string } }>;
     error?: { message?: string };
   } | null;
   if (!response.ok) {
     throw new Error(payload?.error?.message ?? `OpenRouter respondeu ${response.status}`);
   }
-  return payload?.choices?.[0]?.message?.content ?? "";
+  const choice = payload?.choices?.[0];
+  if (choice?.finish_reason === "length") {
+    throw new Error("A resposta da IA foi interrompida pelo limite de saída. Tente analisar novamente.");
+  }
+  return choice?.message?.content ?? "";
 }
 
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -220,11 +226,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
-  let parsed: { suggestions: LlmSuggestion[] };
+  let suggestions: LlmSuggestion[];
   try {
-    const jsonStart = raw.indexOf("{");
-    const jsonEnd = raw.lastIndexOf("}");
-    parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
+    suggestions = parseSuggestionsJson(raw);
   } catch {
     await supabase
       .from("imports")
@@ -238,7 +242,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     );
   }
 
-  const rows = (parsed.suggestions ?? [])
+  const rows = suggestions
     .filter((s) => s.title && s.body)
     .map((s) => {
       const concepts = Array.isArray(s.concepts)
