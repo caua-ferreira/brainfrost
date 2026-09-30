@@ -3,7 +3,9 @@
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
+  dedupeSuggestions,
   parseSuggestionsJson,
+  splitAnalysisText,
   type LlmSuggestion,
 } from "./prompts";
 
@@ -48,6 +50,24 @@ export interface WebLlmProgress {
 }
 
 let engineSingleton: unknown | null = null;
+const LOCAL_CONTEXT_WINDOW_SIZE = 8192;
+const MAX_EXISTING_NOTES_CHARS = 4_000;
+
+function fitExistingNotesToPrompt(
+  notes: Array<{ slug: string; title: string; category: string }>
+) {
+  const selected: typeof notes = [];
+  let usedChars = 0;
+
+  for (const note of notes) {
+    const noteChars = note.slug.length + note.title.length + note.category.length + 24;
+    if (selected.length > 0 && usedChars + noteChars > MAX_EXISTING_NOTES_CHARS) break;
+    selected.push(note);
+    usedChars += noteChars;
+  }
+
+  return selected;
+}
 
 export function isWebGPUAvailable(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -83,6 +103,8 @@ export async function getEngine(
     initProgressCallback: (report) => {
       onProgress?.({ progress: report.progress, text: report.text });
     },
+  }, {
+    context_window_size: LOCAL_CONTEXT_WINDOW_SIZE,
   });
   currentModelId = model;
   return engineSingleton;
@@ -100,16 +122,24 @@ export async function analyzeLocally(
   // response_format json_object dá "Cannot pass non-string to std::string"
   // no WebLLM 0.2.85. O prompt já pede JSON estrito e parseSuggestionsJson
   // extrai o objeto entre { e }, então dispensa.
-  const response = await e.chat.completions.create({
-    messages: [
-      { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
-      { role: "user", content: buildExtractionInput(text, existingNotes) },
-    ],
-    temperature: 0.2,
-    max_tokens: 1500,
-  });
-  const raw = response.choices[0]?.message?.content ?? "";
-  return parseSuggestionsJson(raw);
+  const chunks = splitAnalysisText(text);
+  const catalog = fitExistingNotesToPrompt(existingNotes);
+  const suggestions: LlmSuggestion[] = [];
+
+  for (const chunk of chunks) {
+    const response = await e.chat.completions.create({
+      messages: [
+        { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
+        { role: "user", content: buildExtractionInput(chunk, catalog) },
+      ],
+      temperature: 0.2,
+      max_tokens: 1200,
+    });
+    const raw = response.choices[0]?.message?.content ?? "";
+    suggestions.push(...parseSuggestionsJson(raw));
+  }
+
+  return dedupeSuggestions(suggestions);
 }
 
 export async function chatLocally(
