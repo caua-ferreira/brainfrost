@@ -382,16 +382,13 @@ export default function LandingPage() {
             className="relative overflow-hidden rounded-3xl border p-8"
             style={{ background: "#FCFCFB", borderColor: LIGHT.border }}
           >
-            <picture>
-              <source media="(min-width: 768px)" srcSet="/mascot/yeti-beta-flag.gif" />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/mascot/yeti-beta-flag-back.gif"
-                alt="Frostie avisando que estamos em beta"
-                aria-hidden="true"
-                className="pointer-events-none absolute bottom-20 right-10 z-0 h-[105px] w-auto select-none mix-blend-multiply md:bottom-36 md:right-2 md:z-auto md:h-48 md:mix-blend-normal"
-              />
-            </picture>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mascot/yeti-beta-flag.gif"
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-36 right-2 hidden h-48 w-auto select-none md:block"
+            />
             <div className="relative z-10 md:contents">
               <p className="font-mono text-[12px] uppercase tracking-[0.1em]" style={{ color: LIGHT.dim }}>
                 Free
@@ -412,11 +409,18 @@ export default function LandingPage() {
                 <Tick label="CLI bfrost" />
               </ul>
 
-              <br />
+              <div className="relative mt-2 h-[108px] md:hidden" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/mascot/yeti-beta-flag-back.gif"
+                  alt=""
+                  className="pointer-events-none absolute bottom-0 right-1 h-[105px] w-auto select-none mix-blend-multiply"
+                />
+              </div>
 
               <Link
                 href="/login"
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[14px] font-medium hover:brightness-95"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[14px] font-medium hover:brightness-95 md:mt-8"
                 style={{ borderColor: LIGHT.border, color: LIGHT.fg }}
               >
                 Começar grátis
