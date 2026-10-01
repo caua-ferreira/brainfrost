@@ -7,7 +7,6 @@ import Image from "next/image";
 import {
   Download,
   BadgeDollarSign,
-  CreditCard,
   ChartNoAxesCombined,
   Home,
   LayoutDashboard,
@@ -26,12 +25,11 @@ import { useSession } from "@/components/saas/SessionProvider";
 const NAV = [
   { href: "/painel", label: "Painel", icon: Home, match: (p: string) => p.startsWith("/painel") },
   { href: "/importar", label: "Importar", icon: Upload, match: (p: string) => p.startsWith("/importar") || p.startsWith("/analisando") },
-  { href: "/curadoria", label: "Curadoria", icon: ListChecks, match: (p: string) => p.startsWith("/curadoria") },
+  { href: "/curadoria", label: "Revisar", icon: ListChecks, match: (p: string) => p.startsWith("/curadoria") },
   { href: "/exportar", label: "Exportar", icon: Download, match: (p: string) => p.startsWith("/exportar") },
   { href: "/grafo", label: "Cérebro", icon: LayoutDashboard, match: (p: string) => p === "/grafo" || p === "/cofre" },
   { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p: string) => p.startsWith("/chat") },
-  { href: "/camadas", label: "Camadas", icon: Layers, match: (p: string) => p.startsWith("/camadas") },
-  { href: "/assinatura", label: "Assinatura", icon: CreditCard, match: (p: string) => p.startsWith("/assinatura") },
+  { href: "/camadas", label: "Memórias", icon: Layers, match: (p: string) => p.startsWith("/camadas") },
   { href: "/config", label: "Config", icon: Settings, match: (p: string) => p.startsWith("/config") },
 ];
 

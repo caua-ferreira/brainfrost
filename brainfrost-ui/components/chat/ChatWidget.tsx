@@ -201,7 +201,7 @@ function ChatWidgetContent() {
           <div className="rounded-xl border p-3 text-[12px] leading-relaxed" style={{ borderColor: c.borderSoft, color: c.dim }}>
             <p className="font-medium" style={{ color: c.text }}>Pergunte qualquer coisa ao seu cérebro.</p>
             <p className="mt-1">
-              A primeira pergunta usa suas camadas como contexto e será respondida por {activeConfig.label}.
+              A primeira pergunta usa suas memórias como contexto e será respondida por {activeConfig.label}.
             </p>
           </div>
         )}

@@ -20,7 +20,7 @@ export default function TermsPage() {
         },
         {
           title: "O que o BrainFrost oferece",
-          content: <p>O BrainFrost organiza conteúdos, padrões, decisões e conexões enviados pelo usuário para formar um contexto reutilizável em ferramentas de inteligência artificial. O serviço inclui recursos locais e integrações com terceiros escolhidos pelo usuário.</p>,
+          content: <p>O BrainFrost organiza conteúdos, padrões, decisões, memórias e associações enviados pelo usuário para formar um contexto reutilizável em ferramentas de inteligência artificial. O serviço inclui recursos locais e integrações com terceiros escolhidos pelo usuário.</p>,
         },
         {
           title: "Conta e segurança",
@@ -40,7 +40,7 @@ export default function TermsPage() {
         },
         {
           title: "Uso responsável de IA",
-          content: <p>Respostas, classificações e sugestões de IA podem conter erros. O BrainFrost oferece curadoria para que você revise resultados antes de incorporá-los ao cérebro. Decisões profissionais, técnicas, jurídicas, médicas ou financeiras não devem ser tomadas sem validação humana adequada.</p>,
+          content: <p>Respostas, classificações e sugestões de IA podem conter erros. O BrainFrost permite revisar aprendizados antes de consolidá-los no cérebro. Decisões profissionais, técnicas, jurídicas, médicas ou financeiras não devem ser tomadas sem validação humana adequada.</p>,
         },
         {
           title: "Usos proibidos",

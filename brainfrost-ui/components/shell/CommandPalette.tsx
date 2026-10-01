@@ -44,7 +44,7 @@ export function CommandPalette({ notes, open, onOpenChange }: Props) {
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="buscar camada por título, tag ou slug…" />
+      <CommandInput placeholder="buscar memória por título, tag ou slug…" />
       <CommandList>
         <CommandEmpty>Nada com esse termo.</CommandEmpty>
         {core.length > 0 && (

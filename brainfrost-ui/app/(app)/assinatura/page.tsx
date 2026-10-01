@@ -141,7 +141,7 @@ export default function AssinaturaPage() {
 
             <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-4" style={{ borderColor: c.borderSoft }}>
               <Metric label="importações este mês" value={`${data?.usage.importsThisMonth ?? 0}${isPro ? "" : " / 3"}`} c={c} />
-              <Metric label="camadas no cérebro" value={`${data?.usage.layers ?? 0}${isPro ? "" : " / 50"}`} c={c} />
+              <Metric label="memórias no cérebro" value={`${data?.usage.layers ?? 0}${isPro ? "" : " / 50"}`} c={c} />
               <Metric label={complimentaryGrant && !subscription?.isPro ? "acesso cortesia até" : subscription?.cancelAtPeriodEnd ? "acesso até" : "próxima cobrança"} value={complimentaryGrant && !subscription?.isPro ? (complimentaryGrant.expiresAt ? date(complimentaryGrant.expiresAt) : "vitalício") : subscription ? date(subscription.currentPeriodEnd) : "—"} c={c} />
               <Metric label="total pago" value={money(data?.totals?.totalPaid ?? 0)} c={c} />
             </div>
@@ -182,7 +182,7 @@ export default function AssinaturaPage() {
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.accent }}>desbloqueie o Pro</p>
                 <h2 className="mt-2 text-[22px] font-semibold" style={{ color: c.text }}>Mais contexto, sem limite.</h2>
-                <p className="mt-2 max-w-xl text-[13px] leading-relaxed" style={{ color: c.dim }}>Claude, Gemini, GitHub privado, importações ilimitadas e camadas ilimitadas.</p>
+                <p className="mt-2 max-w-xl text-[13px] leading-relaxed" style={{ color: c.dim }}>Claude, Gemini, GitHub privado, importações ilimitadas e memórias ilimitadas.</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button onClick={() => checkout("monthly")} disabled={busy !== null} className="rounded-full px-4 py-2 text-[12px] font-medium disabled:opacity-50" style={{ background: c.accent, color: c.onAccent }}>{busy === "monthly" ? "abrindo…" : "Pro mensal"}</button>

@@ -23,7 +23,7 @@ interface Item {
 const NAV: Item[] = [
   { href: "/painel", label: "Painel", icon: Home, match: (p) => p.startsWith("/painel") },
   { href: "/importar", label: "Importar", icon: Upload, match: (p) => p.startsWith("/importar") || p.startsWith("/analisando") },
-  { href: "/curadoria", label: "Curadoria", icon: ListChecks, match: (p) => p.startsWith("/curadoria") },
+  { href: "/curadoria", label: "Revisar", icon: ListChecks, match: (p) => p.startsWith("/curadoria") },
   { href: "/grafo", label: "Cérebro", icon: LayoutDashboard, match: (p) => p === "/grafo" || p === "/cofre" },
   { href: "/chat", label: "Chat", icon: MessagesSquare, match: (p) => p.startsWith("/chat") },
   { href: "/config", label: "Config", icon: Settings, match: (p) => p.startsWith("/config") },

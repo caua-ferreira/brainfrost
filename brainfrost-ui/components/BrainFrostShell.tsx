@@ -130,7 +130,7 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
               className={`flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-[11px] transition-colors ${view === "groups" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               <Boxes className="h-3.5 w-3.5" />
-              Gavetas
+              Áreas
             </button>
             <button
               type="button"
@@ -139,21 +139,21 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
               className={`flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1.5 text-[11px] transition-colors ${view === "notes" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               <List className="h-3.5 w-3.5" />
-              Camadas
+              Memórias
             </button>
           </div>
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={view === "groups" ? "buscar gaveta" : "buscar camada"}
+            placeholder={view === "groups" ? "buscar área" : "buscar memória"}
             className="h-8 border-primary/15 bg-background/70 font-mono text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:border-primary/50 focus-visible:ring-0"
           />
           <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] text-muted-foreground">
-            <Stat value={view === "groups" ? groups.length : stats.notes} label={view === "groups" ? "gavetas" : "camadas"} />
-            {view === "groups" && <Stat value={stats.notes} label="camadas" />}
-            <Stat value={stats.edges} label="conexões" />
+            <Stat value={view === "groups" ? groups.length : stats.notes} label={view === "groups" ? "áreas" : "memórias"} />
+            {view === "groups" && <Stat value={stats.notes} label="memórias" />}
+            <Stat value={stats.edges} label="associações" />
             <Stat value={stats.words.toLocaleString("pt-BR")} label="palavras" />
-            {stats.orphans > 0 && <Stat value={stats.orphans} label="sem conexão" tone="aurora" />}
+            {stats.orphans > 0 && <Stat value={stats.orphans} label="isoladas" tone="aurora" />}
             <span className="ml-auto whitespace-nowrap text-mute/70">atualizado em {updated}</span>
           </dl>
         </div>
@@ -207,7 +207,7 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
             className={`pointer-events-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition-colors ${view === "groups" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             <Boxes className="h-3.5 w-3.5" />
-            Gavetas
+            Áreas
           </button>
           <button
             type="button"
@@ -216,12 +216,12 @@ export default function BrainFrostShell({ snapshot }: { snapshot: VaultSnapshot 
             className={`pointer-events-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-medium transition-colors ${view === "notes" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             <List className="h-3.5 w-3.5" />
-            Camadas
+            Memórias
           </button>
           <Link
             href="/camadas"
             className="pointer-events-auto ml-1 inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-            title="Editar camadas manualmente"
+            title="Editar memórias manualmente"
           >
             <Pencil className="h-3.5 w-3.5" />
             editar

@@ -40,8 +40,8 @@ const GROUPS: Record<string, { title: string; description: string }> = {
     description: "O que o cérebro aprendeu ao longo do caminho.",
   },
   sem_categoria: {
-    title: "Sem categoria",
-    description: "Camadas que ainda precisam de uma gaveta.",
+    title: "Sem área",
+    description: "Memórias que ainda precisam de uma área.",
   },
 };
 

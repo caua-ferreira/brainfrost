@@ -36,8 +36,8 @@ export default function Page() {
     return (
       <div className="h-full overflow-auto p-6">
         <EmptyState
-          title="Nenhuma camada ainda"
-          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria."
+          title="Nenhuma memória ainda"
+          description="Ensine algo ao cérebro em Importar e revise os aprendizados sugeridos."
         />
       </div>
     );

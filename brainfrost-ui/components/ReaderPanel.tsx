@@ -123,7 +123,7 @@ export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props)
               Texto
             </TabsTrigger>
             <TabsTrigger value="links" className="text-xs">
-              Ligações
+              Associações
               <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
                 {note.links.length + note.backlinks.length}
               </span>
@@ -146,7 +146,7 @@ export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props)
                         return (
                           <span
                             className="text-muted-foreground underline decoration-dotted"
-                            title="Camada ainda não existe"
+                            title="Memória ainda não existe"
                           >
                             {children}
                           </span>
@@ -202,7 +202,7 @@ export default function ReaderPanel({ note, notes, onNavigate, onClose }: Props)
               </div>
             )}
             {note.links.length + note.backlinks.length + note.broken.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhuma ligação registrada nesta camada.</p>
+              <p className="text-sm text-muted-foreground">Nenhuma associação registrada nesta memória.</p>
             )}
           </TabsContent>
 

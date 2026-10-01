@@ -34,7 +34,7 @@ export default function Page() {
       <div className="h-full overflow-auto p-6">
         <EmptyState
           title="Cérebro vazio"
-          description="Sobe um repositório em /importar e aceita as sugestões em /curadoria pra começar a preencher o cérebro."
+          description="Ensine algo ao cérebro e revise os aprendizados sugeridos para criar as primeiras memórias."
         />
       </div>
     );

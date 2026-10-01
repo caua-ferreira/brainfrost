@@ -83,7 +83,7 @@ export default function ExportarPage() {
 
   const body = notes.length
     ? notes.map((n) => `## ${n.title}\n\n${n.body}\n`).join("\n")
-    : "_(nenhuma camada no cérebro ainda — aceite sugestões em /curadoria)_";
+    : "_(nenhuma memória no cérebro ainda — revise os aprendizados sugeridos)_";
 
   const current = TARGETS.find((t) => t.id === target)!;
   const content = current.build(body);

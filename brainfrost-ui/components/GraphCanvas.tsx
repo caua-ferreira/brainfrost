@@ -263,11 +263,11 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5">
                 <span aria-hidden className="h-2 w-2 rounded-full bg-primary" />
-                gavetas
+                áreas
               </span>
-              <span>· tamanho = camadas</span>
+              <span>· tamanho = memórias</span>
             </div>
-            <span className="opacity-70">clique numa gaveta para abrir o conteúdo</span>
+            <span className="opacity-70">clique numa área para abrir as memórias</span>
           </>
         ) : (
           <>
@@ -280,9 +280,9 @@ export default function GraphCanvas({ data, selected, onSelect }: Props) {
                 <span aria-hidden className="h-2 w-2 rounded-full bg-accent" />
                 growth
               </span>
-              <span>· tamanho = conexões</span>
+              <span>· tamanho = associações</span>
             </div>
-            <span className="opacity-70">arraste para mover · clique numa camada para ler</span>
+            <span className="opacity-70">arraste para mover · clique numa memória para ler</span>
           </>
         )}
       </div>
