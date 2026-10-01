@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { googleExportUrl, htmlToReadableText, importRemoteSource, isUnsafeAddress, parseGitLabProject, parsePublicUrl } from "./remote-import";
+import { googleExportUrl, htmlToReadableText, importRemoteSource, isUnsafeAddress, normalizePublicDocumentUrl, parseGitLabProject, parsePublicUrl } from "./remote-import";
 
 describe("remote-import", () => {
   it("extrai conteúdo legível e remove scripts de HTML", () => {
@@ -37,9 +37,22 @@ describe("remote-import", () => {
       .toBe("https://drive.google.com/uc?export=download&id=file_123");
   });
 
+  it("transforma um arquivo exibido pelo GitHub em conteúdo bruto", () => {
+    expect(normalizePublicDocumentUrl(new URL("https://github.com/owshq-mec/semana-databricks/blob/main/readme.md")).toString())
+      .toBe("https://raw.githubusercontent.com/owshq-mec/semana-databricks/main/readme.md");
+    expect(normalizePublicDocumentUrl(new URL("https://example.com/readme.md")).toString())
+      .toBe("https://example.com/readme.md");
+  });
+
   it.runIf(process.env.RUN_LIVE_REMOTE_IMPORT === "1")("lê uma página e um projeto GitLab públicos", async () => {
     const page = await importRemoteSource("url", "https://example.com");
     expect(page.rawText).toContain("Example Domain");
+
+    const githubFile = await importRemoteSource(
+      "url",
+      "https://github.com/owshq-mec/semana-databricks/blob/main/readme.md"
+    );
+    expect(githubFile.rawText).toContain("Databricks Data Intelligence Platform");
 
     const gitlab = await importRemoteSource("gitlab", "https://gitlab.com/gitlab-org/cli");
     expect(gitlab.label).toContain("cli");

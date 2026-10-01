@@ -173,12 +173,24 @@ async function fetchReadableDocument(url: URL) {
   return { title: "", text: body.trim() };
 }
 
+export function normalizePublicDocumentUrl(url: URL) {
+  if (url.hostname.toLowerCase() !== "github.com") return url;
+  const parts = url.pathname.split("/").filter(Boolean);
+  if (parts.length < 5 || parts[2] !== "blob") return url;
+  const [owner, repo, , ref, ...fileParts] = parts;
+  if (!owner || !repo || !ref || fileParts.length === 0) return url;
+  return new URL(
+    `https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${encodeURIComponent(ref)}/${fileParts.map(encodeURIComponent).join("/")}`
+  );
+}
+
 async function importPublicUrl(value: string): Promise<RemoteImportResult> {
-  const url = parsePublicUrl(value);
-  const { title, text } = await fetchReadableDocument(url);
+  const sourceUrl = parsePublicUrl(value);
+  const fetchUrl = normalizePublicDocumentUrl(sourceUrl);
+  const { title, text } = await fetchReadableDocument(fetchUrl);
   return {
-    label: title || url.hostname,
-    rawText: `# Conteúdo importado de ${url.toString()}\n\n${text}`,
+    label: title || sourceUrl.pathname.split("/").filter(Boolean).at(-1) || sourceUrl.hostname,
+    rawText: `# Conteúdo importado de ${sourceUrl.toString()}\n\n${text}`,
     fileCount: 1,
   };
 }
