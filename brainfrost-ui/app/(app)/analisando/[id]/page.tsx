@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
@@ -35,20 +35,29 @@ class AnalysisRunError extends Error {
 export default function AnalisandoPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const theme = useSaas((s) => s.theme);
-  const provider = useSaas((s) => s.config.llmProvider);
+  const configuredProvider = useSaas((s) => s.config.llmProvider);
+  const requestedProvider = searchParams.get("provider");
+  const provider = requestedProvider === "managed"
+    ? "managed"
+    : requestedProvider === "webllm" || requestedProvider === "claude" || requestedProvider === "gemini"
+      ? requestedProvider
+      : configuredProvider;
   const webLlmModel = useSaas((s) => s.config.webLlmModel ?? DEFAULT_WEBLLM_MODEL);
   const c = palette(theme);
 
   const [progress, setProgress] = useState(5);
   const [modelProgress, setModelProgress] = useState<WebLlmProgress | null>(null);
-  const [usingBrowserFallback, setUsingBrowserFallback] = useState(false);
+  const [usingBrowserFallback, setUsingBrowserFallback] = useState(provider === "managed");
   const localModelLabel = WEBLLM_MODELS.find((model) => model.id === webLlmModel)?.label ?? webLlmModel;
-  const [analyzer, setAnalyzer] = useState(() => provider === "webllm"
-    ? { label: localModelLabel, detail: "Local (WebLLM) · roda neste navegador" }
-    : provider === "claude"
-      ? { label: "Anthropic Claude", detail: "Nuvem · usando sua chave" }
-      : { label: "Google Gemini", detail: "Nuvem · usando sua chave" });
+  const [analyzer, setAnalyzer] = useState(() => provider === "managed"
+    ? { label: "API gerenciada BrainFrost", detail: "Nuvem · conteúdo sanitizado" }
+    : provider === "webllm"
+      ? { label: localModelLabel, detail: "Local (WebLLM) · roda neste navegador" }
+      : provider === "claude"
+        ? { label: "Anthropic Claude", detail: "Nuvem · usando sua chave" }
+        : { label: "Google Gemini", detail: "Nuvem · usando sua chave" });
   const [status, setStatus] = useState<"rodando" | "cancelando" | "erro">("rodando");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const startedRef = useRef(false);
@@ -162,7 +171,9 @@ export default function AnalisandoPage() {
 
     (async () => {
       try {
-        if (provider === "webllm" && getWebLlmPreflightIssue(webLlmModel)) {
+        if (provider === "managed") {
+          await runServer("managed");
+        } else if (provider === "webllm" && getWebLlmPreflightIssue(webLlmModel)) {
           setUsingBrowserFallback(true);
           setAnalyzer({ label: "API gerenciada BrainFrost", detail: "Nuvem · conteúdo sanitizado" });
           await runServer("browser-fallback");
@@ -217,6 +228,7 @@ export default function AnalisandoPage() {
 
   async function cancelAnalysis() {
     if (status !== "rodando") return;
+    if (!window.confirm("Cancelar esta categorização? O conteúdo importado será preservado, mas as sugestões desta análise serão descartadas.")) return;
     setStatus("cancelando");
     cancelledRef.current = true;
     requestControllerRef.current?.abort();
@@ -253,20 +265,18 @@ export default function AnalisandoPage() {
               className="h-auto w-[180px]"
             />
           ) : (
-            <video
-              src="/mascot/yeti-laptop.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
+            <Image
+              src="/mascot/yeti-cooking.png"
+              alt="Frostie preparando a análise"
               width={200}
               height={200}
-              className="h-auto w-[200px]"
+              priority
+              className="h-auto w-[210px] animate-pulse rounded-2xl mix-blend-multiply"
             />
           )}
         </div>
         <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.accent, opacity: 0.8 }}>
-          {status === "erro" ? "algo deu errado" : status === "cancelando" ? "interrompendo" : usingBrowserFallback ? "análise compatível" : provider === "webllm" ? "analisando local" : "analisando"}
+          {status === "erro" ? "algo deu errado" : status === "cancelando" ? "interrompendo" : provider === "managed" ? "análise na nuvem" : usingBrowserFallback ? "análise compatível" : provider === "webllm" ? "analisando local" : "analisando"}
         </p>
         <h1 className="mt-3 text-[36px] font-semibold leading-[1.05] tracking-tight md:text-[44px]" style={{ color: c.text }}>
           {status === "erro" ? "Não deu." : status === "cancelando" ? "Cancelando análise" : showModelProgress ? "baixando modelo" : usingBrowserFallback ? "analisando na nuvem" : stage.label}
@@ -279,6 +289,8 @@ export default function AnalisandoPage() {
               ? "Interrompendo a LLM e preservando seus dados já importados."
               : showModelProgress
               ? `primeiro uso baixa ${WEBLLM_MODELS.find((m) => m.id === webLlmModel)?.size ?? "o modelo"}. Fica em cache pra próximas.`
+              : provider === "managed"
+                ? "O conteúdo sanitizado está sendo analisado pela API BrainFrost sem usar a memória ou GPU desta máquina."
               : usingBrowserFallback
                 ? "Seu navegador não concluiu o modelo local. O conteúdo sanitizado está sendo analisado com segurança no servidor."
               : stage.detail}

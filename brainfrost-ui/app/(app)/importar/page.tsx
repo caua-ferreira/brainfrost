@@ -11,6 +11,7 @@ import { useBilling } from "@/components/saas/BillingProvider";
 import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "@/lib/github";
 import { LOCAL_FILE_ACCEPT, readLocalTextFiles, readZipTextFiles } from "@/lib/import-files";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
+import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
 
 const SANITIZED = [
   ".env*", "*.pem", "*.key", "id_rsa*", "credentials.json",
@@ -19,6 +20,7 @@ const SANITIZED = [
 ];
 
 type Tab = "text" | "files" | "zip" | "github";
+type AnalysisProvider = "managed" | "webllm" | "claude" | "gemini";
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -31,11 +33,12 @@ async function createImport(input: {
   label: string;
   file_count: number;
   raw_text: string;
-}) {
+}, signal?: AbortSignal) {
   const response = await fetch("/api/imports", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
+    signal,
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || !body.id) {
@@ -44,10 +47,30 @@ async function createImport(input: {
   return body.id as string;
 }
 
+function analysisUrl(id: string, provider: AnalysisProvider) {
+  return `/analisando/${id}?provider=${provider}`;
+}
+
+function isCancelled(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
 export default function ImportarPage() {
   const theme = useSaas((s) => s.theme);
   const c = palette(theme);
+  const webLlmModel = useSaas((s) => s.config.webLlmModel ?? DEFAULT_WEBLLM_MODEL);
   const [tab, setTab] = useState<Tab>("text");
+  const [analysisProvider, setAnalysisProvider] = useState<AnalysisProvider>("managed");
+  const [storedProviders, setStoredProviders] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/config/llm-key")
+      .then((response) => response.ok ? response.json() : { credentials: [] })
+      .then((payload) => setStoredProviders((payload.credentials ?? []).map((item: { provider: string }) => item.provider)))
+      .catch(() => setStoredProviders([]));
+  }, []);
+
+  const localModel = WEBLLM_MODELS.find((model) => model.id === webLlmModel)?.label ?? "modelo local";
 
   return (
     <div className="relative h-full overflow-y-auto overflow-x-hidden" style={{ background: c.bg }}>
@@ -95,10 +118,33 @@ export default function ImportarPage() {
         </div>
 
         <div className="mt-6">
-          {tab === "text" && <TextPanel c={c} />}
-          {tab === "files" && <FilesPanel c={c} />}
-          {tab === "zip" && <ZipPanel c={c} />}
-          {tab === "github" && <GitHubPanel c={c} />}
+          <div className="mb-4 rounded-2xl border p-4" style={{ background: c.card, borderColor: c.border }}>
+            <label htmlFor="analysis-provider" className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: c.dim }}>analisar usando</label>
+            <select
+              id="analysis-provider"
+              value={analysisProvider}
+              onChange={(event) => setAnalysisProvider(event.target.value as AnalysisProvider)}
+              className="mt-2 h-11 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
+              style={{ borderColor: c.border, color: c.text, background: c.bgSoft }}
+            >
+              <option value="managed">BrainFrost Cloud — recomendado para não pesar a máquina</option>
+              <option value="webllm">Local (WebLLM) — {localModel}</option>
+              <option value="claude" disabled={!storedProviders.includes("claude")}>Claude — sua chave{!storedProviders.includes("claude") ? " (configure primeiro)" : ""}</option>
+              <option value="gemini" disabled={!storedProviders.includes("gemini")}>Gemini — sua chave{!storedProviders.includes("gemini") ? " (configure primeiro)" : ""}</option>
+            </select>
+            <p className="mt-2 text-[11px] leading-relaxed" style={{ color: c.dim }}>
+              {analysisProvider === "managed"
+                ? "A análise roda na nossa API com o conteúdo sanitizado e usa sua franquia mensal."
+                : analysisProvider === "webllm"
+                  ? "A análise roda neste navegador e pode consumir bastante memória e GPU."
+                  : "A análise roda na nuvem usando a chave salva na sua conta."}
+            </p>
+          </div>
+
+          {tab === "text" && <TextPanel c={c} analysisProvider={analysisProvider} />}
+          {tab === "files" && <FilesPanel c={c} analysisProvider={analysisProvider} />}
+          {tab === "zip" && <ZipPanel c={c} analysisProvider={analysisProvider} />}
+          {tab === "github" && <GitHubPanel c={c} analysisProvider={analysisProvider} />}
         </div>
 
         <div className="mt-16 border-t pt-8" style={{ borderColor: c.borderSoft }}>
@@ -125,10 +171,11 @@ export default function ImportarPage() {
   );
 }
 
-function FilesPanel({ c }: { c: ReturnType<typeof palette> }) {
+function FilesPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
   const router = useRouter();
   const filesInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const taskRef = useRef<AbortController | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -143,9 +190,12 @@ function FilesPanel({ c }: { c: ReturnType<typeof palette> }) {
 
   const submit = async () => {
     if (files.length === 0 || busy) return;
+    const controller = new AbortController();
+    taskRef.current = controller;
     setBusy(true);
     try {
       const contextFiles = await readLocalTextFiles(files);
+      controller.signal.throwIfAborted();
       if (contextFiles.length === 0) {
         throw new Error("Nenhum arquivo de texto compatível foi encontrado.");
       }
@@ -155,14 +205,20 @@ function FilesPanel({ c }: { c: ReturnType<typeof palette> }) {
         label: `Arquivos locais · ${contextFiles.length} arquivos`,
         file_count: contextFiles.length,
         raw_text: rawText,
-      });
+      }, controller.signal);
       announceNavigation();
-      router.push(`/analisando/${id}`);
+      router.push(analysisUrl(id, analysisProvider));
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Não foi possível ler os arquivos.");
+      if (!isCancelled(error)) alert(error instanceof Error ? error.message : "Não foi possível ler os arquivos.");
     } finally {
-      setBusy(false);
+      if (taskRef.current === controller) setBusy(false);
     }
+  };
+
+  const cancel = () => {
+    if (!window.confirm("Cancelar esta importação? Nenhum conteúdo será enviado para análise.")) return;
+    taskRef.current?.abort();
+    setBusy(false);
   };
 
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
@@ -221,14 +277,17 @@ function FilesPanel({ c }: { c: ReturnType<typeof palette> }) {
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
           {files.length > 0 ? `${(totalSize / 1024).toFixed(1)} KB selecionados` : "até 50 arquivos e 200 KB de texto"}
         </span>
-        <button
-          disabled={files.length === 0 || busy}
-          className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: c.accent, color: c.onAccent }}
-          onClick={submit}
-        >
-          {busy ? "lendo…" : "Importar & analisar"}
-        </button>
+        <div className="flex items-center gap-2">
+          {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
+          <button
+            disabled={files.length === 0 || busy}
+            className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: c.accent, color: c.onAccent }}
+            onClick={submit}
+          >
+            {busy ? "lendo…" : "Importar & analisar"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -268,13 +327,16 @@ function TabTrigger({
   );
 }
 
-function TextPanel({ c }: { c: ReturnType<typeof palette> }) {
+function TextPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
   const router = useRouter();
+  const taskRef = useRef<AbortController | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const disabled = text.trim().length < 20 || busy;
 
   const submit = async () => {
+    const controller = new AbortController();
+    taskRef.current = controller;
     setBusy(true);
     try {
       const id = await createImport({
@@ -282,14 +344,20 @@ function TextPanel({ c }: { c: ReturnType<typeof palette> }) {
         label: `Texto colado · ${text.length} caracteres`,
         file_count: 1,
         raw_text: text,
-      });
+      }, controller.signal);
       announceNavigation();
-      router.push(`/analisando/${id}`);
+      router.push(analysisUrl(id, analysisProvider));
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Não foi possível criar o import.");
+      if (!isCancelled(error)) alert(error instanceof Error ? error.message : "Não foi possível criar o import.");
     } finally {
-      setBusy(false);
+      if (taskRef.current === controller) setBusy(false);
     }
+  };
+
+  const cancel = () => {
+    if (!window.confirm("Cancelar esta importação? O texto continuará aqui para você editar.")) return;
+    taskRef.current?.abort();
+    setBusy(false);
   };
 
   return (
@@ -313,6 +381,8 @@ function TextPanel({ c }: { c: ReturnType<typeof palette> }) {
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
           {text.length.toLocaleString("pt-BR")} caracteres
         </span>
+        <div className="flex items-center gap-2">
+        {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
         <button
           disabled={disabled}
           className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
@@ -321,24 +391,29 @@ function TextPanel({ c }: { c: ReturnType<typeof palette> }) {
         >
           {busy ? "…" : "Analisar"}
         </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
+function ZipPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const taskRef = useRef<AbortController | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
   const submit = async () => {
     if (!file || busy) return;
+    const controller = new AbortController();
+    taskRef.current = controller;
     setBusy(true);
     setStatus("lendo arquivos do ZIP…");
     try {
       const contextFiles = await readZipTextFiles(file);
+      controller.signal.throwIfAborted();
       const rawText = buildRawTextFromFiles(file.name, contextFiles);
       setStatus(`criando import com ${contextFiles.length} arquivos…`);
       const id = await createImport({
@@ -346,15 +421,24 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
         label: file.name,
         file_count: contextFiles.length,
         raw_text: rawText,
-      });
+      }, controller.signal);
       announceNavigation();
-      router.push(`/analisando/${id}`);
+      router.push(analysisUrl(id, analysisProvider));
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Não foi possível ler o ZIP.");
+      if (!isCancelled(error)) alert(error instanceof Error ? error.message : "Não foi possível ler o ZIP.");
     } finally {
-      setBusy(false);
-      setStatus(null);
+      if (taskRef.current === controller) {
+        setBusy(false);
+        setStatus(null);
+      }
     }
+  };
+
+  const cancel = () => {
+    if (!window.confirm("Cancelar a leitura deste ZIP? O arquivo continuará selecionado para você tentar novamente.")) return;
+    taskRef.current?.abort();
+    setBusy(false);
+    setStatus(null);
   };
 
   return (
@@ -390,6 +474,7 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
 
       <div className="mt-4 flex justify-end">
         {status && <p className="mr-auto self-center font-mono text-[11px]" style={{ color: c.dim }}>{status}</p>}
+        {busy && <button type="button" onClick={cancel} className="mr-2 rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
         <button
           disabled={!file || busy}
           className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
@@ -403,8 +488,9 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
   );
 }
 
-function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
+function GitHubPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
   const router = useRouter();
+  const taskRef = useRef<AbortController | null>(null);
   const { session } = useSession();
   const { isPro } = useBilling();
   const providerToken = session?.provider_token ?? null;
@@ -450,10 +536,13 @@ function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
 
   const submit = async () => {
     if (!chosen || !providerToken) return;
+    const controller = new AbortController();
+    taskRef.current = controller;
     setBusy(true);
     setStatus("Baixando arquivos de contexto…");
     try {
       const { files } = await fetchContextFiles(providerToken, chosen.full_name, chosen.default_branch);
+      controller.signal.throwIfAborted();
       if (files.length === 0) {
         setBusy(false);
         setStatus(null);
@@ -469,16 +558,23 @@ function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
         label: chosen.full_name,
         file_count: files.length,
         raw_text: rawText,
-      });
+      }, controller.signal);
       setBusy(false);
       setStatus(null);
       announceNavigation();
-      router.push(`/analisando/${id}`);
+      router.push(analysisUrl(id, analysisProvider));
     } catch (e) {
       setBusy(false);
       setStatus(null);
-      alert(e instanceof Error ? e.message : "Erro ao importar.");
+      if (!isCancelled(e)) alert(e instanceof Error ? e.message : "Erro ao importar.");
     }
+  };
+
+  const cancel = () => {
+    if (!window.confirm("Cancelar esta importação do GitHub? Nenhuma sugestão será criada.")) return;
+    taskRef.current?.abort();
+    setBusy(false);
+    setStatus(null);
   };
 
   if (!isPro) {
@@ -604,14 +700,17 @@ function GitHubPanel({ c }: { c: ReturnType<typeof palette> }) {
               ? `Vamos ler README, CLAUDE.md, CONTEXTO.md, .cursor/rules, docs/*.md (até 20 arquivos, 200 KB total)`
               : "Escolha um repo à esquerda.")}
         </p>
-        <button
-          disabled={!chosen || busy}
-          className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: c.accent, color: c.onAccent }}
-          onClick={submit}
-        >
-          {busy ? "…" : "Importar & analisar"}
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
+          <button
+            disabled={!chosen || busy}
+            className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: c.accent, color: c.onAccent }}
+            onClick={submit}
+          >
+            {busy ? "…" : "Importar & analisar"}
+          </button>
+        </div>
       </div>
     </div>
   );
