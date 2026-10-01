@@ -130,7 +130,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const { id: importId } = await ctx.params;
 
   const body = await request.json().catch(() => ({}));
-  const browserFallback = body?.provider === "browser-fallback";
+  const forceManaged = body?.provider === "managed";
+  const browserFallback = body?.provider === "browser-fallback" || forceManaged;
   const providerPref: Provider | null =
     body?.provider === "claude" || body?.provider === "gemini" ? body.provider : null;
 
@@ -177,10 +178,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
   }
 
-  // No fallback, contas Pro usam primeiro a própria chave. O Free usa a
-  // credencial gerenciada do BrainFrost e continua protegido pela cota de
-  // importações aplicada na criação do import.
-  const useUserCredential = !!chosen && (!browserFallback || isPro);
+  // A escolha explícita "managed" sempre usa a franquia BrainFrost. No
+  // fallback automático, contas Pro ainda priorizam a própria chave salva.
+  const useUserCredential = !!chosen && !forceManaged && (!browserFallback || isPro);
   let userApiKey: string | null = null;
   if (useUserCredential) {
     try {
