@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { hasProAccess } from "@/lib/pro-entitlement";
 
 export const runtime = "nodejs";
 
@@ -62,11 +63,12 @@ export async function POST(request: Request) {
   const concepts = conceptsOf(body.concepts ?? suggestion.concepts);
   const suggestedLinks = linksOf(body.links ?? suggestion.suggested_links);
 
-  const [{ data: subscription }, { count: layerCount }] = await Promise.all([
+  const [{ data: subscription }, { data: grant }, { count: layerCount }] = await Promise.all([
     supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),
+    supabase.from("pro_grants").select("expires_at,revoked_at").eq("user_id", user.id).maybeSingle(),
     supabase.from("vault_notes").select("id", { count: "exact", head: true }),
   ]);
-  const isPro = subscription?.status === "active" || subscription?.status === "trialing";
+  const isPro = hasProAccess(subscription?.status, grant);
   if (!isPro && (layerCount ?? 0) >= 50) {
     return NextResponse.json(
       { error: "O plano Free permite até 50 camadas. Faça upgrade para continuar." },

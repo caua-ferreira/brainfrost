@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/crypto";
+import { hasProAccess } from "@/lib/pro-entitlement";
 
 export const runtime = "nodejs";
 
@@ -21,12 +22,11 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("status")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (subscription?.status !== "active" && subscription?.status !== "trialing") {
+  const [{ data: subscription }, { data: grant }] = await Promise.all([
+    supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),
+    supabase.from("pro_grants").select("expires_at,revoked_at").eq("user_id", user.id).maybeSingle(),
+  ]);
+  if (!hasProAccess(subscription?.status, grant)) {
     return NextResponse.json({ error: "Claude e Gemini são recursos do plano Pro." }, { status: 402 });
   }
 

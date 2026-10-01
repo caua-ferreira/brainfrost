@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { hasProAccess } from "@/lib/pro-entitlement";
 
 export const runtime = "nodejs";
 
@@ -7,8 +8,6 @@ const SOURCES = ["text", "files", "zip", "github"] as const;
 type Source = (typeof SOURCES)[number];
 const isSource = (value: unknown): value is Source =>
   typeof value === "string" && (SOURCES as readonly string[]).includes(value);
-
-const isProStatus = (status: string | null | undefined) => status === "active" || status === "trialing";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null) as {
@@ -26,8 +25,9 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
-  const [{ data: subscription }, { count: importsThisMonth }] = await Promise.all([
+  const [{ data: subscription }, { data: grant }, { count: importsThisMonth }] = await Promise.all([
     supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),
+    supabase.from("pro_grants").select("expires_at,revoked_at").eq("user_id", user.id).maybeSingle(),
     (() => {
       const start = new Date();
       start.setUTCDate(1);
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     })(),
   ]);
 
-  const isPro = isProStatus(subscription?.status);
+  const isPro = hasProAccess(subscription?.status, grant);
   if (body.source === "github" && !isPro) {
     return NextResponse.json({ error: "Importação pelo GitHub é um recurso Pro." }, { status: 402 });
   }

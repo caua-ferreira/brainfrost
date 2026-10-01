@@ -18,6 +18,8 @@ const TITLE: Record<string, string> = {
   "/camadas": "Camadas",
   "/cofre": "Cérebro",
   "/assinatura": "Assinatura",
+  "/observabilidade": "Observabilidade",
+  "/gestao-assinaturas": "Gestão Pro",
   "/perfil": "Perfil",
   "/config": "Config",
 };

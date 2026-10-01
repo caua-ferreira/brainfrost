@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   Download,
+  BadgeDollarSign,
   CreditCard,
   ChartNoAxesCombined,
   Home,
@@ -41,6 +42,13 @@ const OBSERVABILITY_NAV = {
   match: (p: string) => p.startsWith("/observabilidade"),
 };
 
+const SUBSCRIPTIONS_ADMIN_NAV = {
+  href: "/gestao-assinaturas",
+  label: "Gestão Pro",
+  icon: BadgeDollarSign,
+  match: (p: string) => p.startsWith("/gestao-assinaturas"),
+};
+
 interface Props {
   onNavigate?: () => void;
 }
@@ -48,30 +56,30 @@ interface Props {
 export function SidebarNav({ onNavigate }: Props) {
   const pathname = usePathname();
   const { session } = useSession();
-  const [canViewObservability, setCanViewObservability] = useState(false);
+  const [canViewAdmin, setCanViewAdmin] = useState(false);
   const collapsed = useSaas((s) => s.sidebarCollapsed);
   const toggle = useSaas((s) => s.toggleSidebar);
 
   useEffect(() => {
     if (!session) {
-      setCanViewObservability(false);
+      setCanViewAdmin(false);
       return;
     }
 
     const controller = new AbortController();
     fetch("/api/observability/access", { signal: controller.signal, cache: "no-store" })
       .then(async (response) => response.ok ? response.json() as Promise<{ allowed: boolean }> : { allowed: false })
-      .then(({ allowed }) => setCanViewObservability(allowed))
+      .then(({ allowed }) => setCanViewAdmin(allowed))
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setCanViewObservability(false);
+        setCanViewAdmin(false);
       });
 
     return () => controller.abort();
   }, [session]);
 
-  const navItems = canViewObservability
-    ? [...NAV.slice(0, -1), OBSERVABILITY_NAV, NAV[NAV.length - 1]]
+  const navItems = canViewAdmin
+    ? [...NAV.slice(0, -1), OBSERVABILITY_NAV, SUBSCRIPTIONS_ADMIN_NAV, NAV[NAV.length - 1]]
     : NAV;
 
   return (

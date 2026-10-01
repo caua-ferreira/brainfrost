@@ -83,6 +83,7 @@ export default function AssinaturaPage() {
   if (loading && !data) return <LoadingScreen message="consultando assinatura" />;
 
   const subscription = data?.subscription;
+  const complimentaryGrant = data?.complimentaryGrant;
   const invoices = data?.invoices ?? [];
   const method = data?.paymentMethods?.[0];
 
@@ -130,18 +131,18 @@ export default function AssinaturaPage() {
                 </span>
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>plano atual</p>
-                  <p className="mt-1 text-[20px] font-semibold" style={{ color: c.text }}>{isPro ? `Pro ${subscription?.plan === "annual" ? "anual" : "mensal"}` : "Free"}</p>
+                  <p className="mt-1 text-[20px] font-semibold" style={{ color: c.text }}>{isPro ? complimentaryGrant && !subscription?.isPro ? "Pro cortesia" : `Pro ${subscription?.plan === "annual" ? "anual" : "mensal"}` : "Free"}</p>
                 </div>
               </div>
               <span className="rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider" style={{ background: `${isPro ? c.aurora : c.dim}20`, color: isPro ? c.aurora : c.dim }}>
-                {subscription ? statusLabel(subscription.status) : "sem cobrança"}
+                {subscription ? statusLabel(subscription.status) : complimentaryGrant ? "cortesia" : "sem cobrança"}
               </span>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-4" style={{ borderColor: c.borderSoft }}>
               <Metric label="importações este mês" value={`${data?.usage.importsThisMonth ?? 0}${isPro ? "" : " / 3"}`} c={c} />
               <Metric label="camadas no cérebro" value={`${data?.usage.layers ?? 0}${isPro ? "" : " / 50"}`} c={c} />
-              <Metric label={subscription?.cancelAtPeriodEnd ? "acesso até" : "próxima cobrança"} value={subscription ? date(subscription.currentPeriodEnd) : "—"} c={c} />
+              <Metric label={complimentaryGrant && !subscription?.isPro ? "acesso cortesia até" : subscription?.cancelAtPeriodEnd ? "acesso até" : "próxima cobrança"} value={complimentaryGrant && !subscription?.isPro ? (complimentaryGrant.expiresAt ? date(complimentaryGrant.expiresAt) : "vitalício") : subscription ? date(subscription.currentPeriodEnd) : "—"} c={c} />
               <Metric label="total pago" value={money(data?.totals?.totalPaid ?? 0)} c={c} />
             </div>
 
