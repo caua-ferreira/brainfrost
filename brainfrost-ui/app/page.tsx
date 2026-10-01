@@ -383,13 +383,12 @@ export default function LandingPage() {
             style={{ background: "#FCFCFB", borderColor: LIGHT.border }}
           >
             <picture>
-              <source media="(min-width: 768px)" srcSet="/mascot/yeti-beta-flag.gif" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/mascot/yeti-beta-flag-back.gif"
                 alt="Frostie avisando que estamos em beta"
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-20 right-10 z-0 h-[105px] w-auto select-none mix-blend-multiply md:bottom-36 md:right-2 md:z-auto md:h-48 md:mix-blend-normal"
+                className="pointer-events-none absolute bottom-20 right-10 z-0 h-[105px] w-auto select-none mix-blend-multiply md:hidden"
               />
             </picture>
             <div className="relative z-10 md:contents">
@@ -404,7 +403,7 @@ export default function LandingPage() {
                 Pra experimentar sem cadastrar cartão
               </p>
 
-              <ul className="mt-8 space-y-3 text-[14px] md:pr-48">
+              <ul className="mt-8 space-y-3 text-[14px]">
                 <Tick label="LLM local (WebLLM) ilimitada" />
                 <Tick label="Até 3 importações por mês" />
                 <Tick label="Até 50 camadas no cérebro" />
@@ -412,11 +411,20 @@ export default function LandingPage() {
                 <Tick label="CLI bfrost" />
               </ul>
 
-              <br />
+              <div className="relative mt-3 hidden h-36 md:block" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/mascot/yeti-beta-flag.gif"
+                  alt=""
+                  className="pointer-events-none absolute bottom-0 left-1/2 h-40 w-auto -translate-x-1/2 select-none"
+                />
+              </div>
+
+              <br className="md:hidden" />
 
               <Link
                 href="/login"
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[14px] font-medium hover:brightness-95"
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-[14px] font-medium hover:brightness-95 md:mt-3"
                 style={{ borderColor: LIGHT.border, color: LIGHT.fg }}
               >
                 Começar grátis
