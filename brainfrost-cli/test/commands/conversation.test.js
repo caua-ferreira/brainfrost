@@ -48,10 +48,8 @@ test("newConversation + saveConversation gera JSON persistido", () => {
 
 test("appendTurn acrescenta user+assistant e atualiza updatedAt", () => {
   const convo = loadConversation();
-  const before = convo.updatedAt;
-  // pequena espera pra garantir diff de timestamp
-  const later = new Date(Date.now() + 5).toISOString();
-  convo.updatedAt = later;
+  const before = "2000-01-01T00:00:00.000Z";
+  convo.updatedAt = before;
   appendTurn(convo, "primeira pergunta", "primeira resposta");
   assert.equal(convo.messages.length, 2);
   assert.equal(convo.messages[0].role, "user");

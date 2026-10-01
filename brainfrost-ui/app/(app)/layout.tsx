@@ -8,6 +8,7 @@ import { ThemeApplicator } from "@/components/saas/ThemeApplicator";
 import { NavigationLoader } from "@/components/shared/NavigationLoader";
 import { BillingProvider } from "@/components/saas/BillingProvider";
 import ChatWidget from "@/components/chat/ChatWidget";
+import { ProductAnalytics } from "@/components/observability/ProductAnalytics";
 
 const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
@@ -31,6 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <BillingProvider>
         <ThemeApplicator />
         <NavigationLoader />
+        <ProductAnalytics />
         <div className="flex h-[100dvh] overflow-hidden">
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">

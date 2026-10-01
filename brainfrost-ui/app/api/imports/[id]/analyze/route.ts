@@ -19,7 +19,9 @@ export const maxDuration = 60;
 
 type Provider = "claude" | "gemini";
 
-function reportAnalysisError(input: {
+async function reportAnalysisError(
+  supabase: Awaited<ReturnType<typeof getSupabaseServer>>,
+  input: {
   stage: string;
   message: unknown;
   userId: string;
@@ -28,7 +30,21 @@ function reportAnalysisError(input: {
   metadata?: Record<string, string | number | boolean | null | undefined>;
 }) {
   const errorId = crypto.randomUUID();
-  writeErrorTelemetry({ errorId, scope: "analysis", ...input });
+  const message = sanitizeTelemetryMessage(input.message);
+  const metadata = Object.fromEntries(
+    Object.entries(input.metadata ?? {}).filter(([, value]) => value !== undefined)
+  );
+  writeErrorTelemetry({ errorId, scope: "analysis", ...input, message, metadata });
+  await supabase.from("error_events").insert({
+    error_id: errorId,
+    user_id: input.userId,
+    import_id: input.importId,
+    scope: "analysis",
+    stage: input.stage,
+    provider: input.provider ?? null,
+    message,
+    metadata,
+  });
   return errorId;
 }
 
@@ -177,7 +193,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   if (managed && isPro) {
     const { data: quotaRows, error: quotaError } = await supabase.rpc("consume_managed_llm_quota");
     if (quotaError) {
-      const errorId = reportAnalysisError({
+      const errorId = await reportAnalysisError(supabase, {
         stage: "quota",
         message: quotaError.message,
         userId: user.id,
@@ -246,7 +262,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "erro no LLM";
-    const errorId = reportAnalysisError({
+    const errorId = await reportAnalysisError(supabase, {
       stage: "provider",
       message: msg,
       userId: user.id,
@@ -267,7 +283,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   try {
     suggestions = parseSuggestionsJson(raw);
   } catch {
-    const errorId = reportAnalysisError({
+    const errorId = await reportAnalysisError(supabase, {
       stage: "parse",
       message: "LLM não devolveu JSON válido",
       userId: user.id,
@@ -322,7 +338,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   if (rows.length > 0) {
     const { error: insErr } = await supabase.from("pattern_suggestions").insert(rows);
     if (insErr) {
-      const errorId = reportAnalysisError({
+      const errorId = await reportAnalysisError(supabase, {
         stage: "save_suggestions",
         message: insErr.message,
         userId: user.id,

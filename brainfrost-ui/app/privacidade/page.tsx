@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       eyebrow="privacidade e dados"
       title="Política de Privacidade"
       description="Esta política descreve quais dados o BrainFrost trata, por que eles são necessários e quais escolhas permanecem sob seu controle."
-      updatedAt="28 de setembro de 2026"
+      updatedAt="30 de setembro de 2026"
       sections={[
         {
           title: "Quem controla os dados",
@@ -25,6 +25,10 @@ export default function PrivacyPage() {
         {
           title: "Por que usamos esses dados",
           content: <ul><li>Criar e proteger sua conta.</li><li>Importar, organizar, relacionar e exportar o contexto solicitado.</li><li>Executar recursos de IA e integrações escolhidos por você.</li><li>Processar assinaturas, cumprir obrigações legais e prestar suporte.</li><li>Prevenir abuso, medir estabilidade e melhorar a experiência.</li></ul>,
+        },
+        {
+          title: "Métricas de uso e observabilidade",
+          content: <><p>Coletamos métricas first-party associadas à conta para operar e melhorar o serviço, como início e última atividade da sessão, tempo em que a aplicação esteve visível e recebeu interação, páginas acessadas, resultado das importações e códigos técnicos de erro.</p><p>Essa telemetria não inclui conteúdo importado, mensagens de chat, prompts, respostas completas de IA ou chaves de API. Segredos reconhecidos em mensagens técnicas são mascarados antes do registro.</p></>,
         },
         {
           title: "Bases legais",
@@ -52,7 +56,7 @@ export default function PrivacyPage() {
         },
         {
           title: "Cookies e armazenamento local",
-          content: <p>Usamos cookies e armazenamento do navegador necessários para autenticação, sessão, preferências e funcionamento de recursos locais. Futuras tecnologias opcionais de análise ou marketing deverão ser informadas e controladas conforme a legislação aplicável.</p>,
+          content: <p>Usamos cookies e armazenamento do navegador necessários para autenticação, sessão, preferências, identificação temporária da sessão de uso e funcionamento de recursos locais. Não usamos essa identificação para publicidade comportamental.</p>,
         },
         {
           title: "Segurança",

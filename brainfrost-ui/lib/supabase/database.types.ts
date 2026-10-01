@@ -58,6 +58,42 @@ export type Database = {
         }
         Relationships: []
       }
+      error_events: {
+        Row: {
+          error_id: string
+          import_id: string | null
+          message: string
+          metadata: Json
+          occurred_at: string
+          provider: string | null
+          scope: string
+          stage: string
+          user_id: string | null
+        }
+        Insert: {
+          error_id: string
+          import_id?: string | null
+          message: string
+          metadata?: Json
+          occurred_at?: string
+          provider?: string | null
+          scope: string
+          stage: string
+          user_id?: string | null
+        }
+        Update: {
+          error_id?: string
+          import_id?: string | null
+          message?: string
+          metadata?: Json
+          occurred_at?: string
+          provider?: string | null
+          scope?: string
+          stage?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       managed_llm_usage: {
         Row: {
           period_start: string
@@ -76,6 +112,93 @@ export type Database = {
           updated_at?: string
           usage_count?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      product_events: {
+        Row: {
+          event_name: string
+          id: number
+          occurred_at: string
+          path: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          event_name: string
+          id?: never
+          occurred_at?: string
+          path: string
+          session_id: string
+          user_id?: string
+        }
+        Update: {
+          event_name?: string
+          id?: never
+          occurred_at?: string
+          path?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      product_sessions: {
+        Row: {
+          active_seconds: number
+          id: string
+          last_path: string
+          last_seen_at: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          active_seconds?: number
+          id: string
+          last_path?: string
+          last_seen_at?: string
+          started_at?: string
+          user_id?: string
+        }
+        Update: {
+          active_seconds?: number
+          id?: string
+          last_path?: string
+          last_seen_at?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      synthetic_checks: {
+        Row: {
+          check_name: string
+          duration_ms: number
+          error_id: string | null
+          id: number
+          occurred_at: string
+          provider: string | null
+          status: string
+          suggestions_count: number | null
+        }
+        Insert: {
+          check_name: string
+          duration_ms: number
+          error_id?: string | null
+          id?: never
+          occurred_at?: string
+          provider?: string | null
+          status: string
+          suggestions_count?: number | null
+        }
+        Update: {
+          check_name?: string
+          duration_ms?: number
+          error_id?: string | null
+          id?: never
+          occurred_at?: string
+          provider?: string | null
+          status?: string
+          suggestions_count?: number | null
         }
         Relationships: []
       }
@@ -294,6 +417,15 @@ export type Database = {
           resets_at: string
           used: number
         }>
+      }
+      record_product_activity: {
+        Args: {
+          p_active_seconds?: number
+          p_page_view?: boolean
+          p_path: string
+          p_session_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: { [_ in never]: never }
