@@ -266,12 +266,13 @@ export default function AnalisandoPage() {
             />
           ) : (
             <Image
-              src="/mascot/yeti-cooking.png"
+              src="/mascot/yeti-cooking.gif"
               alt="Frostie preparando a análise"
               width={200}
               height={200}
               priority
-              className="h-auto w-[210px] animate-pulse rounded-2xl mix-blend-multiply"
+              unoptimized
+              className="h-auto w-[210px] rounded-2xl mix-blend-multiply"
             />
           )}
         </div>
