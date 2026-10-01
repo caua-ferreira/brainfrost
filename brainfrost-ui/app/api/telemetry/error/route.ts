@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   const stage = sanitizeTelemetryMessage(body?.stage ?? "unknown", 50);
   const message = sanitizeTelemetryMessage(body?.message);
   const importId = typeof body?.importId === "string" ? body.importId.slice(0, 100) : undefined;
+  const provider = typeof body?.provider === "string" ? sanitizeTelemetryMessage(body.provider, 100) : undefined;
   writeErrorTelemetry({
     errorId,
     scope,
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
     message,
     userId: user.id,
     importId,
+    provider,
     metadata: { source: "browser" },
   });
 
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
     import_id: importId && /^[0-9a-f-]{36}$/i.test(importId) ? importId : null,
     scope,
     stage,
+    provider: provider ?? null,
     message,
     metadata: { source: "browser" },
   });

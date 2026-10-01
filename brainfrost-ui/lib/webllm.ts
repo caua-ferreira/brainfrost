@@ -100,7 +100,7 @@ export function getWebLlmPreflightIssue(
 
 export function isWebLlmCompatibilityError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /webgpu|gpu|adapter|device lost|out of memory|memory limit|shader|context window|token.*limit|already (?:been )?disposed|has already disposed/i.test(message);
+  return /webgpu|gpu|adapter|device lost|out of memory|memory limit|shader|context window|token.*limit|already (?:been )?disposed|has already disposed|LLM não devolveu JSON válido/i.test(message);
 }
 
 export function isWebLlmDisposedError(error: unknown): boolean {
