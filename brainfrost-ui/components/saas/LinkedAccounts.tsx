@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { Check, Unlink } from "lucide-react";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "./SessionProvider";
-import { GitHubBrandLogo, GoogleLogo, MicrosoftLogo } from "./OAuthProviderLogos";
+import { GitHubBrandLogo, GitLabLogo, GoogleLogo, MicrosoftLogo } from "./OAuthProviderLogos";
 
-type Provider = "google" | "github" | "azure";
+type Provider = "google" | "github" | "azure" | "gitlab";
+
+const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED === "true";
 
 const PROVIDERS: {
   id: Provider;
@@ -18,6 +20,7 @@ const PROVIDERS: {
   { id: "google", label: "Google", hint: "e-mail pessoal", Icon: GoogleLogo },
   { id: "github", label: "GitHub", hint: "importar repositórios privados", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
   { id: "azure", label: "Microsoft", hint: "conta Microsoft / Azure AD", scopes: "email", Icon: MicrosoftLogo },
+  ...(GITLAB_ENABLED ? [{ id: "gitlab" as const, label: "GitLab", hint: "importar repositórios do GitLab", scopes: "read_user", Icon: GitLabLogo }] : []),
 ];
 
 export function LinkedAccounts() {

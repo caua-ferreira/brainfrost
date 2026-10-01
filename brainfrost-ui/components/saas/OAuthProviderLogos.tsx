@@ -37,3 +37,14 @@ export function MicrosoftLogo({ size = 18, className }: LogoProps) {
     </svg>
   );
 }
+
+export function GitLabLogo({ size = 18, className }: LogoProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-label="GitLab">
+      <path
+        fill="#FC6D26"
+        d="m23.955 13.587-1.342-4.135-2.659-8.192a.459.459 0 0 0-.87 0l-2.659 8.192h-8.85L4.916 1.26a.459.459 0 0 0-.87 0L1.387 9.452.045 13.587a.924.924 0 0 0 .331 1.023L12 23.055l11.624-8.445a.924.924 0 0 0 .331-1.023Z"
+      />
+    </svg>
+  );
+}
