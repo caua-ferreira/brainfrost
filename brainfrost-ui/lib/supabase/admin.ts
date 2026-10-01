@@ -2,8 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 
 /**
- * Cliente com service_role — bypassa RLS. USE APENAS no webhook do Stripe
- * (que valida signature). Qualquer outro uso vira brecha de segurança.
+ * Cliente com service_role — bypassa RLS. Use somente em rotas de servidor
+ * com autenticação forte: webhook assinado, cron protegido ou admin validado.
  */
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;

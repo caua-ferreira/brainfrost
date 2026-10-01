@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hasProAccess } from "@/lib/pro-entitlement";
 import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -141,12 +142,11 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     return NextResponse.json({ ok: true, alreadyAnalyzed: true });
   }
 
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("status")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const isPro = subscription?.status === "active" || subscription?.status === "trialing";
+  const [{ data: subscription }, { data: grant }] = await Promise.all([
+    supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),
+    supabase.from("pro_grants").select("expires_at,revoked_at").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const isPro = hasProAccess(subscription?.status, grant);
 
   const { data: creds } = await supabase
     .from("llm_credentials")

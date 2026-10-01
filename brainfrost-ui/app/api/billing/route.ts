@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { hasActiveGrant, hasProAccess } from "@/lib/pro-entitlement";
 
 export const runtime = "nodejs";
-
-const PRO_STATUSES = new Set(["active", "trialing"]);
 
 function isMissingCustomer(error: unknown) {
   return error instanceof Error
@@ -23,10 +22,15 @@ export async function GET() {
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
 
-  const [{ data: subscription }, { count: importsThisMonth }, { count: layers }] = await Promise.all([
+  const [{ data: subscription }, { data: grant }, { count: importsThisMonth }, { count: layers }] = await Promise.all([
     supabase
       .from("subscriptions")
       .select("stripe_customer_id, stripe_subscription_id, status, price_id, current_period_end, cancel_at_period_end, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("pro_grants")
+      .select("expires_at,reason,revoked_at,updated_at")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase
@@ -42,7 +46,13 @@ export async function GET() {
 
   if (!subscription) {
     return NextResponse.json({
+      isPro: hasActiveGrant(grant),
       subscription: null,
+      complimentaryGrant: hasActiveGrant(grant) ? {
+        expiresAt: grant?.expires_at ?? null,
+        reason: grant?.reason ?? "Concessão administrativa",
+        updatedAt: grant?.updated_at ?? null,
+      } : null,
       invoices: [],
       paymentMethods: [],
       usage: { importsThisMonth: importsThisMonth ?? 0, layers: layers ?? 0 },
@@ -78,15 +88,21 @@ export async function GET() {
       .reduce((sum, invoice) => sum + invoice.amountRemaining, 0);
 
     return NextResponse.json({
+      isPro: hasProAccess(status, grant),
       subscription: {
         status,
-        isPro: PRO_STATUSES.has(status),
+        isPro: hasProAccess(status, grant),
         plan,
         priceId,
         currentPeriodEnd: subscription.current_period_end,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         updatedAt: subscription.updated_at,
       },
+      complimentaryGrant: hasActiveGrant(grant) ? {
+        expiresAt: grant?.expires_at ?? null,
+        reason: grant?.reason ?? "Concessão administrativa",
+        updatedAt: grant?.updated_at ?? null,
+      } : null,
       invoices,
       paymentMethods: paymentMethodList.data.map((method) => ({
         id: method.id,
@@ -101,7 +117,13 @@ export async function GET() {
   } catch (error) {
     if (isMissingCustomer(error)) {
       return NextResponse.json({
+        isPro: hasActiveGrant(grant),
         subscription: null,
+        complimentaryGrant: hasActiveGrant(grant) ? {
+          expiresAt: grant?.expires_at ?? null,
+          reason: grant?.reason ?? "Concessão administrativa",
+          updatedAt: grant?.updated_at ?? null,
+        } : null,
         invoices: [],
         paymentMethods: [],
         usage: { importsThisMonth: importsThisMonth ?? 0, layers: layers ?? 0 },

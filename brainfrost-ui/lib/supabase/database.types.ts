@@ -358,6 +358,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pro_grants: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_by: string | null
+          reason: string
+          revoked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          reason: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          reason?: string
+          revoked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscription_admin_events: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          id: string
+          new_expires_at: string | null
+          previous_expires_at: string | null
+          reason: string
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_expires_at?: string | null
+          previous_expires_at?: string | null
+          reason: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          id?: string
+          new_expires_at?: string | null
+          previous_expires_at?: string | null
+          reason?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       vault_links: {
         Row: { from_note_id: string; to_slug: string }
         Insert: { from_note_id: string; to_slug: string }

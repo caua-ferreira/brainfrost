@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export interface BillingData {
+  isPro: boolean;
   subscription: {
     status: string;
     isPro: boolean;
@@ -11,6 +12,11 @@ export interface BillingData {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
     updatedAt: string;
+  } | null;
+  complimentaryGrant: {
+    expiresAt: string | null;
+    reason: string;
+    updatedAt: string | null;
   } | null;
   invoices: Array<{
     id: string;
@@ -80,7 +86,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ data, loading, error, isPro: data?.subscription?.isPro ?? false, refresh }),
+    () => ({ data, loading, error, isPro: data?.isPro ?? false, refresh }),
     [data, loading, error, refresh]
   );
 

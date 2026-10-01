@@ -458,6 +458,11 @@ CRON_SECRET=<segredo aleatório para o teste sintético diário>
 A chave nunca usa prefixo `NEXT_PUBLIC_`. O plano Free continua limitado a três importações
 mensais; contas Pro com chave própria usam primeiro a credencial do usuário.
 
+Os e-mails em `BRAINFROST_ADMIN_EMAILS` recebem no sidebar os painéis privados de
+Observabilidade e Gestão Pro. A Gestão Pro permite conceder, estender ou revogar
+acessos cortesia sem alterar cobranças e faturas mantidas pelo Stripe. Essas ações
+ficam registradas em `subscription_admin_events`.
+
 O painel privado `/observabilidade` mostra usuários totais, DAU/WAU/MAU, pessoas
 ativas nos últimos cinco minutos, tempo ativo, rotas, importações e erros. O cron
 `/api/cron/import-smoke` executa diariamente uma análise real curta usando a LLM
