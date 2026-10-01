@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { priceFor, stripe, type PlanKey } from "@/lib/stripe";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,8 @@ export async function POST(request: Request) {
   if (!user?.email) {
     return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   }
+  const limited = await enforceRateLimit(supabase, "checkout", 10, 600);
+  if (limited) return limited;
 
   const { data: existing, error: subscriptionError } = await supabase
     .from("subscriptions")

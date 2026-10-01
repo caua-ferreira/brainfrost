@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       eyebrow="privacidade e dados"
       title="Política de Privacidade"
       description="Esta política descreve quais dados o BrainFrost trata, por que eles são necessários e quais escolhas permanecem sob seu controle."
-      updatedAt="30 de setembro de 2026"
+      updatedAt="1 de outubro de 2026"
       sections={[
         {
           title: "Quem controla os dados",
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
         },
         {
           title: "Retenção e exclusão",
-          content: <p>Mantemos os dados enquanto sua conta estiver ativa e pelo tempo necessário para prestar o serviço, resolver disputas e cumprir obrigações legais. Você pode solicitar a exclusão; dados sujeitos a retenção obrigatória ou necessários para defesa de direitos poderão ser preservados pelo prazo aplicável.</p>,
+          content: <p>Mantemos os dados enquanto sua conta estiver ativa e pelo tempo necessário para prestar o serviço, resolver disputas e cumprir obrigações legais. Na tela Perfil, você pode exportar seus dados ou excluir a conta diretamente. A exclusão cancela a assinatura ativa e remove os dados operacionais vinculados à conta; registros fiscais sujeitos a retenção obrigatória ou necessários para defesa de direitos poderão ser preservados pelo prazo aplicável.</p>,
         },
         {
           title: "Seus direitos",

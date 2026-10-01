@@ -17,6 +17,7 @@ jobs:
           sudo apt-get install -y postgresql-client-17
 
       - name: pg_dump + gpg
+        timeout-minutes: 15
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
@@ -40,12 +41,18 @@ jobs:
             --passphrase "$BACKUP_PASSPHRASE" \
             --symmetric --cipher-algo AES256 \
             "${OUT}.gz"
+          gpg --batch --quiet --pinentry-mode loopback \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --decrypt "${OUT}.gz.gpg" | gzip --test
+          sha256sum "${OUT}.gz.gpg" > "${OUT}.gz.gpg.sha256"
           echo "BACKUP_FILE=${OUT}.gz.gpg" >> "$GITHUB_ENV"
 
       - name: Sobe artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BACKUP_FILE }}
-          path: ${{ env.BACKUP_FILE }}
+          path: |
+            ${{ env.BACKUP_FILE }}
+            ${{ env.BACKUP_FILE }}.sha256
           retention-days: 90
           if-no-files-found: error

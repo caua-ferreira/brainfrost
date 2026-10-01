@@ -2,12 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, Check, Settings2, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Camera, Check, Download, Settings2, Trash2, UserRound } from "lucide-react";
 import { useSession } from "@/components/saas/SessionProvider";
 import { LinkedAccounts } from "@/components/saas/LinkedAccounts";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ProfileStatus = { type: "ok" | "error"; message: string } | null;
 
@@ -31,6 +40,7 @@ function initialsFor(name: string, email: string) {
 }
 
 export default function PerfilPage() {
+  const router = useRouter();
   const theme = useSaas((s) => s.theme);
   const c = palette(theme);
   const { session } = useSession();
@@ -43,6 +53,10 @@ export default function PerfilPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<ProfileStatus>(null);
+  const [exporting, setExporting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -154,6 +168,64 @@ export default function PerfilPage() {
     }
   };
 
+  const exportAccount = async () => {
+    setExporting(true);
+    setStatus(null);
+    try {
+      const response = await fetch("/api/account/export", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error ?? "Não foi possível exportar seus dados.");
+
+      try {
+        const localChat = JSON.parse(localStorage.getItem("brainfrost.chat.v1") ?? "null") as {
+          state?: { sessions?: unknown[] };
+        } | null;
+        payload.browserLocalData = {
+          chatSessions: localChat?.state?.sessions ?? [],
+          notice: "Conversas ficam somente neste navegador e foram anexadas por ele.",
+        };
+      } catch {
+        payload.browserLocalData = { chatSessions: [], notice: "Nenhuma conversa local pôde ser anexada." };
+      }
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `brainfrost-export-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setStatus({ type: "ok", message: "Seus dados foram exportados." });
+    } catch (error) {
+      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível exportar seus dados." });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (deleteConfirmation !== "EXCLUIR") return;
+    setDeleting(true);
+    try {
+      const response = await fetch("/api/account", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirmation: deleteConfirmation }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error ?? "Não foi possível excluir sua conta.");
+      localStorage.removeItem("brainfrost.chat.v1");
+      await getSupabase().auth.signOut().catch(() => undefined);
+      router.replace("/");
+      router.refresh();
+    } catch (error) {
+      setDeleteOpen(false);
+      setStatus({ type: "error", message: error instanceof Error ? error.message : "Não foi possível excluir sua conta." });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="relative h-full overflow-y-auto overflow-x-hidden" style={{ background: c.bg }}>
       <div className="pointer-events-none absolute -right-32 top-0 h-[520px] w-[520px] rounded-full blur-3xl" style={{ background: c.accent, opacity: 0.1 }} />
@@ -240,7 +312,53 @@ export default function PerfilPage() {
             Configurações
           </Link>
         </section>
+
+        <section className="mt-8 rounded-2xl border p-5" style={{ background: c.card, borderColor: c.border }}>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: c.dim }}>seus dados</p>
+          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[14px] font-semibold" style={{ color: c.text }}>Baixar uma cópia</p>
+              <p className="mt-1 max-w-lg text-[12px] leading-relaxed" style={{ color: c.dim }}>Exporta perfil, cérebro, importações, sugestões e conversas deste navegador em JSON. Segredos nunca entram no arquivo.</p>
+            </div>
+            <button type="button" onClick={exportAccount} disabled={exporting} className="flex shrink-0 items-center justify-center gap-2 rounded-full border px-4 py-2 text-[12px] font-medium disabled:opacity-50" style={{ borderColor: c.borderSoft, color: c.text }}>
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? "preparando…" : "exportar dados"}
+            </button>
+          </div>
+
+          <div className="my-5 h-px" style={{ background: c.border }} />
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[14px] font-semibold text-red-600">Excluir conta</p>
+              <p className="mt-1 max-w-lg text-[12px] leading-relaxed" style={{ color: c.dim }}>Cancela uma assinatura ativa e remove permanentemente seu perfil e os dados do BrainFrost. Registros fiscais do Stripe podem ser mantidos quando exigidos por lei.</p>
+            </div>
+            <button type="button" onClick={() => { setDeleteConfirmation(""); setDeleteOpen(true); }} className="flex shrink-0 items-center justify-center gap-2 rounded-full border border-red-300 px-4 py-2 text-[12px] font-medium text-red-600 hover:bg-red-50">
+              <Trash2 className="h-3.5 w-3.5" />
+              excluir conta
+            </button>
+          </div>
+        </section>
       </div>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir sua conta permanentemente?</DialogTitle>
+            <DialogDescription>Essa ação cancela sua assinatura e apaga o seu cérebro, importações, configurações e perfil. Faça uma exportação antes se quiser guardar uma cópia.</DialogDescription>
+          </DialogHeader>
+          <label className="block text-[12px] text-muted-foreground">
+            Digite <strong className="text-foreground">EXCLUIR</strong> para confirmar
+            <input autoComplete="off" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none focus:ring-2 focus:ring-red-300" />
+          </label>
+          <DialogFooter>
+            <button type="button" onClick={() => setDeleteOpen(false)} className="rounded-full border border-border px-5 py-2 text-[13px]">cancelar</button>
+            <button type="button" onClick={deleteAccount} disabled={deleting || deleteConfirmation !== "EXCLUIR"} className="rounded-full bg-red-600 px-5 py-2 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-40">
+              {deleting ? "excluindo…" : "excluir definitivamente"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

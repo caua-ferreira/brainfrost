@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { hasProAccess } from "@/lib/pro-entitlement";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  const limited = await enforceRateLimit(supabase, "create-import", 20, 3600);
+  if (limited) return limited;
 
   const [{ data: subscription }, { data: grant }, { count: importsThisMonth }] = await Promise.all([
     supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),

@@ -63,6 +63,7 @@ async function onSubscriptionChanged(sub: Stripe.Subscription) {
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
   const customer = await stripe.customers.retrieve(customerId);
   if (customer.deleted) return;
+  if (customer.metadata?.account_deleted === "true") return;
   const userId = customer.metadata?.supabase_user_id;
   if (!userId) {
     throw new Error(`customer ${customerId} sem metadata.supabase_user_id`);
