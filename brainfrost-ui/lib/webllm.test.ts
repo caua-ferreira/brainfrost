@@ -7,11 +7,12 @@ describe("isWebLlmCompatibilityError", () => {
     expect(isWebLlmCompatibilityError(new Error("device lost: out of memory"))).toBe(true);
     expect(isWebLlmCompatibilityError(new Error("context window token limit exceeded"))).toBe(true);
     expect(isWebLlmCompatibilityError(new Error("Object has already disposed"))).toBe(true);
+    expect(isWebLlmCompatibilityError(new Error("LLM não devolveu JSON válido"))).toBe(true);
   });
 
   test("não transforma erros de dados em fallback pago", () => {
-    expect(isWebLlmCompatibilityError(new Error("LLM não devolveu JSON válido"))).toBe(false);
     expect(isWebLlmCompatibilityError(new Error("import não encontrado"))).toBe(false);
+    expect(isWebLlmCompatibilityError(new Error("falha ao salvar sugestões"))).toBe(false);
   });
 });
 

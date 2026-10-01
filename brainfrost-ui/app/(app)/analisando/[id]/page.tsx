@@ -199,6 +199,7 @@ export default function AnalisandoPage() {
                 stage: provider === "webllm" ? "browser_model" : "browser_request",
                 message,
                 importId: params.id,
+                provider: provider === "webllm" ? `webllm:${webLlmModel}` : provider,
               }),
             });
             const telemetry = await telemetryRes.json();
@@ -351,13 +352,12 @@ export default function AnalisandoPage() {
             </button>
             <button
               onClick={() => {
-                announceNavigation();
-                router.push("/importar");
+                window.location.reload();
               }}
               className="rounded-full px-4 py-2 text-[13px] font-medium"
               style={{ background: c.accent, color: c.onAccent }}
             >
-              Tentar de novo
+              Repetir análise
             </button>
           </div>
         )}
