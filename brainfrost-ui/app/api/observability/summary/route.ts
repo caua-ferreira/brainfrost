@@ -14,7 +14,7 @@ function uniqueUsers<T extends { user_id: string | null }>(rows: T[]) {
 export async function GET() {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   if (!isObservabilityAdmin(user.email)) {
     return NextResponse.json({ error: "acesso restrito" }, { status: 403 });
   }

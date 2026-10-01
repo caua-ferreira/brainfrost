@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
   const [{ data: subscription }, { data: grant }] = await Promise.all([
     supabase.from("subscriptions").select("status").eq("user_id", user.id).maybeSingle(),
@@ -55,7 +55,7 @@ export async function DELETE(request: Request) {
   }
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
   const { error } = await supabase
     .from("llm_credentials")
@@ -69,7 +69,7 @@ export async function DELETE(request: Request) {
 export async function GET() {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
   const { data } = await supabase
     .from("llm_credentials")

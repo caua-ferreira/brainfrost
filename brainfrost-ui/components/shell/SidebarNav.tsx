@@ -44,7 +44,7 @@ const OBSERVABILITY_NAV = {
 
 const SUBSCRIPTIONS_ADMIN_NAV = {
   href: "/gestao-assinaturas",
-  label: "Gestão Pro",
+  label: "Gestão",
   icon: BadgeDollarSign,
   match: (p: string) => p.startsWith("/gestao-assinaturas"),
 };

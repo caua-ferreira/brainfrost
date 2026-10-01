@@ -8,7 +8,7 @@ export async function GET() {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user || user.is_anonymous) {
     return NextResponse.json({ allowed: false }, { status: 401 });
   }
 
