@@ -71,6 +71,15 @@ export default function ImportarPage() {
   }, []);
 
   const localModel = WEBLLM_MODELS.find((model) => model.id === webLlmModel)?.label ?? "modelo local";
+  const providerControl = (
+    <AnalysisProviderSelect
+      c={c}
+      value={analysisProvider}
+      onChange={setAnalysisProvider}
+      storedProviders={storedProviders}
+      localModel={localModel}
+    />
+  );
 
   return (
     <div className="relative h-full overflow-y-auto overflow-x-hidden" style={{ background: c.bg }}>
@@ -118,33 +127,10 @@ export default function ImportarPage() {
         </div>
 
         <div className="mt-6">
-          <div className="mb-4 rounded-2xl border p-4" style={{ background: c.card, borderColor: c.border }}>
-            <label htmlFor="analysis-provider" className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: c.dim }}>analisar usando</label>
-            <select
-              id="analysis-provider"
-              value={analysisProvider}
-              onChange={(event) => setAnalysisProvider(event.target.value as AnalysisProvider)}
-              className="mt-2 h-11 w-full rounded-xl border bg-transparent px-3 text-sm outline-none"
-              style={{ borderColor: c.border, color: c.text, background: c.bgSoft }}
-            >
-              <option value="managed">BrainFrost Cloud — recomendado para não pesar a máquina</option>
-              <option value="webllm">Local (WebLLM) — {localModel}</option>
-              <option value="claude" disabled={!storedProviders.includes("claude")}>Claude — sua chave{!storedProviders.includes("claude") ? " (configure primeiro)" : ""}</option>
-              <option value="gemini" disabled={!storedProviders.includes("gemini")}>Gemini — sua chave{!storedProviders.includes("gemini") ? " (configure primeiro)" : ""}</option>
-            </select>
-            <p className="mt-2 text-[11px] leading-relaxed" style={{ color: c.dim }}>
-              {analysisProvider === "managed"
-                ? "A análise roda na nossa API com o conteúdo sanitizado e usa sua franquia mensal."
-                : analysisProvider === "webllm"
-                  ? "A análise roda neste navegador e pode consumir bastante memória e GPU."
-                  : "A análise roda na nuvem usando a chave salva na sua conta."}
-            </p>
-          </div>
-
-          {tab === "text" && <TextPanel c={c} analysisProvider={analysisProvider} />}
-          {tab === "files" && <FilesPanel c={c} analysisProvider={analysisProvider} />}
-          {tab === "zip" && <ZipPanel c={c} analysisProvider={analysisProvider} />}
-          {tab === "github" && <GitHubPanel c={c} analysisProvider={analysisProvider} />}
+          {tab === "text" && <TextPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "files" && <FilesPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "zip" && <ZipPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "github" && <GitHubPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
         </div>
 
         <div className="mt-16 border-t pt-8" style={{ borderColor: c.borderSoft }}>
@@ -171,7 +157,47 @@ export default function ImportarPage() {
   );
 }
 
-function FilesPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
+function AnalysisProviderSelect({
+  c,
+  value,
+  onChange,
+  storedProviders,
+  localModel,
+}: {
+  c: ReturnType<typeof palette>;
+  value: AnalysisProvider;
+  onChange: (provider: AnalysisProvider) => void;
+  storedProviders: string[];
+  localModel: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value as AnalysisProvider)}
+      className="h-10 max-w-[190px] min-w-0 rounded-md border bg-transparent px-2.5 text-[11px] outline-none focus:ring-2"
+      style={{ borderColor: c.borderSoft, color: c.text, background: c.bgSoft }}
+      aria-label="Escolher IA para análise"
+      title="Escolher IA para análise"
+    >
+      <option value="managed">BrainFrost Cloud</option>
+      <option value="webllm">Local · {localModel}</option>
+      <option value="claude" disabled={!storedProviders.includes("claude")}>
+        Claude{!storedProviders.includes("claude") ? " · configurar" : ""}
+      </option>
+      <option value="gemini" disabled={!storedProviders.includes("gemini")}>
+        Gemini{!storedProviders.includes("gemini") ? " · configurar" : ""}
+      </option>
+    </select>
+  );
+}
+
+type ImportPanelProps = {
+  c: ReturnType<typeof palette>;
+  analysisProvider: AnalysisProvider;
+  providerControl: React.ReactNode;
+};
+
+function FilesPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
   const router = useRouter();
   const filesInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -273,11 +299,12 @@ function FilesPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; an
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
           {files.length > 0 ? `${(totalSize / 1024).toFixed(1)} KB selecionados` : "até 50 arquivos e 200 KB de texto"}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {providerControl}
           {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
           <button
             disabled={files.length === 0 || busy}
@@ -285,7 +312,7 @@ function FilesPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; an
             style={{ background: c.accent, color: c.onAccent }}
             onClick={submit}
           >
-            {busy ? "lendo…" : "Importar & analisar"}
+            {busy ? "lendo…" : "Analisar"}
           </button>
         </div>
       </div>
@@ -327,7 +354,7 @@ function TabTrigger({
   );
 }
 
-function TextPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
+function TextPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
   const router = useRouter();
   const taskRef = useRef<AbortController | null>(null);
   const [text, setText] = useState("");
@@ -377,27 +404,28 @@ function TextPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; ana
           color: c.text,
         }}
       />
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
           {text.length.toLocaleString("pt-BR")} caracteres
         </span>
-        <div className="flex items-center gap-2">
-        {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
-        <button
-          disabled={disabled}
-          className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: c.accent, color: c.onAccent }}
-          onClick={submit}
-        >
-          {busy ? "…" : "Analisar"}
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {providerControl}
+          {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
+          <button
+            disabled={disabled}
+            className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: c.accent, color: c.onAccent }}
+            onClick={submit}
+          >
+            {busy ? "…" : "Analisar"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function ZipPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
+function ZipPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const taskRef = useRef<AbortController | null>(null);
@@ -472,23 +500,26 @@ function ZipPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; anal
         </button>
       </div>
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         {status && <p className="mr-auto self-center font-mono text-[11px]" style={{ color: c.dim }}>{status}</p>}
-        {busy && <button type="button" onClick={cancel} className="mr-2 rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
-        <button
-          disabled={!file || busy}
-          className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: c.accent, color: c.onAccent }}
-          onClick={submit}
-        >
-          {busy ? "…" : "Analisar"}
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {providerControl}
+          {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
+          <button
+            disabled={!file || busy}
+            className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: c.accent, color: c.onAccent }}
+            onClick={submit}
+          >
+            {busy ? "…" : "Analisar"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function GitHubPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; analysisProvider: AnalysisProvider }) {
+function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
   const router = useRouter();
   const taskRef = useRef<AbortController | null>(null);
   const { session } = useSession();
@@ -693,14 +724,15 @@ function GitHubPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; a
         </ul>
       )}
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-[11px]" style={{ color: c.dim }}>
           {status ??
             (chosen
               ? `Vamos ler README, CLAUDE.md, CONTEXTO.md, .cursor/rules, docs/*.md (até 20 arquivos, 200 KB total)`
               : "Escolha um repo à esquerda.")}
         </p>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {providerControl}
           {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
           <button
             disabled={!chosen || busy}
@@ -708,7 +740,7 @@ function GitHubPanel({ c, analysisProvider }: { c: ReturnType<typeof palette>; a
             style={{ background: c.accent, color: c.onAccent }}
             onClick={submit}
           >
-            {busy ? "…" : "Importar & analisar"}
+            {busy ? "…" : "Analisar"}
           </button>
         </div>
       </div>
