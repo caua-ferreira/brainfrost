@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileArchive, FileText, FolderOpen, GitBranch, Lock, Search, ShieldCheck, Type } from "lucide-react";
+import { FileArchive, FileText, FolderOpen, GitBranch, Globe2, Lock, PlugZap, Search, ShieldCheck, Type } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
@@ -12,6 +12,7 @@ import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "
 import { LOCAL_FILE_ACCEPT, readLocalTextFiles, readZipTextFiles } from "@/lib/import-files";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
 import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
+import { GitLabLogo, GoogleDriveLogo } from "@/components/saas/OAuthProviderLogos";
 
 const SANITIZED = [
   ".env*", "*.pem", "*.key", "id_rsa*", "credentials.json",
@@ -19,8 +20,10 @@ const SANITIZED = [
   "binários", "PII em seeds",
 ];
 
-type Tab = "text" | "files" | "zip" | "github";
+type Tab = "text" | "files" | "zip" | "github" | "connectors";
 type AnalysisProvider = "managed" | "webllm" | "claude" | "gemini";
+type ImportSource = "text" | "files" | "zip" | "github" | "url" | "gitlab" | "google_drive";
+type RemoteSource = Extract<ImportSource, "url" | "gitlab" | "google_drive">;
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -29,7 +32,7 @@ function formatFileSize(bytes: number) {
 }
 
 async function createImport(input: {
-  source: "text" | "files" | "zip" | "github";
+  source: ImportSource;
   label: string;
   file_count: number;
   raw_text: string;
@@ -111,7 +114,7 @@ export default function ImportarPage() {
           no cérebro sem sua aprovação.
         </p>
 
-        <div className="mt-10 flex gap-2 border-b" style={{ borderColor: c.borderSoft }}>
+        <div className="mt-10 flex gap-2 overflow-x-auto border-b" style={{ borderColor: c.borderSoft }}>
           <TabTrigger c={c} icon={<Type className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "text"} onClick={() => setTab("text")}>
             Colar texto
           </TabTrigger>
@@ -124,6 +127,9 @@ export default function ImportarPage() {
           <TabTrigger c={c} icon={<GitBranch className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "github"} onClick={() => setTab("github")}>
             GitHub
           </TabTrigger>
+          <TabTrigger c={c} icon={<PlugZap className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "connectors"} onClick={() => setTab("connectors")}>
+            Mais fontes
+          </TabTrigger>
         </div>
 
         <div className="mt-6">
@@ -131,6 +137,7 @@ export default function ImportarPage() {
           {tab === "files" && <FilesPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
           {tab === "zip" && <ZipPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
           {tab === "github" && <GitHubPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "connectors" && <ConnectorsPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
         </div>
 
         <div className="mt-16 border-t pt-8" style={{ borderColor: c.borderSoft }}>
@@ -515,6 +522,194 @@ function ZipPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const REMOTE_SOURCES: Array<{
+  id: RemoteSource;
+  label: string;
+  description: string;
+  placeholder: string;
+  pro: boolean;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    id: "url",
+    label: "URL pública",
+    description: "Artigos, documentação e páginas técnicas públicas.",
+    placeholder: "https://exemplo.com/documentacao",
+    pro: false,
+    icon: Globe2,
+  },
+  {
+    id: "gitlab",
+    label: "GitLab",
+    description: "README, AGENTS, CONTEXTO e docs de projetos públicos.",
+    placeholder: "https://gitlab.com/grupo/projeto",
+    pro: true,
+    icon: GitLabLogo,
+  },
+  {
+    id: "google_drive",
+    label: "Google Drive / Docs",
+    description: "Docs, planilhas e arquivos de texto compartilhados por link.",
+    placeholder: "https://docs.google.com/document/d/…/edit",
+    pro: true,
+    icon: GoogleDriveLogo,
+  },
+];
+
+function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
+  const router = useRouter();
+  const { isPro } = useBilling();
+  const taskRef = useRef<AbortController | null>(null);
+  const [source, setSource] = useState<RemoteSource>("url");
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const selected = REMOTE_SOURCES.find((item) => item.id === source)!;
+  const locked = selected.pro && !isPro;
+
+  const submit = async () => {
+    if (!url.trim() || busy || locked) return;
+    const controller = new AbortController();
+    taskRef.current = controller;
+    setBusy(true);
+    setStatus(source === "gitlab" ? "lendo arquivos do projeto…" : "lendo conteúdo público…");
+    try {
+      const remoteResponse = await fetch("/api/import-source", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ source, url: url.trim() }),
+        signal: controller.signal,
+      });
+      const remote = await remoteResponse.json().catch(() => ({})) as {
+        label?: string;
+        rawText?: string;
+        fileCount?: number;
+        error?: string;
+      };
+      if (!remoteResponse.ok || !remote.rawText || !remote.label) {
+        throw new Error(remote.error ?? "Não foi possível ler essa fonte.");
+      }
+      setStatus("criando importação…");
+      const id = await createImport({
+        source,
+        label: remote.label,
+        file_count: remote.fileCount ?? 1,
+        raw_text: remote.rawText,
+      }, controller.signal);
+      announceNavigation();
+      router.push(analysisUrl(id, analysisProvider));
+    } catch (error) {
+      if (!isCancelled(error)) alert(error instanceof Error ? error.message : "Não foi possível importar essa fonte.");
+    } finally {
+      if (taskRef.current === controller) {
+        setBusy(false);
+        setStatus(null);
+      }
+    }
+  };
+
+  const cancel = () => {
+    if (!window.confirm("Cancelar a leitura desta fonte?")) return;
+    taskRef.current?.abort();
+    setBusy(false);
+    setStatus(null);
+  };
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ background: c.card, borderColor: c.border }}>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {REMOTE_SOURCES.map((item) => {
+          const Icon = item.icon;
+          const active = source === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => { setSource(item.id); setUrl(""); }}
+              className="rounded-xl border p-3 text-left transition-colors"
+              style={{
+                borderColor: active ? c.accent : c.borderSoft,
+                background: active ? `${c.accent}10` : c.bgSoft,
+                color: c.text,
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span style={{ color: c.accent }}><Icon className="h-4 w-4" /></span>
+                {item.pro && (
+                  <span className="rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider" style={{ borderColor: c.borderSoft, color: c.dim }}>
+                    Pro
+                  </span>
+                )}
+              </div>
+              <p className="mt-2 text-[13px] font-semibold">{item.label}</p>
+              <p className="mt-1 text-[10px] leading-relaxed" style={{ color: c.dim }}>{item.description}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {locked ? (
+        <div className="mt-4 rounded-xl border p-5 text-center" style={{ borderColor: c.borderSoft, background: c.bgSoft }}>
+          <Lock className="mx-auto h-6 w-6" strokeWidth={1.6} style={{ color: c.accent }} />
+          <p className="mt-2 text-[13px] font-semibold" style={{ color: c.text }}>{selected.label} é uma integração Pro</p>
+          <p className="mt-1 text-[11px]" style={{ color: c.dim }}>O plano Free continua com texto, arquivos, ZIP e URL pública.</p>
+          <button type="button" onClick={() => router.push("/assinatura")} className="mt-3 rounded-full px-5 py-2 text-[12px] font-medium" style={{ background: c.accent, color: c.onAccent }}>
+            Ver plano Pro
+          </button>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <label htmlFor="remote-source-url" className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: c.dim }}>
+            link da fonte
+          </label>
+          <div className="mt-2 flex items-center gap-2 rounded-xl border px-3" style={{ borderColor: c.borderSoft, background: c.bgSoft }}>
+            <Globe2 className="h-4 w-4 shrink-0" strokeWidth={1.8} style={{ color: c.dim }} />
+            <input
+              id="remote-source-url"
+              type="url"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void submit();
+                }
+              }}
+              placeholder={selected.placeholder}
+              className="h-12 min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:opacity-45"
+              style={{ color: c.text }}
+            />
+          </div>
+          <p className="mt-2 text-[10px] leading-relaxed" style={{ color: c.dim }}>
+            {source === "url" && "A página precisa estar acessível sem login. Endereços internos e arquivos binários são bloqueados."}
+            {source === "gitlab" && "Nesta primeira etapa, o projeto precisa ser público. Projetos privados entrarão pela conexão OAuth."}
+            {source === "google_drive" && "Compartilhe como “qualquer pessoa com o link”. Drive privado entrará pela conexão OAuth."}
+          </p>
+        </div>
+      )}
+
+      {!locked && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <span className="font-mono text-[11px]" style={{ color: c.dim }}>{status ?? "até 220 KB de texto por fonte"}</span>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {providerControl}
+            {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
+            <button
+              type="button"
+              disabled={!url.trim() || busy}
+              onClick={submit}
+              className="rounded-full px-6 py-2.5 text-[13px] font-medium transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ background: c.accent, color: c.onAccent }}
+            >
+              {busy ? "lendo…" : "Analisar"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

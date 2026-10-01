@@ -6,7 +6,7 @@ import { sanitizeTelemetryMessage, writeErrorTelemetry } from "@/lib/error-telem
 
 export const runtime = "nodejs";
 
-const SOURCES = ["text", "files", "zip", "github"] as const;
+const SOURCES = ["text", "files", "zip", "github", "url", "gitlab", "google_drive"] as const;
 type Source = (typeof SOURCES)[number];
 const isSource = (value: unknown): value is Source =>
   typeof value === "string" && (SOURCES as readonly string[]).includes(value);
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
   ]);
 
   const isPro = hasProAccess(subscription?.status, grant);
-  if (body.source === "github" && !isPro) {
-    return NextResponse.json({ error: "Importação pelo GitHub é um recurso Pro." }, { status: 402 });
+  if (["github", "gitlab", "google_drive"].includes(body.source) && !isPro) {
+    return NextResponse.json({ error: "Esta integração é um recurso Pro." }, { status: 402 });
   }
   if (!isPro && (importsThisMonth ?? 0) >= 3) {
     return NextResponse.json({ error: "O plano Free permite 3 importações por mês. Assine o Pro para continuar." }, { status: 402 });
