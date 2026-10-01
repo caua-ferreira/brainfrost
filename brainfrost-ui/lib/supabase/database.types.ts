@@ -472,6 +472,18 @@ export type Database = {
     }
     Views: { [_ in never]: never }
     Functions: {
+      consume_api_rate_limit: {
+        Args: {
+          p_bucket: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: Array<{
+          allowed: boolean
+          remaining: number
+          resets_at: string
+        }>
+      }
       consume_managed_llm_quota: {
         Args: Record<PropertyKey, never>
         Returns: Array<{

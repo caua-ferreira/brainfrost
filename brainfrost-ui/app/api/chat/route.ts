@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { decrypt } from "@/lib/crypto";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -100,6 +101,8 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  const limited = await enforceRateLimit(supabase, "chat", 60, 60);
+  if (limited) return limited;
 
   const { data: credential, error } = await supabase
     .from("chat_credentials")

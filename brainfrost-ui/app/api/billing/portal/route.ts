@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { stripe } from "@/lib/stripe";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -8,6 +9,8 @@ export async function POST(request: Request) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  const limited = await enforceRateLimit(supabase, "billing-portal", 10, 600);
+  if (limited) return limited;
 
   const { data: sub } = await supabase
     .from("subscriptions")

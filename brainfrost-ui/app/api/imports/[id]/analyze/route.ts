@@ -7,6 +7,7 @@ import { decrypt } from "@/lib/crypto";
 import { sanitize } from "@/lib/sanitize";
 import { resolveManagedLlmConfig } from "@/lib/managed-llm-config";
 import { sanitizeTelemetryMessage, writeErrorTelemetry } from "@/lib/error-telemetry";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
@@ -132,6 +133,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  const limited = await enforceRateLimit(supabase, "analyze-import", 20, 3600);
+  if (limited) return limited;
 
   const { data: imp } = await supabase.from("imports").select("*").eq("id", importId).maybeSingle();
   if (!imp) return NextResponse.json({ error: "import não encontrado" }, { status: 404 });
