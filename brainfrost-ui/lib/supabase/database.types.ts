@@ -115,6 +115,66 @@ export type Database = {
         }
         Relationships: []
       }
+      managed_llm_quota_limits: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          monthly_limit: number
+          reason: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          monthly_limit: number
+          reason: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          monthly_limit?: number
+          reason?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_notifications: {
+        Row: {
+          created_at: string
+          href: string | null
+          id: string
+          kind: string
+          message: string
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          href?: string | null
+          id?: string
+          kind: string
+          message: string
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          href?: string | null
+          id?: string
+          kind?: string
+          message?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_events: {
         Row: {
           event_name: string

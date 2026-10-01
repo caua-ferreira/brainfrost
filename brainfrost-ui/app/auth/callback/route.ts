@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { userNeedsName } from "@/lib/user-profile";
 
 export const runtime = "nodejs";
 
@@ -25,12 +27,38 @@ export async function GET(request: Request) {
   }
 
   const supabase = await getSupabaseServer();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     const params = new URLSearchParams({ error: error.message });
     return NextResponse.redirect(new URL(`/login?${params.toString()}`, request.url));
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  const user = data.user;
+  if (!user || user.is_anonymous) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(new URL("/login?error=anonymous_not_allowed", request.url));
+  }
+
+  const store = await cookies();
+  const rawAttribution = store.get("brainfrost_attribution")?.value;
+  if (rawAttribution && !user.user_metadata?.acquisition) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(rawAttribution)) as Record<string, unknown>;
+      const acquisition = Object.fromEntries(
+        Object.entries(parsed)
+          .filter(([, value]) => typeof value === "string")
+          .slice(0, 8)
+          .map(([key, value]) => [key.slice(0, 40), String(value).slice(0, 300)])
+      );
+      await supabase.auth.updateUser({ data: { ...user.user_metadata, acquisition } });
+    } catch {
+      // Atribuição é auxiliar e nunca deve impedir o login.
+    }
+  }
+
+  const destination = userNeedsName(user) ? "/perfil?onboarding=1" : next;
+  const response = NextResponse.redirect(new URL(destination, request.url));
+  response.cookies.delete("brainfrost_attribution");
+  return response;
 }

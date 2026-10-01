@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export async function DELETE(request: Request) {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
   const limited = await enforceRateLimit(supabase, "account-delete", 3, 3600);
   if (limited) return limited;

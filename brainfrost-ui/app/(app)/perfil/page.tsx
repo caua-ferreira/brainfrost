@@ -57,6 +57,11 @@ export default function PerfilPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [onboarding, setOnboarding] = useState(false);
+
+  useEffect(() => {
+    setOnboarding(new URLSearchParams(window.location.search).get("onboarding") === "1");
+  }, []);
 
   useEffect(() => {
     if (!session) return;
@@ -64,9 +69,7 @@ export default function PerfilPage() {
     const identity = session.user.identities?.[0]?.identity_data ?? {};
     const displayName =
       metadataValue(metadata, "display_name", "full_name", "name") ||
-      metadataValue(identity, "full_name", "name") ||
-      session.user.email ||
-      "";
+      metadataValue(identity, "full_name", "name");
     setName(displayName);
     setEmail(session.user.email ?? "");
     setAddress(metadataValue(metadata, "address"));
@@ -158,6 +161,10 @@ export default function PerfilPage() {
           ? "Perfil salvo. Confirme o novo e-mail na sua caixa de entrada."
           : "Perfil atualizado.",
       });
+      if (onboarding && !emailChanged) {
+        router.replace("/painel");
+        router.refresh();
+      }
     } catch (error) {
       setStatus({
         type: "error",
@@ -246,6 +253,12 @@ export default function PerfilPage() {
           Atualize seus dados de conta e a foto que aparece no BrainFrost.
           As contas conectadas ficam aqui. Provedores, chaves de API e análise profunda continuam em Configurações.
         </p>
+
+        {onboarding && (
+          <div className="mt-8 rounded-2xl border p-4 text-[13px] leading-relaxed" style={{ borderColor: c.accent, background: `${c.accent}12`, color: c.text }}>
+            <strong>Antes de continuar, complete seu nome.</strong> Seu provedor de login não enviou essa informação. Assim conseguimos identificar sua conta corretamente e oferecer suporte sem tratar você como convidado.
+          </div>
+        )}
 
         <section className="mt-12 rounded-2xl border p-6" style={{ background: c.card, borderColor: c.border }}>
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">

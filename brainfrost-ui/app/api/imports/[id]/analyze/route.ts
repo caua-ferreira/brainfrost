@@ -132,7 +132,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   const limited = await enforceRateLimit(supabase, "analyze-import", 20, 3600);
   if (limited) return limited;
 

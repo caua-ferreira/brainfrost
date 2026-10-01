@@ -16,7 +16,7 @@ function isMissingCustomer(error: unknown) {
 export async function GET() {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
   const monthStart = new Date();
   monthStart.setUTCDate(1);

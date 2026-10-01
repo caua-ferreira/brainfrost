@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
 
   const { data: suggestion, error: suggestionLoadError } = await supabase
     .from("pattern_suggestions")

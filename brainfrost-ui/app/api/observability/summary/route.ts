@@ -14,7 +14,7 @@ function uniqueUsers<T extends { user_id: string | null }>(rows: T[]) {
 export async function GET() {
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
   if (!isObservabilityAdmin(user.email)) {
     return NextResponse.json({ error: "acesso restrito" }, { status: 403 });
   }
@@ -30,8 +30,8 @@ export async function GET() {
   const [sessionsResult, eventsResult, importsResult, errorsResult, checksResult] = await Promise.all([
     admin.from("product_sessions").select("user_id,started_at,last_seen_at,active_seconds,last_path").gte("last_seen_at", since30d).order("last_seen_at", { ascending: false }).limit(500),
     admin.from("product_events").select("user_id,path,occurred_at").gte("occurred_at", since14d).order("occurred_at", { ascending: false }).limit(5_000),
-    admin.from("imports").select("status,created_at,finished_at").gte("created_at", since30d),
-    admin.from("error_events").select("error_id,stage,provider,message,occurred_at").gte("occurred_at", since7d).order("occurred_at", { ascending: false }).limit(200),
+    admin.from("imports").select("id,user_id,status,created_at,finished_at").gte("created_at", since30d),
+    admin.from("error_events").select("error_id,user_id,import_id,scope,stage,provider,message,occurred_at").gte("occurred_at", since7d).order("occurred_at", { ascending: false }).limit(200),
     admin.from("synthetic_checks").select("check_name,status,duration_ms,provider,suggestions_count,error_id,occurred_at").order("occurred_at", { ascending: false }).limit(10),
   ]);
 
@@ -59,12 +59,30 @@ export async function GET() {
   const successfulImports = imports.filter((row) => row.status === "pronto").length;
   const failedImports = imports.filter((row) => row.status === "erro").length;
   const emailByUserId = new Map(users.map((item) => [item.id, item.email ?? "sem e-mail"]));
+  const importOwnerById = new Map(imports.map((item) => [item.id, item.user_id]));
+  const realUsers = users.filter((item) => !item.is_anonymous && (item.email || (item.identities?.length ?? 0) > 0));
 
   const routeCounts = new Map<string, number>();
   for (const event of events) routeCounts.set(event.path, (routeCounts.get(event.path) ?? 0) + 1);
 
   const errorStages = new Map<string, number>();
-  for (const event of errors) errorStages.set(event.stage, (errorStages.get(event.stage) ?? 0) + 1);
+  for (const event of errors) {
+    const key = `${event.scope}/${event.stage}`;
+    errorStages.set(key, (errorStages.get(key) ?? 0) + 1);
+  }
+
+  const recentErrors = errors.slice(0, 20).map((event) => {
+    const ownerId = event.user_id ?? (event.import_id ? importOwnerById.get(event.import_id) : null);
+    return {
+      ...event,
+      email: ownerId ? emailByUserId.get(ownerId) ?? "usuário removido" : null,
+      origin: event.scope === "synthetic"
+        ? "Teste sintético"
+        : ownerId
+          ? emailByUserId.get(ownerId) ?? "usuário removido"
+          : "Sem usuário associado",
+    };
+  });
 
   const daily = Array.from({ length: 14 }, (_, index) => {
     const date = new Date(now - (13 - index) * DAY).toISOString().slice(0, 10);
@@ -75,8 +93,8 @@ export async function GET() {
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
     users: {
-      total: users.length,
-      new7d: users.filter((item) => item.created_at >= since7d).length,
+      total: realUsers.length,
+      new7d: realUsers.filter((item) => item.created_at >= since7d).length,
       activeNow,
       dau,
       wau,
@@ -109,7 +127,7 @@ export async function GET() {
     errors: {
       total7d: errors.length,
       byStage: [...errorStages.entries()].sort((a, b) => b[1] - a[1]).map(([stage, count]) => ({ stage, count })),
-      recent: errors.slice(0, 20),
+      recent: recentErrors,
     },
     syntheticChecks: checks,
   });

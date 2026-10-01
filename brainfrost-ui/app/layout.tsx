@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/saas/SessionProvider";
+import { AttributionCapture } from "@/components/observability/AttributionCapture";
 
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable}`}>
       <body className="font-sans antialiased">
+        <AttributionCapture />
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

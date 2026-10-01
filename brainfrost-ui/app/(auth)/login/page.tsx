@@ -70,7 +70,7 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (session) router.replace("/painel");
+    if (session && !session.user.is_anonymous) router.replace("/painel");
   }, [session, router]);
 
   const signInWith = async (provider: OAuthProvider, scopes?: string) => {
