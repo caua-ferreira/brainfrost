@@ -37,7 +37,7 @@ export default function Page() {
       <div className="h-full overflow-auto p-6">
         <EmptyState
           title="Cérebro vazio"
-          description="O chat precisa de camadas para injetar como contexto. Adicione algumas em /importar → /curadoria."
+          description="O chat precisa de memórias para usar como contexto. Ensine algo ao cérebro e revise os aprendizados sugeridos."
         />
       </div>
     );

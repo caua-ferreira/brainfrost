@@ -410,7 +410,7 @@ export default function ConfigPage() {
           </div>
           <p className="mt-2 max-w-lg text-[13px]" style={{ color: c.dim }}>
             Copia sua sessão atual em um blob JSON pra colar no <code className="font-mono">bfrost login</code>. Depois{" "}
-            <code className="font-mono">bfrost pull</code> baixa suas camadas e <code className="font-mono">bfrost inject</code> leva pro
+            <code className="font-mono">bfrost pull</code> baixa suas memórias e <code className="font-mono">bfrost inject</code> leva pro
             CLAUDE.md do repo que você estiver.
           </p>
           <pre

@@ -13,10 +13,10 @@ const TITLE: Record<string, string> = {
   "/grafo": "Cérebro",
   "/painel": "Painel",
   "/importar": "Importar",
-  "/curadoria": "Curadoria",
+  "/curadoria": "Revisar aprendizados",
   "/exportar": "Exportar",
   "/chat": "Chat",
-  "/camadas": "Camadas",
+  "/camadas": "Memórias",
   "/cofre": "Cérebro",
   "/assinatura": "Assinatura",
   "/observabilidade": "Observabilidade",
@@ -71,8 +71,8 @@ export function Header({ commit, notes }: Props) {
           <button
             onClick={() => setPaletteOpen(true)}
             className="flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 text-muted-foreground transition-colors hover:text-foreground md:h-8 md:min-w-0 md:rounded-md md:px-2"
-            title="Buscar camada (Ctrl/Cmd+K)"
-            aria-label="Buscar camada"
+            title="Buscar memória (Ctrl/Cmd+K)"
+            aria-label="Buscar memória"
           >
             <Search className="h-4 w-4 md:h-3 md:w-3" />
             <span className="hidden tracking-widest md:inline">⌘K / Ctrl+K</span>

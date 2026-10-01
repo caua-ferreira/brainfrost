@@ -96,7 +96,7 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
   async function cleanBrokenLinks() {
     if (brokenLinks.length === 0 || cleaning) return;
     const confirmed = window.confirm(
-      `Remover ${brokenLinks.length} referência(s) para camadas inexistentes?\n\nNenhuma camada será apagada.`
+      `Remover ${brokenLinks.length} associações para memórias inexistentes?\n\nNenhuma memória será apagada.`
     );
     if (!confirmed) return;
 
@@ -115,7 +115,7 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
   const perCategory = useMemo(() => {
     const map = new Map<string, number>();
     for (const n of notes) {
-      const cat = n.category ?? "sem categoria";
+      const cat = n.category ?? "sem área";
       map.set(cat, (map.get(cat) ?? 0) + 1);
     }
     return Array.from(map.entries()).map(([id, count]) => ({
@@ -180,15 +180,15 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} style={{ color: c.aurora }} />
             <div>
               <p className="text-[13px] font-medium" style={{ color: c.text }}>
-                {brokenCount} {brokenCount === 1 ? "link aponta" : "links apontam"} para camada inexistente
+                {brokenCount} {brokenCount === 1 ? "associação aponta" : "associações apontam"} para memória inexistente
               </p>
               <p className="mt-1 max-w-3xl font-mono text-[11px] leading-relaxed" style={{ color: c.dim }}>
                 {brokenLinks.slice(0, 6).map((link) => `${link.source} → ${link.target}`).join(" · ")}
                 {brokenLinks.length > 6 && ` … +${brokenLinks.length - 6}`}
               </p>
               <p className="mt-3 text-[11px]" style={{ color: c.dim }}>
-                Escolha a camada correta para redirecionar uma referência ou remova só aquele link.
-                As camadas permanecem intactas.
+                Escolha a memória correta para redirecionar uma associação ou remova apenas aquela relação.
+                As memórias permanecem intactas.
               </p>
               <div className="mt-3 space-y-2">
                 {brokenLinks.map((link) => {
@@ -230,7 +230,7 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
                           type="button"
                           onClick={() => updateBrokenLink(link, selectedTarget)}
                           disabled={busy || !selectedTarget || !link.sourceId}
-                          title="Redirecionar para a camada escolhida"
+                          title="Redirecionar para a memória escolhida"
                           className="flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
                           style={{ borderColor: c.accent, color: c.accent }}
                         >
@@ -260,7 +260,7 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
                 className="mt-3 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors disabled:cursor-wait disabled:opacity-50"
                 style={{ borderColor: c.aurora, color: c.text }}
               >
-                {cleaning ? "limpando…" : "limpar links quebrados"}
+                {cleaning ? "limpando…" : "limpar associações quebradas"}
               </button>
               {cleanupError && (
                 <p className="mt-2 font-mono text-[11px]" style={{ color: "#c2415a" }}>
@@ -276,19 +276,19 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
           className="mt-12 grid grid-cols-2 gap-6 border-t pt-8 md:grid-cols-3 lg:grid-cols-6"
           style={{ borderColor: c.borderSoft }}
         >
-          <Stat c={c} label="camadas" value={stats.notes} />
-          <Stat c={c} label="conexões" value={stats.edges} />
+          <Stat c={c} label="memórias" value={stats.notes} />
+          <Stat c={c} label="associações" value={stats.edges} />
           <Stat c={c} label="palavras" value={stats.words.toLocaleString("pt-BR")} />
           <Stat c={c} label="tokens (est.)" value={totalTokens.toLocaleString("pt-BR")} />
-          <Stat c={c} label="sem conexão" value={stats.orphans} tone={stats.orphans > 0 ? "aurora" : undefined} />
-          <Stat c={c} label="links quebrados" value={brokenCount} tone={brokenCount > 0 ? "aurora" : undefined} />
+          <Stat c={c} label="isoladas" value={stats.orphans} tone={stats.orphans > 0 ? "aurora" : undefined} />
+          <Stat c={c} label="associações quebradas" value={brokenCount} tone={brokenCount > 0 ? "aurora" : undefined} />
         </div>
 
         {/* Categorias */}
         {perCategory.length > 0 && (
           <div className="mt-12 border-t pt-8" style={{ borderColor: c.borderSoft }}>
             <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
-              Camadas por categoria
+              Memórias por área
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {perCategory.map((cat) => (
@@ -313,7 +313,7 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" strokeWidth={2} style={{ color: c.accent }} />
               <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
-                Top {chartData.length} camadas por conexão
+                Top {chartData.length} memórias por associação
               </p>
             </div>
             <div className="mt-4 h-56 w-full sm:h-64">
@@ -368,7 +368,7 @@ export default function CofreDashboard({ notes, stats, onRefresh }: Props) {
                     {n.title}
                   </div>
                   <div className="mt-0.5 font-mono text-[11px]" style={{ color: c.dim }}>
-                    {n.words.toLocaleString("pt-BR")} palavras · {n.links.length + n.backlinks.length} conexões · {formatDate(n.updatedAt)}
+                    {n.words.toLocaleString("pt-BR")} palavras · {n.links.length + n.backlinks.length} associações · {formatDate(n.updatedAt)}
                   </div>
                 </div>
               </div>

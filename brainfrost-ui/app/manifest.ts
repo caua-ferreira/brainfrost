@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "BrainFrost",
     short_name: "BrainFrost",
-    description: "Cérebro de contexto para IA — grafo, chat e camadas de conhecimento.",
+    description: "Cérebro de contexto para IA — memórias, associações e chat.",
     start_url: "/",
     display: "standalone",
     background_color: "#050E1A",

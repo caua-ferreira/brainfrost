@@ -20,7 +20,7 @@ export default function PrivacyPage() {
         },
         {
           title: "Dados que podemos tratar",
-          content: <ul><li>Cadastro e perfil: nome, e-mail, foto e provedores de login conectados.</li><li>Conteúdo: projetos, textos, padrões, camadas, conexões, conversas e arquivos que você decide importar.</li><li>Configurações: preferências, integrações e chaves de API protegidas por criptografia.</li><li>Assinatura: identificadores de cliente e assinatura, plano, status, faturas e dados resumidos do meio de pagamento. Os dados completos do cartão são tratados pelo Stripe.</li><li>Uso e segurança: endereço IP, navegador, registros técnicos e eventos necessários para prevenir fraude e corrigir falhas.</li></ul>,
+          content: <ul><li>Cadastro e perfil: nome, e-mail, foto e provedores de login conectados.</li><li>Conteúdo: projetos, textos, padrões, memórias, associações, conversas e arquivos que você decide importar.</li><li>Configurações: preferências, integrações e chaves de API protegidas por criptografia.</li><li>Assinatura: identificadores de cliente e assinatura, plano, status, faturas e dados resumidos do meio de pagamento. Os dados completos do cartão são tratados pelo Stripe.</li><li>Uso e segurança: endereço IP, navegador, registros técnicos e eventos necessários para prevenir fraude e corrigir falhas.</li></ul>,
         },
         {
           title: "Por que usamos esses dados",

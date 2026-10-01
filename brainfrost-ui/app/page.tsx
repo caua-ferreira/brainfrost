@@ -307,7 +307,7 @@ export default function LandingPage() {
             n={3}
             Icon={Layers}
             title="Você aprova e o cérebro cresce"
-            body="Cada sugestão vira uma camada. Você aceita, edita ou rejeita. O cérebro é seu, você controla o que ele aprende e decide o que incluir."
+            body="Cada sugestão pode virar uma memória. Você aceita, edita ou rejeita. O cérebro é seu: você controla o que ele aprende."
           />
         </div>
       </section>
@@ -406,7 +406,7 @@ export default function LandingPage() {
               <ul className="mt-8 space-y-3 text-[14px]">
                 <Tick label="LLM local (WebLLM) ilimitada" />
                 <Tick label="Até 3 importações por mês" />
-                <Tick label="Até 50 camadas no cérebro" />
+                <Tick label="Até 50 memórias no cérebro" />
                 <Tick label="Export pra qualquer IA" />
                 <Tick label="CLI bfrost" />
               </ul>
@@ -491,9 +491,9 @@ export default function LandingPage() {
               <Tick label="Tudo do Free +" bold />
               <Tick label="Claude, Gemini e local, todos" />
               <Tick label="Importações ilimitadas" />
-              <Tick label="Camadas ilimitadas" />
+              <Tick label="Memórias ilimitadas" />
               <Tick label="Import direto do GitHub (public + private)" />
-              <Tick label="Reprocessar sugestão com outra LLM" />
+              <Tick label="Reaprender sugestão com outra LLM" />
             </ul>
 
             <button

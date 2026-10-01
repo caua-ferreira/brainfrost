@@ -48,7 +48,7 @@ export default function CuradoriaPage() {
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      alert(result.error ?? "Erro ao criar camada.");
+      alert(result.error ?? "Erro ao criar memória.");
       return;
     }
     refresh();
@@ -100,7 +100,7 @@ export default function CuradoriaPage() {
           )}
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
-          Cada aceite vira uma camada no seu cérebro. Rejeitar não apaga: só ignora.
+          Cada aceite consolida uma memória no seu cérebro. Rejeitar não apaga: apenas ignora.
         </p>
 
         <div className="mt-12">
@@ -217,7 +217,7 @@ function SuggestionRow({
           </div>
           {s.category_reason && (
             <p className="mt-2 text-[12px] leading-relaxed" style={{ color: c.dim }}>
-              <span style={{ color: c.text }}>Por que esta gaveta:</span> {s.category_reason}
+              <span style={{ color: c.text }}>Por que esta área:</span> {s.category_reason}
             </p>
           )}
         </div>
@@ -274,7 +274,7 @@ function SuggestionRow({
           </label>
           <label className="space-y-1">
             <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
-              ligações · slugs separados por vírgula
+              associações · memórias separadas por vírgula
             </span>
             <input
               value={linksText}
@@ -322,7 +322,7 @@ function SuggestionRow({
           {links.length > 0 && (
             <div>
               <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest" style={{ color: c.dim }}>
-                <Link2 className="h-3 w-3" /> ligações sugeridas
+                <Link2 className="h-3 w-3" /> associações sugeridas
               </p>
               <div className="space-y-1.5">
                 {links.map((link) => (

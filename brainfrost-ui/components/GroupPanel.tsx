@@ -27,7 +27,7 @@ export default function GroupPanel({ group, onSelectNote, onClose }: Props) {
             </span>
             <div className="min-w-0">
               <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                gaveta · {group.notes.length} {group.notes.length === 1 ? "camada" : "camadas"}
+                área · {group.notes.length} {group.notes.length === 1 ? "memória" : "memórias"}
               </p>
               <SheetTitle className="mt-1 truncate text-xl font-semibold tracking-tight text-foreground">
                 {group.title}
@@ -35,14 +35,14 @@ export default function GroupPanel({ group, onSelectNote, onClose }: Props) {
             </div>
           </div>
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            {group.description} Clique numa camada para abrir o conteúdo completo e suas ligações.
+            {group.description} Clique numa memória para abrir o conteúdo completo e suas associações.
           </p>
         </SheetHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
           <div className="mb-4 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            <span>conteúdo da gaveta</span>
-            <span>{group.connections} relações externas</span>
+            <span>memórias desta área</span>
+            <span>{group.connections} associações externas</span>
           </div>
           <div className="space-y-2">
             {group.notes.map((note) => (
@@ -69,7 +69,7 @@ function GroupNote({ note, onSelect }: { note: Note; onSelect: () => void }) {
           {note.excerpt || "Sem resumo disponível."}
         </span>
         <span className="mt-2 flex items-center gap-3 font-mono text-[10px] text-muted-foreground">
-          <span>{note.links.length + note.backlinks.length} conexões</span>
+          <span>{note.links.length + note.backlinks.length} associações</span>
           <span>{note.words} palavras</span>
         </span>
       </span>

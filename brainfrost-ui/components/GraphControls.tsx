@@ -82,7 +82,7 @@ function ControlsBody({
       <div className="space-y-4">
         <label className="block">
           <div className="mb-2 flex items-baseline justify-between text-[12px]">
-            <span>espaço entre nós</span>
+            <span>espaço entre conceitos</span>
             <span className="font-mono text-[11px] text-mute">{spacing}</span>
           </div>
           <Slider
@@ -91,7 +91,7 @@ function ControlsBody({
             max={100}
             step={5}
             onValueChange={([v]) => set({ spacing: v })}
-            aria-label="Espaço entre nós"
+            aria-label="Espaço entre conceitos"
           />
         </label>
 
@@ -105,11 +105,11 @@ function ControlsBody({
         </label>
 
         <label className="flex items-center justify-between text-[12px]">
-          <span>apagar camadas antigas</span>
+          <span>apagar memórias antigas</span>
           <Switch
             checked={dimByAge}
             onCheckedChange={(v) => set({ dimByAge: v })}
-            aria-label="Apagar camadas antigas"
+            aria-label="Apagar memórias antigas"
           />
         </label>
 

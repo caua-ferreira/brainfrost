@@ -66,7 +66,7 @@ export default function CamadasBrowser({ notes, refresh }: Props) {
           className="text-[42px] font-semibold leading-[1.02] tracking-tight md:text-[56px]"
           style={{ color: c.text }}
         >
-          {notes.length} camadas
+          {notes.length} memórias
           <br />
           <span
             className="bg-clip-text text-transparent"
@@ -76,8 +76,8 @@ export default function CamadasBrowser({ notes, refresh }: Props) {
           </span>
         </h1>
         <p className="mt-6 max-w-lg text-[15px] leading-relaxed" style={{ color: c.dim }}>
-          Clique numa camada pra editar título, corpo ou categoria. Corrija manualmente o que
-          o LLM classificou errado — não precisa reprocessar.
+          Clique numa memória para editar título, corpo ou área. Corrija manualmente o que
+          a IA classificou errado — não precisa reaprender.
         </p>
 
         {/* Filtros */}
@@ -129,7 +129,7 @@ export default function CamadasBrowser({ notes, refresh }: Props) {
               Nada aqui.
               {categoryFilter && (
                 <>
-                  {" "}Escolha outra categoria ou{" "}
+                  {" "}Escolha outra área ou{" "}
                   <button
                     onClick={() => setCategoryFilter(null)}
                     className="underline underline-offset-4"
@@ -230,14 +230,14 @@ function NoteRow({
             <span style={{ color: c.dim }}>{formatDate(note.updatedAt)}</span>
             <span style={{ color: c.dim }}>{note.words.toLocaleString("pt-BR")} palavras</span>
             <span style={{ color: c.dim }}>
-              {degree} {degree === 1 ? "conexão" : "conexões"}
+              {degree} {degree === 1 ? "associação" : "associações"}
             </span>
           </div>
         </div>
         <button
           onClick={onEdit}
           className="flex h-8 w-8 items-center justify-center rounded-full opacity-70 transition-opacity hover:opacity-100"
-          title="Editar camada"
+          title="Editar memória"
           style={{ background: `${c.dim}18`, color: c.dim }}
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={1.8} />
@@ -287,7 +287,7 @@ function EditRow({
 
   const remove = async () => {
     if (!note.id) return;
-    if (!confirm(`Remover "${note.title}"? A camada será apagada e não pode ser desfeita.`)) return;
+    if (!confirm(`Remover "${note.title}"? A memória será apagada e não pode ser desfeita.`)) return;
     setBusy(true);
     const supabase = getSupabase();
     const { error: linksError } = await supabase.from("vault_links").delete().eq("to_slug", note.slug);
@@ -325,7 +325,7 @@ function EditRow({
 
         <div>
           <label className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.dim }}>
-            Categoria
+            Área
           </label>
           <select
             value={category}
@@ -367,7 +367,7 @@ function EditRow({
           style={{ color: "#ff6b81" }}
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={1.8} />
-          Remover camada
+          Remover memória
         </button>
         <div className="flex items-center gap-2">
           <button
