@@ -28,8 +28,8 @@ export async function GET() {
   const activeSince = new Date(now - 5 * 60_000).toISOString();
 
   const [sessionsResult, eventsResult, importsResult, errorsResult, checksResult] = await Promise.all([
-    admin.from("product_sessions").select("user_id,started_at,last_seen_at,active_seconds,last_path").gte("last_seen_at", since30d),
-    admin.from("product_events").select("user_id,path,occurred_at").gte("occurred_at", since14d),
+    admin.from("product_sessions").select("user_id,started_at,last_seen_at,active_seconds,last_path").gte("last_seen_at", since30d).order("last_seen_at", { ascending: false }).limit(500),
+    admin.from("product_events").select("user_id,path,occurred_at").gte("occurred_at", since14d).order("occurred_at", { ascending: false }).limit(5_000),
     admin.from("imports").select("status,created_at,finished_at").gte("created_at", since30d),
     admin.from("error_events").select("error_id,stage,provider,message,occurred_at").gte("occurred_at", since7d).order("occurred_at", { ascending: false }).limit(200),
     admin.from("synthetic_checks").select("check_name,status,duration_ms,provider,suggestions_count,error_id,occurred_at").order("occurred_at", { ascending: false }).limit(10),
@@ -58,6 +58,7 @@ export async function GET() {
   const totalActiveSeconds = sessions.reduce((total, row) => total + row.active_seconds, 0);
   const successfulImports = imports.filter((row) => row.status === "pronto").length;
   const failedImports = imports.filter((row) => row.status === "erro").length;
+  const emailByUserId = new Map(users.map((item) => [item.id, item.email ?? "sem e-mail"]));
 
   const routeCounts = new Map<string, number>();
   for (const event of events) routeCounts.set(event.path, (routeCounts.get(event.path) ?? 0) + 1);
@@ -86,6 +87,18 @@ export async function GET() {
       pageViews14d: events.length,
       topRoutes: [...routeCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([path, views]) => ({ path, views })),
       daily,
+      recentSessions: sessions.slice(0, 30).map((session) => ({
+        email: emailByUserId.get(session.user_id) ?? "usuário removido",
+        startedAt: session.started_at,
+        lastSeenAt: session.last_seen_at,
+        activeMinutes: Math.round(session.active_seconds / 60),
+        lastPath: session.last_path,
+      })),
+      recentPageViews: events.slice(0, 50).map((event) => ({
+        email: emailByUserId.get(event.user_id) ?? "usuário removido",
+        path: event.path,
+        occurredAt: event.occurred_at,
+      })),
     },
     imports: {
       total30d: imports.length,

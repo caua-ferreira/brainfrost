@@ -21,6 +21,8 @@ type Summary = {
     pageViews14d: number;
     topRoutes: Array<{ path: string; views: number }>;
     daily: Array<{ date: string; activeUsers: number; pageViews: number }>;
+    recentSessions: Array<{ email: string; startedAt: string; lastSeenAt: string; activeMinutes: number; lastPath: string }>;
+    recentPageViews: Array<{ email: string; path: string; occurredAt: string }>;
   };
   imports: {
     total30d: number;
@@ -129,6 +131,37 @@ export default function ObservabilidadePage() {
                 <div className="flex justify-between gap-3 text-xs"><span>{item.stage}</span><span style={{ color: c.dim }}>{new Date(item.occurred_at).toLocaleString("pt-BR")}</span></div>
                 <p className="mt-1 truncate font-mono text-[10px]" style={{ color: c.dim }}>{item.error_id}</p>
                 <p className="mt-1 line-clamp-2 text-xs" style={{ color: c.dim }}>{item.message}</p>
+              </div>
+            ))}
+          </Panel>
+        </div>
+
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <Panel title="Atividade · 14 dias" icon={<Activity />} c={c}>
+            {data.usage.daily.map((day) => (
+              <Row
+                key={day.date}
+                left={new Date(`${day.date}T12:00:00Z`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                right={`${day.activeUsers} usuários · ${day.pageViews} views`}
+                c={c}
+              />
+            ))}
+          </Panel>
+          <Panel title="Acessos recentes" icon={<Users />} c={c}>
+            {data.usage.recentSessions.length === 0 ? <Empty c={c} /> : data.usage.recentSessions.slice(0, 15).map((session, index) => (
+              <div key={`${session.email}-${session.startedAt}-${index}`} className="border-b py-3 last:border-0" style={{ borderColor: c.borderSoft }}>
+                <div className="flex items-center justify-between gap-3 text-xs"><span className="truncate font-medium">{session.email}</span><span className="shrink-0 font-mono" style={{ color: c.dim }}>{session.activeMinutes} min</span></div>
+                <div className="mt-1 flex items-center justify-between gap-3 font-mono text-[10px]" style={{ color: c.dim }}><span className="truncate">{session.lastPath}</span><span className="shrink-0">{new Date(session.lastSeenAt).toLocaleString("pt-BR")}</span></div>
+              </div>
+            ))}
+          </Panel>
+        </div>
+
+        <div className="mt-5">
+          <Panel title="Últimas páginas acessadas" icon={<Eye />} c={c}>
+            {data.usage.recentPageViews.length === 0 ? <Empty c={c} /> : data.usage.recentPageViews.slice(0, 20).map((view, index) => (
+              <div key={`${view.email}-${view.occurredAt}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 border-b py-3 text-xs last:border-0" style={{ borderColor: c.borderSoft }}>
+                <span className="truncate">{view.email}</span><span className="truncate font-mono" style={{ color: c.dim }}>{view.path}</span><span className="shrink-0" style={{ color: c.dim }}>{new Date(view.occurredAt).toLocaleString("pt-BR")}</span>
               </div>
             ))}
           </Panel>
