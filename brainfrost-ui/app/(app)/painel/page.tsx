@@ -19,6 +19,16 @@ const relative = (iso: string) => {
   return new Date(iso).toLocaleDateString("pt-BR");
 };
 
+const IMPORT_SOURCE_LABELS: Record<string, string> = {
+  text: "texto",
+  files: "arquivos",
+  zip: "ZIP",
+  github: "GitHub",
+  gitlab: "GitLab",
+  url: "URL pública",
+  google_drive: "Google Drive",
+};
+
 export default function PainelPage() {
   const { session } = useSession();
   const theme = useSaas((s) => s.theme);
@@ -170,7 +180,7 @@ export default function PainelPage() {
           >
             <Stat value={vaultLayers} label="memórias no cérebro" tint={c.accent} textColor={c.text} dimColor={c.dim} />
             <Stat value={pending} label="aprendizados pendentes" tint={c.aurora} textColor={c.text} dimColor={c.dim} href={pending > 0 ? "/curadoria" : undefined} />
-            <Stat value={imports.length} label="repos analisados" tint={c.dim} textColor={c.text} dimColor={c.dim} />
+            <Stat value={imports.length} label="fontes analisadas" tint={c.dim} textColor={c.text} dimColor={c.dim} />
           </div>
         </div>
       </div>
@@ -223,7 +233,7 @@ export default function PainelPage() {
                       {imp.label}
                     </div>
                     <div className="mt-0.5 font-mono text-[11px]" style={{ color: c.dim }}>
-                      {imp.file_count} arquivos · {imp.source} · {relative(imp.created_at)}
+                      {imp.file_count} {imp.file_count === 1 ? "item" : "itens"} · {IMPORT_SOURCE_LABELS[imp.source] ?? imp.source} · {relative(imp.created_at)}
                       {imp.provider_used && ` · ${imp.provider_used}`}
                     </div>
                   </div>
