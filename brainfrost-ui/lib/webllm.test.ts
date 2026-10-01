@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { getWebLlmPreflightIssue, isWebLlmCompatibilityError, isWebLlmDisposedError } from "./webllm";
+import { analyzeLocally, getWebLlmPreflightIssue, isWebLlmCompatibilityError, isWebLlmDisposedError } from "./webllm";
 
 describe("isWebLlmCompatibilityError", () => {
   test("reconhece falhas de navegador, GPU e contexto", () => {
@@ -32,5 +32,15 @@ describe("getWebLlmPreflightIssue", () => {
 
   test("mantém o modelo local quando os requisitos estão presentes", () => {
     expect(getWebLlmPreflightIssue("Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC", { webGpu: true, deviceMemory: 8, mobile: false })).toBeNull();
+  });
+});
+
+describe("analyzeLocally", () => {
+  test("interrompe antes de carregar o modelo quando a análise já foi cancelada", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(analyzeLocally("conteúdo", undefined, undefined, [], controller.signal))
+      .rejects.toMatchObject({ name: "AbortError" });
   });
 });

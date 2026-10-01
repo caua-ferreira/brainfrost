@@ -43,23 +43,37 @@ export default function AnalisandoPage() {
   const [progress, setProgress] = useState(5);
   const [modelProgress, setModelProgress] = useState<WebLlmProgress | null>(null);
   const [usingBrowserFallback, setUsingBrowserFallback] = useState(false);
-  const [status, setStatus] = useState<"rodando" | "erro">("rodando");
+  const localModelLabel = WEBLLM_MODELS.find((model) => model.id === webLlmModel)?.label ?? webLlmModel;
+  const [analyzer, setAnalyzer] = useState(() => provider === "webllm"
+    ? { label: localModelLabel, detail: "Local (WebLLM) · roda neste navegador" }
+    : provider === "claude"
+      ? { label: "Anthropic Claude", detail: "Nuvem · usando sua chave" }
+      : { label: "Google Gemini", detail: "Nuvem · usando sua chave" });
+  const [status, setStatus] = useState<"rodando" | "cancelando" | "erro">("rodando");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const startedRef = useRef(false);
+  const cancelledRef = useRef(false);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
     const tick = setInterval(() => {
       setProgress((p) => (p < 90 ? p + Math.random() * 4 + 1 : p));
     }, 400);
+    tickRef.current = tick;
 
     const runServer = async (selectedProvider: string = provider) => {
       const res = await fetch(`/api/imports/${params.id}/analyze`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ provider: selectedProvider }),
+        signal: controller.signal,
       });
       const json = await res.json();
       if (!res.ok) throw new AnalysisRunError(json.error ?? "erro desconhecido", json.errorId);
@@ -90,8 +104,10 @@ export default function AnalisandoPage() {
         sanitized.cleanText,
         webLlmModel,
         (p) => setModelProgress(p),
-        existingNotes ?? []
+        existingNotes ?? [],
+        controller.signal
       );
+      controller.signal.throwIfAborted();
 
       const rows = rawSuggestions
         .filter((s) => s.title && s.body)
@@ -122,20 +138,33 @@ export default function AnalisandoPage() {
         if (insErr) throw new Error(insErr.message);
       }
 
-      await supabase
+      if (controller.signal.aborted) {
+        await supabase.from("pattern_suggestions").delete().eq("import_id", params.id);
+        controller.signal.throwIfAborted();
+      }
+      controller.signal.throwIfAborted();
+      const { data: finishedImport } = await supabase
         .from("imports")
         .update({
           status: "pronto",
           finished_at: new Date().toISOString(),
           provider_used: "webllm",
         })
-        .eq("id", params.id);
+        .eq("id", params.id)
+        .eq("status", "analisando")
+        .select("id")
+        .maybeSingle();
+      if (!finishedImport) {
+        await supabase.from("pattern_suggestions").delete().eq("import_id", params.id);
+        throw new DOMException("Análise cancelada", "AbortError");
+      }
     };
 
     (async () => {
       try {
         if (provider === "webllm" && getWebLlmPreflightIssue(webLlmModel)) {
           setUsingBrowserFallback(true);
+          setAnalyzer({ label: "API gerenciada BrainFrost", detail: "Nuvem · conteúdo sanitizado" });
           await runServer("browser-fallback");
         } else if (provider === "webllm") {
           try {
@@ -144,17 +173,19 @@ export default function AnalisandoPage() {
             if (!isWebLlmCompatibilityError(error)) throw error;
             setModelProgress(null);
             setUsingBrowserFallback(true);
+            setAnalyzer({ label: "API gerenciada BrainFrost", detail: "Nuvem · o modelo local não concluiu" });
             await runServer("browser-fallback");
           }
         } else await runServer();
         clearInterval(tick);
         setProgress(100);
-        setTimeout(() => {
+        redirectTimerRef.current = setTimeout(() => {
           announceNavigation();
           router.replace("/curadoria");
         }, 700);
       } catch (e) {
         clearInterval(tick);
+        if (cancelledRef.current || controller.signal.aborted) return;
         setStatus("erro");
         const message = e instanceof Error ? e.message : "erro de rede";
         let errorId = e instanceof AnalysisRunError ? e.errorId : undefined;
@@ -182,6 +213,27 @@ export default function AnalisandoPage() {
 
     return () => clearInterval(tick);
   }, [params.id, router, provider, webLlmModel]);
+
+  async function cancelAnalysis() {
+    if (status !== "rodando") return;
+    setStatus("cancelando");
+    cancelledRef.current = true;
+    requestControllerRef.current?.abort();
+    if (tickRef.current) clearInterval(tickRef.current);
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+
+    try {
+      const response = await fetch(`/api/imports/${params.id}/analyze`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error ?? "Não foi possível cancelar a categorização.");
+      announceNavigation();
+      router.replace("/importar");
+    } catch (error) {
+      cancelledRef.current = false;
+      setStatus("erro");
+      setErrorMsg(error instanceof Error ? error.message : "Não foi possível cancelar a categorização.");
+    }
+  }
 
   const stage = [...STAGES].reverse().find((s) => progress >= s.at) ?? STAGES[0];
   const showModelProgress = provider === "webllm" && !usingBrowserFallback && modelProgress && modelProgress.progress < 1;
@@ -213,21 +265,32 @@ export default function AnalisandoPage() {
           )}
         </div>
         <p className="font-mono text-[10px] uppercase tracking-[0.3em]" style={{ color: c.accent, opacity: 0.8 }}>
-          {status === "erro" ? "algo deu errado" : usingBrowserFallback ? "análise compatível" : provider === "webllm" ? "analisando local" : "analisando"}
+          {status === "erro" ? "algo deu errado" : status === "cancelando" ? "interrompendo" : usingBrowserFallback ? "análise compatível" : provider === "webllm" ? "analisando local" : "analisando"}
         </p>
         <h1 className="mt-3 text-[36px] font-semibold leading-[1.05] tracking-tight md:text-[44px]" style={{ color: c.text }}>
-          {status === "erro" ? "Não deu." : showModelProgress ? "baixando modelo" : usingBrowserFallback ? "analisando na nuvem" : stage.label}
+          {status === "erro" ? "Não deu." : status === "cancelando" ? "Cancelando análise" : showModelProgress ? "baixando modelo" : usingBrowserFallback ? "analisando na nuvem" : stage.label}
           {status !== "erro" && <span className="animate-pulse" style={{ color: c.aurora }}>.</span>}
         </h1>
         <p className="mt-3 text-[14px]" style={{ color: c.dim }}>
           {status === "erro"
             ? errorMsg
+            : status === "cancelando"
+              ? "Interrompendo a LLM e preservando seus dados já importados."
               : showModelProgress
               ? `primeiro uso baixa ${WEBLLM_MODELS.find((m) => m.id === webLlmModel)?.size ?? "o modelo"}. Fica em cache pra próximas.`
               : usingBrowserFallback
                 ? "Seu navegador não concluiu o modelo local. O conteúdo sanitizado está sendo analisado com segurança no servidor."
               : stage.detail}
         </p>
+
+        <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border px-4 py-3" style={{ borderColor: c.border, background: c.bgSoft }}>
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em]" style={{ color: c.dim }}>analisando com</p>
+            <p className="mt-1 truncate text-sm font-semibold" style={{ color: c.text }}>{analyzer.label}</p>
+            <p className="mt-0.5 text-[11px]" style={{ color: c.dim }}>{analyzer.detail}</p>
+          </div>
+          <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full" style={{ background: status === "erro" ? "#ff6b81" : c.aurora }} />
+        </div>
 
         <div className="mt-8 h-1.5 w-full overflow-hidden rounded-full" style={{ background: c.bgSoft }}>
           <div
@@ -246,6 +309,8 @@ export default function AnalisandoPage() {
           <span>
             {status === "erro"
               ? "interrompido"
+              : status === "cancelando"
+                ? "cancelando"
               : showModelProgress
                 ? "baixando"
                 : progress >= 100
@@ -258,6 +323,18 @@ export default function AnalisandoPage() {
           <p className="mt-2 font-mono text-[10px]" style={{ color: c.dim }}>
             {modelProgress.text}
           </p>
+        )}
+
+        {(status === "rodando" || status === "cancelando") && progress < 100 && (
+          <button
+            type="button"
+            onClick={cancelAnalysis}
+            disabled={status === "cancelando"}
+            className="mt-6 rounded-full border px-4 py-2 text-[13px] font-medium transition-opacity disabled:cursor-wait disabled:opacity-50"
+            style={{ borderColor: c.border, color: c.dim }}
+          >
+            {status === "cancelando" ? "Cancelando…" : "Cancelar categorização"}
+          </button>
         )}
 
         {status === "erro" && (

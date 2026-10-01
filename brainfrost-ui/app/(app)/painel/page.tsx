@@ -230,8 +230,8 @@ export default function PainelPage() {
                   <span
                     className="rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-widest"
                     style={{
-                      background: `${imp.status === "pronto" ? c.aurora : c.accent}18`,
-                      color: imp.status === "pronto" ? c.aurora : c.accent,
+                      background: `${imp.status === "pronto" ? c.aurora : imp.status === "cancelado" ? c.dim : c.accent}18`,
+                      color: imp.status === "pronto" ? c.aurora : imp.status === "cancelado" ? c.dim : c.accent,
                     }}
                   >
                     {imp.status}
