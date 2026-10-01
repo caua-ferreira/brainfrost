@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { hasProAccess } from "@/lib/pro-entitlement";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { sanitizeTelemetryMessage, writeErrorTelemetry } from "@/lib/error-telemetry";
 
 export const runtime = "nodejs";
 
@@ -62,6 +63,22 @@ export async function POST(request: Request) {
     .select("id")
     .single();
 
-  if (error || !data) return NextResponse.json({ error: "não foi possível criar o import" }, { status: 500 });
+  if (error || !data) {
+    const errorId = crypto.randomUUID();
+    const message = sanitizeTelemetryMessage(error?.message ?? "insert não retornou dados");
+    const fileCount = typeof body.file_count === "number" ? body.file_count : null;
+    console.error("[imports/create]", errorId, message);
+    writeErrorTelemetry({ errorId, scope: "import", stage: "create", message, userId: user.id });
+    await supabase.from("error_events").insert({
+      error_id: errorId,
+      user_id: user.id,
+      scope: "import",
+      stage: "create",
+      provider: null,
+      message,
+      metadata: { source: body.source, fileCount },
+    });
+    return NextResponse.json({ error: `Não foi possível criar a importação. Código: ${errorId}` }, { status: 500 });
+  }
   return NextResponse.json({ id: data.id });
 }

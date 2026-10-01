@@ -54,7 +54,8 @@ async function callClaude(
   apiKey: string,
   userText: string,
   model?: string,
-  maxTokens = 2000
+  maxTokens = 2000,
+  signal?: AbortSignal
 ): Promise<string> {
   const anthropic = new Anthropic({ apiKey });
   const response = await anthropic.messages.create({
@@ -62,7 +63,7 @@ async function callClaude(
     max_tokens: maxTokens,
     system: EXTRACTION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userText }],
-  });
+  }, { signal });
   const block = response.content[0];
   return block.type === "text" ? block.text : "";
 }
@@ -71,7 +72,8 @@ async function callGemini(
   apiKey: string,
   userText: string,
   modelName?: string,
-  maxOutputTokens = 2000
+  maxOutputTokens = 2000,
+  signal?: AbortSignal
 ): Promise<string> {
   const genai = new GoogleGenerativeAI(apiKey);
   const model = genai.getGenerativeModel({
@@ -79,7 +81,7 @@ async function callGemini(
     systemInstruction: EXTRACTION_SYSTEM_PROMPT,
     generationConfig: { responseMimeType: "application/json", maxOutputTokens },
   });
-  const result = await model.generateContent(userText);
+  const result = await model.generateContent(userText, { signal });
   return result.response.text();
 }
 
@@ -87,7 +89,8 @@ async function callOpenRouter(
   apiKey: string,
   model: string,
   userText: string,
-  maxTokens: number
+  maxTokens: number,
+  signal?: AbortSignal
 ): Promise<string> {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -107,6 +110,7 @@ async function callOpenRouter(
       response_format: { type: "json_object" },
       max_tokens: maxTokens,
     }),
+    signal,
   });
   const payload = await response.json().catch(() => null) as {
     choices?: Array<{ finish_reason?: string; message?: { content?: string } }>;
@@ -239,31 +243,37 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   try {
     if (userApiKey) {
       raw = provider === "claude"
-        ? await callClaude(userApiKey, analysisInput)
-        : await callGemini(userApiKey, analysisInput);
+        ? await callClaude(userApiKey, analysisInput, undefined, 2000, request.signal)
+        : await callGemini(userApiKey, analysisInput, undefined, 2000, request.signal);
     } else if (managed!.provider === "claude") {
       raw = await callClaude(
         managed!.apiKey,
         analysisInput,
         managed!.model,
-        managed!.maxOutputTokens
+        managed!.maxOutputTokens,
+        request.signal
       );
     } else if (managed!.provider === "gemini") {
       raw = await callGemini(
         managed!.apiKey,
         analysisInput,
         managed!.model,
-        managed!.maxOutputTokens
+        managed!.maxOutputTokens,
+        request.signal
       );
     } else {
       raw = await callOpenRouter(
         managed!.apiKey,
         managed!.model,
         analysisInput,
-        managed!.maxOutputTokens
+        managed!.maxOutputTokens,
+        request.signal
       );
     }
   } catch (e) {
+    if (request.signal.aborted || (e instanceof Error && e.name === "AbortError")) {
+      return new Response(null, { status: 499 });
+    }
     const msg = e instanceof Error ? e.message : "erro no LLM";
     const errorId = await reportAnalysisError(supabase, {
       stage: "provider",
@@ -338,6 +348,15 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       };
     });
 
+  const { data: currentImport } = await supabase
+    .from("imports")
+    .select("status")
+    .eq("id", importId)
+    .maybeSingle();
+  if (request.signal.aborted || currentImport?.status === "cancelado") {
+    return NextResponse.json({ error: "análise cancelada", code: "ANALYSIS_CANCELLED" }, { status: 409 });
+  }
+
   if (rows.length > 0) {
     const { error: insErr } = await supabase.from("pattern_suggestions").insert(rows);
     if (insErr) {
@@ -355,14 +374,27 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     }
   }
 
-  await supabase
+  if (request.signal.aborted) {
+    await supabase.from("pattern_suggestions").delete().eq("import_id", importId);
+    return new Response(null, { status: 499 });
+  }
+
+  const { data: finishedImport } = await supabase
     .from("imports")
     .update({
       status: "pronto",
       finished_at: new Date().toISOString(),
       provider_used: managed ? `brainfrost:${managed.provider}` : provider,
     })
-    .eq("id", importId);
+    .eq("id", importId)
+    .eq("status", "analisando")
+    .select("id")
+    .maybeSingle();
+
+  if (!finishedImport) {
+    await supabase.from("pattern_suggestions").delete().eq("import_id", importId);
+    return NextResponse.json({ error: "análise cancelada", code: "ANALYSIS_CANCELLED" }, { status: 409 });
+  }
 
   return NextResponse.json({
     ok: true,
@@ -370,4 +402,24 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     suggestionsCreated: rows.length,
     redactions: sanitized.redactions,
   });
+}
+
+export async function DELETE(_request: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id: importId } = await ctx.params;
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || user.is_anonymous) return NextResponse.json({ error: "não autenticado" }, { status: 401 });
+
+  const { data: cancelledImport, error } = await supabase
+    .from("imports")
+    .update({ status: "cancelado", error: null, finished_at: new Date().toISOString() })
+    .eq("id", importId)
+    .eq("status", "analisando")
+    .select("id")
+    .maybeSingle();
+  if (error) return NextResponse.json({ error: "não foi possível cancelar a categorização" }, { status: 503 });
+  if (!cancelledImport) return NextResponse.json({ error: "esta categorização já foi concluída" }, { status: 409 });
+
+  await supabase.from("pattern_suggestions").delete().eq("import_id", importId);
+  return NextResponse.json({ ok: true });
 }

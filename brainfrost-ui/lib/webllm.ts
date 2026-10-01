@@ -190,13 +190,17 @@ export async function analyzeLocally(
   text: string,
   modelId: string = DEFAULT_WEBLLM_MODEL,
   onProgress?: (p: WebLlmProgress) => void,
-  existingNotes: Array<{ slug: string; title: string; category: string }> = []
+  existingNotes: Array<{ slug: string; title: string; category: string }> = [],
+  signal?: AbortSignal
 ): Promise<LlmSuggestion[]> {
   return runInferenceExclusive(async () => {
     const attempt = async () => {
+      signal?.throwIfAborted();
       const engine = await getEngine(modelId, onProgress);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const e = engine as any;
+      const interrupt = () => { void e.interruptGenerate?.(); };
+      signal?.addEventListener("abort", interrupt, { once: true });
       // response_format json_object dá "Cannot pass non-string to std::string"
       // no WebLLM 0.2.85. O prompt já pede JSON estrito e parseSuggestionsJson
       // extrai o objeto entre { e }, então dispensa.
@@ -204,17 +208,23 @@ export async function analyzeLocally(
       const catalog = fitExistingNotesToPrompt(existingNotes);
       const suggestions: LlmSuggestion[] = [];
 
-      for (const chunk of chunks) {
-        const response = await e.chat.completions.create({
-          messages: [
-            { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
-            { role: "user", content: buildExtractionInput(chunk, catalog) },
-          ],
-          temperature: 0.2,
-          max_tokens: 1200,
-        });
-        const raw = response.choices[0]?.message?.content ?? "";
-        suggestions.push(...parseSuggestionsJson(raw));
+      try {
+        for (const chunk of chunks) {
+          signal?.throwIfAborted();
+          const response = await e.chat.completions.create({
+            messages: [
+              { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
+              { role: "user", content: buildExtractionInput(chunk, catalog) },
+            ],
+            temperature: 0.2,
+            max_tokens: 1200,
+          });
+          signal?.throwIfAborted();
+          const raw = response.choices[0]?.message?.content ?? "";
+          suggestions.push(...parseSuggestionsJson(raw));
+        }
+      } finally {
+        signal?.removeEventListener("abort", interrupt);
       }
 
       return dedupeSuggestions(suggestions);

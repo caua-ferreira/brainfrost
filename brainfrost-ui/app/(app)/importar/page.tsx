@@ -20,6 +20,12 @@ const SANITIZED = [
 
 type Tab = "text" | "files" | "zip" | "github";
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
 async function createImport(input: {
   source: "text" | "files" | "zip" | "github";
   label: string;
@@ -363,7 +369,7 @@ function ZipPanel({ c }: { c: ReturnType<typeof palette> }) {
         </p>
         <p className="max-w-sm font-mono text-[11px]" style={{ color: c.dim }}>
           {file
-            ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
+            ? formatFileSize(file.size)
             : "ou clique para escolher — segredos e binários são descartados antes de qualquer análise"}
         </p>
         <input
