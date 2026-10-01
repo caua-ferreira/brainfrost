@@ -31,6 +31,14 @@ type ManagedUser = {
   activeMinutes: number;
   lastPath: string | null;
   recentPages: Array<{ path: string; occurredAt: string }>;
+  recentErrors: Array<{
+    id: string;
+    scope: string;
+    stage: string;
+    provider: string | null;
+    message: string;
+    occurredAt: string;
+  }>;
   acquisition: {
     source: string;
     medium: string | null;
@@ -38,6 +46,14 @@ type ManagedUser = {
     landingPath: string | null;
     capturedAt: string | null;
   } | null;
+  quota: {
+    used: number;
+    limit: number;
+    isCustom: boolean;
+    reason: string | null;
+    updatedAt: string | null;
+    resetsAt: string;
+  };
   access: "free" | "paid" | "grant" | "paid_and_grant";
   subscription: { status: string; current_period_end: string | null; cancel_at_period_end: boolean } | null;
   grant: { expires_at: string | null; reason: string; revoked_at: string | null; updated_at: string } | null;
@@ -59,8 +75,8 @@ const accessLabel: Record<ManagedUser["access"], string> = {
 function formatDate(value: string | null, withTime = false) {
   if (!value) return "nunca";
   return new Date(value).toLocaleString("pt-BR", withTime
-    ? { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }
-    : { day: "2-digit", month: "short", year: "numeric" });
+    ? { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }
+    : { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", year: "numeric" });
 }
 
 function providerLabel(provider: string) {
@@ -74,6 +90,7 @@ export default function GestaoPage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<ManagedUser | null>(null);
   const [days, setDays] = useState(30);
+  const [quotaLimit, setQuotaLimit] = useState(30);
   const [reason, setReason] = useState("Ajuste administrativo de acesso");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +114,13 @@ export default function GestaoPage() {
     try { await load(query); } catch (cause) { setError(cause instanceof Error ? cause.message : "Erro desconhecido"); }
   }
 
-  async function mutate(action: "grant" | "extend" | "revoke" | "block" | "unblock", lifetime = false) {
+  function openUser(user: ManagedUser) {
+    setSelected(user);
+    setQuotaLimit(user.quota.limit);
+    setNotice(null);
+  }
+
+  async function mutate(action: "grant" | "extend" | "revoke" | "block" | "unblock" | "set_quota" | "reset_quota", lifetime = false) {
     if (!selected) return;
     if (action === "revoke" && !window.confirm(`Revogar a cortesia Pro de ${selected.email}?`)) return;
     if (action === "block" && !window.confirm(`Bloquear o acesso de ${selected.email}? A assinatura no Stripe não será cancelada.`)) return;
@@ -108,12 +131,18 @@ export default function GestaoPage() {
       const response = await fetch("/api/admin/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: selected.id, action, days, lifetime, reason }),
+        body: JSON.stringify({ userId: selected.id, action, days, lifetime, reason, quotaLimit }),
       });
       const json = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(json.error ?? "Não foi possível alterar o acesso.");
-      const messages = { revoke: "Cortesia revogada.", block: "Acesso bloqueado.", unblock: "Acesso liberado." };
-      setNotice(action in messages ? messages[action as keyof typeof messages] : lifetime ? "Pro vitalício concedido." : `Acesso Pro atualizado por ${days} dias.`);
+      const messages = {
+        revoke: "Cortesia revogada.",
+        block: "Acesso bloqueado.",
+        unblock: "Acesso liberado.",
+        set_quota: `Franquia mensal atualizada para ${quotaLimit} análises.`,
+        reset_quota: "Franquia padrão de 30 análises restaurada.",
+      };
+      setNotice(action in messages ? messages[action as keyof typeof messages] : lifetime ? "Pro vitalício concedido e usuário notificado." : `Acesso Pro atualizado por ${days} dias e usuário notificado.`);
       await load(query);
       setSelected(null);
     } catch (cause) {
@@ -155,12 +184,12 @@ export default function GestaoPage() {
 
         {data && <div className="mt-5 overflow-hidden rounded-2xl border" style={{ borderColor: c.border, background: c.card }}>
           {data.users.length === 0 ? <p className="p-6 text-sm" style={{ color: c.dim }}>Nenhum usuário encontrado.</p> : data.users.map((user) => (
-            <button key={user.id} onClick={() => { setSelected(user); setNotice(null); }} className="grid w-full gap-3 border-b p-4 text-left transition-colors last:border-0 hover:bg-black/[0.03] md:grid-cols-[minmax(0,1.5fr)_130px_150px_190px_auto] md:items-center" style={{ borderColor: c.borderSoft }}>
+            <button key={user.id} onClick={() => openUser(user)} className="grid w-full gap-3 border-b p-4 text-left transition-colors last:border-0 hover:bg-black/[0.03] md:grid-cols-[minmax(0,1.5fr)_130px_150px_190px_auto] md:items-center" style={{ borderColor: c.borderSoft }}>
               <div className="flex min-w-0 items-center gap-3">
                 <Avatar user={user} c={c} />
                 <div className="min-w-0"><p className="truncate text-sm font-medium">{user.name || user.email}</p><p className="mt-1 truncate font-mono text-[10px]" style={{ color: c.dim }}>{user.email}</p></div>
               </div>
-              <span className="w-fit rounded-full px-2.5 py-1 font-mono text-[10px] uppercase" style={{ background: `${user.access === "free" ? c.dim : c.aurora}20`, color: user.access === "free" ? c.dim : c.aurora }}>{accessLabel[user.access]}</span>
+              <div><span className="w-fit rounded-full px-2.5 py-1 font-mono text-[10px] uppercase" style={{ background: `${user.access === "free" ? c.dim : c.aurora}20`, color: user.access === "free" ? c.dim : c.aurora }}>{accessLabel[user.access]}</span><p className="mt-2 font-mono text-[10px]" style={{ color: c.dim }}>IA {user.quota.used}/{user.quota.limit}</p></div>
               <p className="truncate text-xs" style={{ color: c.dim }}>{user.providers.length ? user.providers.map(providerLabel).join(", ") : "sem provedor"}</p>
               <div className="text-xs" style={{ color: c.dim }}><p>Último acesso</p><p className="mt-1 text-[11px]">{formatDate(user.lastAccessAt, true)}</p></div>
               {user.blocked ? <Ban className="h-4 w-4 text-red-600 md:justify-self-end" /> : <CalendarPlus className="h-4 w-4 md:justify-self-end" style={{ color: c.accent }} />}
@@ -194,12 +223,32 @@ export default function GestaoPage() {
             <Detail label="Último acesso" value={formatDate(selected.lastAccessAt, true)} />
             <Detail label="Tempo ativo" value={`${selected.activeMinutes} min`} />
             <Detail label="Última página" value={selected.lastPath ?? "sem registro"} />
+            <Detail label="Franquia IA" value={`${selected.quota.used} de ${selected.quota.limit}`} />
           </div>
+
+          <section className="mt-5 rounded-xl border p-4" style={{ borderColor: c.borderSoft }}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><h2 className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: c.dim }}>uso mensal da IA gerenciada</h2><p className="mt-2 text-sm font-medium">{selected.quota.used} de {selected.quota.limit} análises usadas</p><p className="mt-1 text-xs" style={{ color: c.dim }}>Renova em {formatDate(selected.quota.resetsAt)} · {selected.quota.isCustom ? "limite personalizado" : "limite padrão"}</p></div>
+              <span className="rounded-full px-2.5 py-1 font-mono text-[10px]" style={{ background: `${c.accent}15`, color: c.accent }}>{Math.min(100, Math.round((selected.quota.used / Math.max(1, selected.quota.limit)) * 100))}%</span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full" style={{ background: c.borderSoft }}><div className="h-full rounded-full" style={{ width: `${Math.min(100, (selected.quota.used / Math.max(1, selected.quota.limit)) * 100)}%`, background: c.accent }} /></div>
+            <label className="mt-4 block text-xs" style={{ color: c.dim }}>Novo limite mensal</label>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <input type="number" min={1} max={10000} value={quotaLimit} onChange={(event) => setQuotaLimit(Number(event.target.value))} className="h-10 min-w-0 flex-1 rounded-lg border bg-transparent px-3 text-sm outline-none" style={{ borderColor: c.borderSoft }} />
+              <button onClick={() => mutate("set_quota")} disabled={busy || selected.isAnonymous} className="rounded-full px-4 py-2 text-xs font-medium disabled:opacity-50" style={{ background: c.accent, color: c.onAccent }}>Salvar franquia</button>
+              {selected.quota.isCustom && <button onClick={() => mutate("reset_quota")} disabled={busy} className="rounded-full border px-4 py-2 text-xs font-medium disabled:opacity-50" style={{ borderColor: c.borderSoft }}>Restaurar 30</button>}
+            </div>
+          </section>
 
           <section className="mt-5 rounded-xl border p-4" style={{ borderColor: c.borderSoft }}>
             <h2 className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: c.dim }}>origem do cadastro</h2>
             <p className="mt-2 text-sm font-medium">{selected.acquisition?.source ?? "Não registrada"}</p>
             {selected.acquisition && <p className="mt-1 text-xs" style={{ color: c.dim }}>{[selected.acquisition.medium, selected.acquisition.campaign, selected.acquisition.landingPath].filter(Boolean).join(" · ") || "acesso direto"}</p>}
+          </section>
+
+          <section className="mt-5 rounded-xl border p-4" style={{ borderColor: selected.recentErrors.length ? "#c2415a55" : c.borderSoft }}>
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.2em]" style={{ color: selected.recentErrors.length ? "#c2415a" : c.dim }}>erros recentes</h2>
+            {selected.recentErrors.length === 0 ? <p className="mt-2 text-xs" style={{ color: c.dim }}>Nenhum erro registrado para este usuário.</p> : <div className="mt-2 divide-y" style={{ borderColor: c.borderSoft }}>{selected.recentErrors.map((item) => <div key={item.id} className="py-3 text-xs"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-mono uppercase text-red-600">{item.scope} · {item.stage}{item.provider ? ` · ${item.provider}` : ""}</span><span className="font-mono text-[10px]" style={{ color: c.dim }}>{formatDate(item.occurredAt, true)}</span></div><p className="mt-1 break-words leading-relaxed" style={{ color: c.dim }}>{item.message}</p><p className="mt-1 font-mono text-[9px]" style={{ color: c.dim }}>ID {item.id}</p></div>)}</div>}
           </section>
 
           <section className="mt-5 rounded-xl border p-4" style={{ borderColor: c.borderSoft }}>

@@ -11,6 +11,7 @@ import { announceNavigation } from "@/components/shared/NavigationLoader";
 import {
   analyzeLocally,
   DEFAULT_WEBLLM_MODEL,
+  getWebLlmPreflightIssue,
   isWebGPUAvailable,
   isWebLlmCompatibilityError,
   WEBLLM_MODELS,
@@ -133,7 +134,7 @@ export default function AnalisandoPage() {
 
     (async () => {
       try {
-        if (provider === "webllm" && !isWebGPUAvailable()) {
+        if (provider === "webllm" && getWebLlmPreflightIssue(webLlmModel)) {
           setUsingBrowserFallback(true);
           await runServer("browser-fallback");
         } else if (provider === "webllm") {

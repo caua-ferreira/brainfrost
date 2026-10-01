@@ -33,7 +33,7 @@ type Summary = {
   errors: {
     total7d: number;
     byStage: Array<{ stage: string; count: number }>;
-    recent: Array<{ error_id: string; stage: string; provider: string | null; message: string; occurred_at: string }>;
+    recent: Array<{ error_id: string; scope: string; stage: string; provider: string | null; message: string; occurred_at: string; email: string | null; origin: string }>;
   };
   syntheticChecks: Array<{
     check_name: string;
@@ -45,6 +45,18 @@ type Summary = {
     occurred_at: string;
   }>;
 };
+
+function formatSaoPaulo(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(new Date(value));
+}
 
 export default function ObservabilidadePage() {
   const theme = useSaas((state) => state.theme);
@@ -90,7 +102,7 @@ export default function ObservabilidadePage() {
             <p className="mt-2 text-sm" style={{ color: c.dim }}>Uso real, confiabilidade das importações e saúde da IA.</p>
           </div>
           <p className="font-mono text-[10px]" style={{ color: c.dim }}>
-            atualizado {new Date(data.generatedAt).toLocaleString("pt-BR")}
+            atualizado {formatSaoPaulo(data.generatedAt)} · São Paulo
           </p>
         </div>
 
@@ -121,14 +133,15 @@ export default function ObservabilidadePage() {
                 <Row left="status" right={latestCheck.status === "ok" ? "saudável" : "falhou"} c={c} />
                 <Row left="duração" right={`${latestCheck.duration_ms} ms`} c={c} />
                 <Row left="sugestões" right={String(latestCheck.suggestions_count ?? 0)} c={c} />
-                <Row left="última execução" right={new Date(latestCheck.occurred_at).toLocaleString("pt-BR")} c={c} />
+                <Row left="última execução" right={formatSaoPaulo(latestCheck.occurred_at)} c={c} />
               </>
             )}
           </Panel>
           <Panel title="Erros recentes" icon={<AlertTriangle />} c={c}>
             {data.errors.recent.length === 0 ? <Empty c={c} /> : data.errors.recent.slice(0, 8).map((item) => (
               <div key={item.error_id} className="border-b py-3 last:border-0" style={{ borderColor: c.borderSoft }}>
-                <div className="flex justify-between gap-3 text-xs"><span>{item.stage}</span><span style={{ color: c.dim }}>{new Date(item.occurred_at).toLocaleString("pt-BR")}</span></div>
+                <div className="flex justify-between gap-3 text-xs"><span>{item.scope}/{item.stage}</span><span style={{ color: c.dim }}>{formatSaoPaulo(item.occurred_at)}</span></div>
+                <p className="mt-1 text-[11px] font-medium" style={{ color: item.scope === "synthetic" ? c.accent : c.text }}>{item.origin}</p>
                 <p className="mt-1 truncate font-mono text-[10px]" style={{ color: c.dim }}>{item.error_id}</p>
                 <p className="mt-1 line-clamp-2 text-xs" style={{ color: c.dim }}>{item.message}</p>
               </div>
@@ -151,7 +164,7 @@ export default function ObservabilidadePage() {
             {data.usage.recentSessions.length === 0 ? <Empty c={c} /> : data.usage.recentSessions.slice(0, 15).map((session, index) => (
               <div key={`${session.email}-${session.startedAt}-${index}`} className="border-b py-3 last:border-0" style={{ borderColor: c.borderSoft }}>
                 <div className="flex items-center justify-between gap-3 text-xs"><span className="truncate font-medium">{session.email}</span><span className="shrink-0 font-mono" style={{ color: c.dim }}>{session.activeMinutes} min</span></div>
-                <div className="mt-1 flex items-center justify-between gap-3 font-mono text-[10px]" style={{ color: c.dim }}><span className="truncate">{session.lastPath}</span><span className="shrink-0">{new Date(session.lastSeenAt).toLocaleString("pt-BR")}</span></div>
+                <div className="mt-1 flex items-center justify-between gap-3 font-mono text-[10px]" style={{ color: c.dim }}><span className="truncate">{session.lastPath}</span><span className="shrink-0">{formatSaoPaulo(session.lastSeenAt)}</span></div>
               </div>
             ))}
           </Panel>
@@ -161,7 +174,7 @@ export default function ObservabilidadePage() {
           <Panel title="Últimas páginas acessadas" icon={<Eye />} c={c}>
             {data.usage.recentPageViews.length === 0 ? <Empty c={c} /> : data.usage.recentPageViews.slice(0, 20).map((view, index) => (
               <div key={`${view.email}-${view.occurredAt}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 border-b py-3 text-xs last:border-0" style={{ borderColor: c.borderSoft }}>
-                <span className="truncate">{view.email}</span><span className="truncate font-mono" style={{ color: c.dim }}>{view.path}</span><span className="shrink-0" style={{ color: c.dim }}>{new Date(view.occurredAt).toLocaleString("pt-BR")}</span>
+                <span className="truncate">{view.email}</span><span className="truncate font-mono" style={{ color: c.dim }}>{view.path}</span><span className="shrink-0" style={{ color: c.dim }}>{formatSaoPaulo(view.occurredAt)}</span>
               </div>
             ))}
           </Panel>

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import { CommandPalette, type PaletteNote } from "./CommandPalette";
 import { AccountMenu } from "@/components/saas/AccountMenu";
+import { NotificationBell } from "@/components/saas/NotificationBell";
 
 const TITLE: Record<string, string> = {
   "/grafo": "Cérebro",
@@ -76,6 +77,7 @@ export function Header({ commit, notes }: Props) {
             <Search className="h-4 w-4 md:h-3 md:w-3" />
             <span className="hidden tracking-widest md:inline">⌘K / Ctrl+K</span>
           </button>
+          <NotificationBell />
           <AccountMenu />
         </div>
       </header>

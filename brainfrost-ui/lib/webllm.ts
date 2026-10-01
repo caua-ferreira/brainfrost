@@ -77,6 +77,27 @@ export function isWebGPUAvailable(): boolean {
   return "gpu" in navigator;
 }
 
+export function getWebLlmPreflightIssue(
+  modelId: string,
+  capabilities?: { webGpu: boolean; deviceMemory?: number; mobile: boolean },
+): string | null {
+  const detected = capabilities ?? (() => {
+    if (typeof navigator === "undefined") return { webGpu: false, mobile: false };
+    const extendedNavigator = navigator as Navigator & { deviceMemory?: number };
+    return {
+      webGpu: isWebGPUAvailable(),
+      deviceMemory: extendedNavigator.deviceMemory,
+      mobile: /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent),
+    };
+  })();
+
+  if (!detected.webGpu) return "WebGPU indisponível";
+  if (detected.mobile) return "modelo local desativado em dispositivos móveis para evitar travamentos";
+  if (detected.deviceMemory && detected.deviceMemory <= 4) return "memória disponível insuficiente para executar o modelo local com segurança";
+  if (modelId.includes("3B-") && detected.deviceMemory && detected.deviceMemory < 8) return "o modelo local de 3B exige pelo menos 8 GB de memória";
+  return null;
+}
+
 export function isWebLlmCompatibilityError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /webgpu|gpu|adapter|device lost|out of memory|memory limit|shader|context window|token.*limit|already (?:been )?disposed|has already disposed/i.test(message);
