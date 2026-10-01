@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   Download,
   CreditCard,
+  ChartNoAxesCombined,
   Home,
   LayoutDashboard,
   Layers,
@@ -18,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSaas } from "@/lib/saas-mock";
+import { useSession } from "@/components/saas/SessionProvider";
 
 const NAV = [
   { href: "/painel", label: "Painel", icon: Home, match: (p: string) => p.startsWith("/painel") },
@@ -31,14 +34,45 @@ const NAV = [
   { href: "/config", label: "Config", icon: Settings, match: (p: string) => p.startsWith("/config") },
 ];
 
+const OBSERVABILITY_NAV = {
+  href: "/observabilidade",
+  label: "Observabilidade",
+  icon: ChartNoAxesCombined,
+  match: (p: string) => p.startsWith("/observabilidade"),
+};
+
 interface Props {
   onNavigate?: () => void;
 }
 
 export function SidebarNav({ onNavigate }: Props) {
   const pathname = usePathname();
+  const { session } = useSession();
+  const [canViewObservability, setCanViewObservability] = useState(false);
   const collapsed = useSaas((s) => s.sidebarCollapsed);
   const toggle = useSaas((s) => s.toggleSidebar);
+
+  useEffect(() => {
+    if (!session) {
+      setCanViewObservability(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch("/api/observability/access", { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() as Promise<{ allowed: boolean }> : { allowed: false })
+      .then(({ allowed }) => setCanViewObservability(allowed))
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setCanViewObservability(false);
+      });
+
+    return () => controller.abort();
+  }, [session]);
+
+  const navItems = canViewObservability
+    ? [...NAV.slice(0, -1), OBSERVABILITY_NAV, NAV[NAV.length - 1]]
+    : NAV;
 
   return (
     <div className="flex h-full flex-col py-4">
@@ -60,7 +94,7 @@ export function SidebarNav({ onNavigate }: Props) {
       </Link>
 
       <nav className={cn("flex flex-1 flex-col gap-0.5", collapsed ? "px-1.5" : "px-2")}>
-        {NAV.map(({ href, label, icon: Icon, match }) => {
+        {navItems.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname);
           return (
             <Link
