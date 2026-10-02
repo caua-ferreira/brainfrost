@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileArchive, FileText, FolderOpen, GitBranch, Globe2, Lock, PlugZap, Search, ShieldCheck, Type } from "lucide-react";
+import { FileArchive, FileText, FolderOpen, GitBranch, Globe2, Lock, Search, ShieldCheck, Type } from "lucide-react";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
@@ -12,7 +12,7 @@ import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "
 import { LOCAL_FILE_ACCEPT, readLocalTextFiles, readZipTextFiles } from "@/lib/import-files";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
 import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
-import { GitLabLogo, GoogleDriveLogo } from "@/components/saas/OAuthProviderLogos";
+import { GitHubBrandLogo, GitLabLogo } from "@/components/saas/OAuthProviderLogos";
 
 const SANITIZED = [
   ".env*", "*.pem", "*.key", "id_rsa*", "credentials.json",
@@ -20,7 +20,7 @@ const SANITIZED = [
   "binários", "PII em seeds",
 ];
 
-type Tab = "text" | "files" | "zip" | "github" | "connectors";
+type Tab = "text" | "files" | "repositories" | "url";
 type AnalysisProvider = "managed" | "webllm" | "claude" | "gemini";
 type ImportSource = "text" | "files" | "zip" | "github" | "url" | "gitlab" | "google_drive";
 type RemoteSource = Extract<ImportSource, "url" | "gitlab" | "google_drive">;
@@ -114,30 +114,26 @@ export default function ImportarPage() {
           no cérebro sem sua aprovação.
         </p>
 
-        <div className="mt-10 flex gap-2 overflow-x-auto border-b" style={{ borderColor: c.borderSoft }}>
+        <div className="mt-10 grid grid-cols-2 border-b sm:grid-cols-4" style={{ borderColor: c.borderSoft }}>
           <TabTrigger c={c} icon={<Type className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "text"} onClick={() => setTab("text")}>
             Colar texto
           </TabTrigger>
           <TabTrigger c={c} icon={<FileText className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "files"} onClick={() => setTab("files")}>
             Arquivos
           </TabTrigger>
-          <TabTrigger c={c} icon={<FileArchive className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "zip"} onClick={() => setTab("zip")}>
-            Arquivo ZIP
+          <TabTrigger c={c} icon={<GitBranch className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "repositories"} onClick={() => setTab("repositories")}>
+            Repositórios
           </TabTrigger>
-          <TabTrigger c={c} icon={<GitBranch className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "github"} onClick={() => setTab("github")}>
-            GitHub
-          </TabTrigger>
-          <TabTrigger c={c} icon={<PlugZap className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "connectors"} onClick={() => setTab("connectors")}>
-            Mais fontes
+          <TabTrigger c={c} icon={<Globe2 className="h-3.5 w-3.5" strokeWidth={2} />} active={tab === "url"} onClick={() => setTab("url")}>
+            URL pública
           </TabTrigger>
         </div>
 
         <div className="mt-6">
           {tab === "text" && <TextPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
-          {tab === "files" && <FilesPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
-          {tab === "zip" && <ZipPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
-          {tab === "github" && <GitHubPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
-          {tab === "connectors" && <ConnectorsPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "files" && <FilesGroupPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "repositories" && <RepositoriesPanel c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
+          {tab === "url" && <RemoteSourcePanel source="url" c={c} analysisProvider={analysisProvider} providerControl={providerControl} />}
         </div>
 
         <div className="mt-16 border-t pt-8" style={{ borderColor: c.borderSoft }}>
@@ -203,6 +199,26 @@ type ImportPanelProps = {
   analysisProvider: AnalysisProvider;
   providerControl: React.ReactNode;
 };
+
+function FilesGroupPanel(props: ImportPanelProps) {
+  const [kind, setKind] = useState<"regular" | "zip">("regular");
+  return (
+    <div>
+      <SourceChoices
+        c={props.c}
+        value={kind}
+        onChange={setKind}
+        options={[
+          { id: "regular", label: "Arquivos e pastas", description: "Markdown, texto, código e configurações.", icon: FileText },
+          { id: "zip", label: "Arquivo ZIP", description: "Um repositório ou conjunto de documentos compactado.", icon: FileArchive },
+        ]}
+      />
+      <div className="mt-3">
+        {kind === "regular" ? <FilesPanel {...props} /> : <ZipPanel {...props} />}
+      </div>
+    </div>
+  );
+}
 
 function FilesPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
   const router = useRouter();
@@ -310,7 +326,7 @@ function FilesPanel({ c, analysisProvider, providerControl }: ImportPanelProps) 
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
           {files.length > 0 ? `${(totalSize / 1024).toFixed(1)} KB selecionados` : "até 50 arquivos e 200 KB de texto"}
         </span>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {providerControl}
           {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
           <button
@@ -358,6 +374,54 @@ function TabTrigger({
         />
       )}
     </button>
+  );
+}
+
+function SourceChoices<T extends string>({
+  c,
+  value,
+  onChange,
+  options,
+}: {
+  c: ReturnType<typeof palette>;
+  value: T;
+  onChange: (value: T) => void;
+  options: Array<{
+    id: T;
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ className?: string }>;
+    disabled?: boolean;
+  }>;
+}) {
+  return (
+    <div className={`grid gap-2 ${options.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+      {options.map((option) => {
+        const Icon = option.icon;
+        const active = value === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            disabled={option.disabled}
+            onClick={() => onChange(option.id)}
+            className="rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55"
+            style={{
+              borderColor: active ? c.accent : c.borderSoft,
+              background: active ? `${c.accent}10` : c.bgSoft,
+              color: c.text,
+            }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <Icon className="h-4 w-4" />
+              {option.disabled && <span className="font-mono text-[8px] uppercase tracking-wider" style={{ color: c.dim }}>em breve</span>}
+            </div>
+            <p className="mt-2 text-[13px] font-semibold">{option.label}</p>
+            <p className="mt-1 text-[10px] leading-relaxed" style={{ color: c.dim }}>{option.description}</p>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -415,7 +479,7 @@ function TextPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
           {text.length.toLocaleString("pt-BR")} caracteres
         </span>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {providerControl}
           {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
           <button
@@ -532,7 +596,6 @@ const REMOTE_SOURCES: Array<{
   description: string;
   placeholder: string;
   pro: boolean;
-  icon: React.ComponentType<{ className?: string }>;
 }> = [
   {
     id: "url",
@@ -540,7 +603,6 @@ const REMOTE_SOURCES: Array<{
     description: "Artigos, documentação e páginas técnicas públicas.",
     placeholder: "https://exemplo.com/documentacao",
     pro: false,
-    icon: Globe2,
   },
   {
     id: "gitlab",
@@ -548,23 +610,13 @@ const REMOTE_SOURCES: Array<{
     description: "README, AGENTS, CONTEXTO e docs de projetos públicos.",
     placeholder: "https://gitlab.com/grupo/projeto",
     pro: true,
-    icon: GitLabLogo,
-  },
-  {
-    id: "google_drive",
-    label: "Google Drive / Docs",
-    description: "Docs, planilhas e arquivos de texto compartilhados por link.",
-    placeholder: "https://docs.google.com/document/d/…/edit",
-    pro: true,
-    icon: GoogleDriveLogo,
   },
 ];
 
-function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
+function RemoteSourcePanel({ source, c, analysisProvider, providerControl }: ImportPanelProps & { source: Extract<RemoteSource, "url" | "gitlab"> }) {
   const router = useRouter();
   const { isPro } = useBilling();
   const taskRef = useRef<AbortController | null>(null);
-  const [source, setSource] = useState<RemoteSource>("url");
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -621,39 +673,8 @@ function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelPr
 
   return (
     <div className="rounded-2xl border p-5" style={{ background: c.card, borderColor: c.border }}>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {REMOTE_SOURCES.map((item) => {
-          const Icon = item.icon;
-          const active = source === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => { setSource(item.id); setUrl(""); }}
-              className="rounded-xl border p-3 text-left transition-colors"
-              style={{
-                borderColor: active ? c.accent : c.borderSoft,
-                background: active ? `${c.accent}10` : c.bgSoft,
-                color: c.text,
-              }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span style={{ color: c.accent }}><Icon className="h-4 w-4" /></span>
-                {item.pro && (
-                  <span className="rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider" style={{ borderColor: c.borderSoft, color: c.dim }}>
-                    Pro
-                  </span>
-                )}
-              </div>
-              <p className="mt-2 text-[13px] font-semibold">{item.label}</p>
-              <p className="mt-1 text-[10px] leading-relaxed" style={{ color: c.dim }}>{item.description}</p>
-            </button>
-          );
-        })}
-      </div>
-
       {locked ? (
-        <div className="mt-4 rounded-xl border p-5 text-center" style={{ borderColor: c.borderSoft, background: c.bgSoft }}>
+        <div className="rounded-xl border p-5 text-center" style={{ borderColor: c.borderSoft, background: c.bgSoft }}>
           <Lock className="mx-auto h-6 w-6" strokeWidth={1.6} style={{ color: c.accent }} />
           <p className="mt-2 text-[13px] font-semibold" style={{ color: c.text }}>{selected.label} é uma integração Pro</p>
           <p className="mt-1 text-[11px]" style={{ color: c.dim }}>O plano Free continua com texto, arquivos, ZIP e URL pública.</p>
@@ -662,7 +683,7 @@ function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelPr
           </button>
         </div>
       ) : (
-        <div className="mt-4">
+        <div>
           <label htmlFor="remote-source-url" className="font-mono text-[10px] uppercase tracking-[0.25em]" style={{ color: c.dim }}>
             link da fonte
           </label>
@@ -687,7 +708,6 @@ function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelPr
           <p className="mt-2 text-[10px] leading-relaxed" style={{ color: c.dim }}>
             {source === "url" && "A página precisa estar acessível sem login. Endereços internos e arquivos binários são bloqueados."}
             {source === "gitlab" && "Nesta primeira etapa, o projeto precisa ser público. Projetos privados entrarão pela conexão OAuth."}
-            {source === "google_drive" && "Compartilhe como “qualquer pessoa com o link”. Drive privado entrará pela conexão OAuth."}
           </p>
         </div>
       )}
@@ -695,7 +715,7 @@ function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelPr
       {!locked && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <span className="font-mono text-[11px]" style={{ color: c.dim }}>{status ?? "até 220 KB de texto por fonte"}</span>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {providerControl}
             {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
             <button
@@ -710,6 +730,28 @@ function ConnectorsPanel({ c, analysisProvider, providerControl }: ImportPanelPr
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RepositoriesPanel(props: ImportPanelProps) {
+  const [source, setSource] = useState<"github" | "gitlab" | "bitbucket">("github");
+  return (
+    <div>
+      <SourceChoices
+        c={props.c}
+        value={source}
+        onChange={setSource}
+        options={[
+          { id: "github", label: "GitHub", description: "Conecte sua conta e escolha um repositório.", icon: GitHubBrandLogo },
+          { id: "gitlab", label: "GitLab", description: "Importe um projeto público pela URL.", icon: GitLabLogo },
+          { id: "bitbucket", label: "Bitbucket", description: "Conexão de repositórios em preparação.", icon: GitBranch, disabled: true },
+        ]}
+      />
+      <div className="mt-3">
+        {source === "github" && <GitHubPanel {...props} />}
+        {source === "gitlab" && <RemoteSourcePanel source="gitlab" {...props} />}
+      </div>
     </div>
   );
 }
