@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/saas/SessionProvider";
 import { AttributionCapture } from "@/components/observability/AttributionCapture";
+import { Analytics } from "@vercel/analytics/next";
 
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <AttributionCapture />
         <SessionProvider>{children}</SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
