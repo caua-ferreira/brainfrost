@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/saas/SessionProvider";
 import { AttributionCapture } from "@/components/observability/AttributionCapture";
@@ -56,11 +57,14 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   return (
     <html lang="pt-BR" className={`${plexSans.variable} ${plexMono.variable}`}>
       <body className="font-sans antialiased">
         <AttributionCapture />
         <SessionProvider>{children}</SessionProvider>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );
