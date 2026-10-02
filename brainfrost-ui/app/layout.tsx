@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { SessionProvider } from "@/components/saas/SessionProvider";
 import { AttributionCapture } from "@/components/observability/AttributionCapture";
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AttributionCapture />
         <SessionProvider>{children}</SessionProvider>
         {gaId && <GoogleAnalytics gaId={gaId} />}
+        <Analytics />
       </body>
     </html>
   );
