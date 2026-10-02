@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "Segundo cerebro de contexto para IA: cofre em Markdown, grafo na web e injetor de contexto no terminal.",
-  "workspaces": ["brainfrost-ui", "brainfrost-cli"],
+  "workspaces": [
+    "brainfrost-ui",
+    "brainfrost-cli"
+  ],
   "scripts": {
     "dev": "npm run dev --workspace brainfrost-ui",
     "build": "npm run build --workspace brainfrost-ui",
@@ -11,5 +14,8 @@
     "vault": "npm run vault --workspace brainfrost-ui",
     "test": "npm test --workspaces --if-present"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
 }
