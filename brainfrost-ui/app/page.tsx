@@ -24,6 +24,7 @@ import {
   GeminiLogo,
 } from "@/components/saas/AiLogos";
 import { useSession } from "@/components/saas/SessionProvider";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 
 // Paleta clara pra landing — light-first, com hero dark pra impacto.
 const LIGHT = {
@@ -104,6 +105,12 @@ export default function LandingPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, session]);
+
+  // Nunca renderiza a landing enquanto a sessão persistida está sendo
+  // hidratada nem durante o redirecionamento de um usuário já autenticado.
+  if (loading || session) {
+    return <LoadingScreen fullScreen message="abrindo seu cérebro" />;
+  }
 
   return (
     <div className="min-h-[100dvh]" style={{ background: LIGHT.bg, color: LIGHT.fg }}>

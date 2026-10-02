@@ -21,9 +21,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = getSupabase();
-    supabase.auth.getSession().then(({ data }) =>
-      setState({ session: data.session, loading: false })
-    );
+    // O evento INITIAL_SESSION já hidrata a sessão persistida. Manter um
+    // getSession paralelo cria uma corrida em que um resultado nulo antigo
+    // pode sobrescrever o login OAuth recém-concluído e exibir a landing.
     const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
       setState({ session, loading: false });
     });
