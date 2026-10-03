@@ -17,7 +17,7 @@ import {
   WEBLLM_MODELS,
   type WebLlmProgress,
 } from "@/lib/webllm";
-import { isCategory } from "@/lib/prompts";
+import { isCategory, type ExistingPattern } from "@/lib/prompts";
 
 const STAGES = [
   { at: 0,  label: "lendo arquivos",         detail: "descartando segredos e binários" },
@@ -106,14 +106,25 @@ export default function AnalisandoPage() {
       const sanitized = sanitize(imp.raw_text);
       const { data: existingNotes } = await supabase
         .from("vault_notes")
-        .select("slug, title, category")
+        .select("slug, title, body, category")
         .order("updated_at", { ascending: false })
         .limit(200);
+      const { data: pendingSuggestions } = await supabase
+        .from("pattern_suggestions")
+        .select("title, body, category")
+        .eq("status", "pending")
+        .neq("import_id", params.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
+      const existingPatterns: ExistingPattern[] = [
+        ...(existingNotes ?? []),
+        ...(pendingSuggestions ?? []),
+      ];
       const rawSuggestions = await analyzeLocally(
         sanitized.cleanText,
         webLlmModel,
         (p) => setModelProgress(p),
-        existingNotes ?? [],
+        existingPatterns,
         controller.signal
       );
       controller.signal.throwIfAborted();

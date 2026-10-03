@@ -23,6 +23,7 @@ import {
 import { useSession } from "./SessionProvider";
 import { getSupabase } from "@/lib/supabase/client";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
+import { useAccessPreview } from "@/components/admin/AccessPreviewProvider";
 
 interface Identity {
   provider?: string;
@@ -43,24 +44,12 @@ function extractDisplay(user: {
   email?: string | null;
 }) {
   const meta = user.user_metadata ?? {};
-  const appMeta = user.app_metadata ?? {};
-
-  // Supabase seta app_metadata.provider quando o user é CRIADO e não atualiza
-  // depois. Se o mesmo email logou com Google e depois GitHub, o "provider"
-  // primário continua sendo o Google. Ordena por last_sign_in_at pra achar o
-  // provider ATUAL (o do login mais recente).
   const identities = user.identities ?? [];
   const mostRecent = [...identities].sort((a, b) => {
     const ta = new Date(a.last_sign_in_at ?? 0).getTime();
     const tb = new Date(b.last_sign_in_at ?? 0).getTime();
     return tb - ta;
   })[0];
-
-  const currentProvider =
-    (meta.mock_provider as string | undefined) ??
-    mostRecent?.provider ??
-    (appMeta.provider as string | undefined) ??
-    "anônimo";
 
   const identity = mostRecent?.identity_data ?? identities[0]?.identity_data ?? {};
 
@@ -96,17 +85,24 @@ function extractDisplay(user: {
       .join("")
       .toUpperCase() || "??");
 
-  return { name, email, avatar, initials, provider: currentProvider };
+  return { name, email, avatar, initials };
 }
 
 export function AccountMenu() {
   const { session } = useSession();
   const router = useRouter();
+  const { preview } = useAccessPreview();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (!session) return null;
 
-  const { name, email, avatar, initials, provider } = extractDisplay(session.user);
+  const accountDisplay = extractDisplay(session.user);
+  const name = preview?.name || preview?.email || accountDisplay.name;
+  const email = preview?.email ?? accountDisplay.email;
+  const avatar = preview?.avatarUrl ?? accountDisplay.avatar;
+  const initials = preview
+    ? (name.split(/\s+/).map((part) => part[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "??")
+    : accountDisplay.initials;
   const firstName = name.split(/\s+/)[0];
 
   const logout = async () => {
@@ -140,9 +136,6 @@ export function AccountMenu() {
         <DropdownMenuLabel className="flex flex-col">
           <span className="text-foreground">{name}</span>
           {email && <span className="font-mono text-[11px] text-muted-foreground">{email}</span>}
-          <span className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            via {provider}
-          </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => { announceNavigation(); router.push("/assinatura"); }}>

@@ -1,12 +1,15 @@
 import { shouldSkipFile } from "./sanitize";
 import type { ContextFile } from "./github";
+import {
+  MAX_IMPORT_FILES,
+  MAX_IMPORT_FILE_BYTES,
+  MAX_IMPORT_TOTAL_BYTES,
+  MAX_ZIP_ARCHIVE_BYTES,
+} from "./import-limits";
 
 export const LOCAL_FILE_ACCEPT =
   ".md,.mdx,.mdc,.txt,.json,.yaml,.yml,.toml,.js,.jsx,.mjs,.cjs,.ts,.tsx,.py,.sql,.css,.html,.xml,.sh,.ps1,.bat,.go,.java,.kt,.rs,.rb,.php,.vue,.svelte,Dockerfile,Makefile,README,CONTEXT,AGENTS";
 
-const MAX_FILES = 50;
-const MAX_FILE_BYTES = 60 * 1024;
-const MAX_TOTAL_BYTES = 200 * 1024;
 const TEXT_EXTENSIONS = new Set([
   ".md", ".mdx", ".mdc", ".txt", ".json", ".yaml", ".yml", ".toml",
   ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".py", ".sql", ".css",
@@ -30,8 +33,8 @@ async function readFileCandidates(files: Array<{ path: string; size: number; tex
   let totalBytes = 0;
 
   for (const file of files) {
-    if (result.length >= MAX_FILES || !isTextPath(file.path)) continue;
-    if (file.size > MAX_FILE_BYTES || totalBytes + file.size > MAX_TOTAL_BYTES) continue;
+    if (result.length >= MAX_IMPORT_FILES || !isTextPath(file.path)) continue;
+    if (file.size > MAX_IMPORT_FILE_BYTES || totalBytes + file.size > MAX_IMPORT_TOTAL_BYTES) continue;
     const text = await file.text();
     if (!text.trim()) continue;
     result.push({ path: file.path, size: text.length, text });
@@ -72,6 +75,9 @@ function findEndOfCentralDirectory(view: DataView) {
 }
 
 export async function readZipTextFiles(file: File) {
+  if (file.size > MAX_ZIP_ARCHIVE_BYTES) {
+    throw new Error("O ZIP pode ter no máximo 25 MB compactado.");
+  }
   const buffer = await file.arrayBuffer();
   const view = new DataView(buffer);
   const endOffset = findEndOfCentralDirectory(view);
@@ -83,7 +89,7 @@ export async function readZipTextFiles(file: File) {
   const candidates: Array<{ path: string; size: number; text: () => Promise<string> }> = [];
   let offset = centralOffset;
 
-  for (let index = 0; index < entryCount && index < MAX_FILES * 4; index++) {
+  for (let index = 0; index < entryCount && index < MAX_IMPORT_FILES * 5; index++) {
     if (offset + 46 > view.byteLength || view.getUint32(offset, true) !== 0x02014b50) {
       throw new Error("Estrutura interna do ZIP inválida.");
     }
@@ -100,7 +106,7 @@ export async function readZipTextFiles(file: File) {
     offset += 46 + nameLength + extraLength + commentLength;
 
     if (name.endsWith("/") || (flags & 1) !== 0 || !isTextPath(name)) continue;
-    if (![0, 8].includes(method) || uncompressedSize > MAX_FILE_BYTES) continue;
+    if (![0, 8].includes(method) || uncompressedSize > MAX_IMPORT_FILE_BYTES) continue;
     if (localOffset + 30 > view.byteLength || view.getUint32(localOffset, true) !== 0x04034b50) {
       continue;
     }

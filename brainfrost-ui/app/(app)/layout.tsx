@@ -9,6 +9,7 @@ import { NavigationLoader } from "@/components/shared/NavigationLoader";
 import { BillingProvider } from "@/components/saas/BillingProvider";
 import ChatWidget from "@/components/chat/ChatWidget";
 import { ProductAnalytics } from "@/components/observability/ProductAnalytics";
+import { AccessPreviewBanner, AccessPreviewProvider } from "@/components/admin/AccessPreviewProvider";
 
 const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? "local";
 
@@ -29,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const notes = paletteNotes();
   return (
     <AuthGuard>
+      <AccessPreviewProvider>
       <BillingProvider>
         <ThemeApplicator />
         <NavigationLoader />
@@ -37,6 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <Header commit={commit} notes={notes} />
+            <AccessPreviewBanner />
             <main className="min-h-0 flex-1 overflow-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
               {children}
             </main>
@@ -45,6 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ChatWidget />
         </div>
       </BillingProvider>
+      </AccessPreviewProvider>
     </AuthGuard>
   );
 }

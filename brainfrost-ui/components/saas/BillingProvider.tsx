@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useAccessPreview } from "@/components/admin/AccessPreviewProvider";
 
 export interface BillingData {
   isPro: boolean;
@@ -59,6 +60,7 @@ const BillingContext = createContext<BillingContextValue>({
 });
 
 export function BillingProvider({ children }: { children: React.ReactNode }) {
+  const { preview } = useAccessPreview();
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,8 +88,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ data, loading, error, isPro: data?.isPro ?? false, refresh }),
-    [data, loading, error, refresh]
+    () => ({ data, loading, error, isPro: preview ? preview.isPro && !preview.blocked : data?.isPro ?? false, refresh }),
+    [data, loading, error, preview, refresh]
   );
 
   return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;

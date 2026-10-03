@@ -8,7 +8,7 @@ import { GitHubBrandLogo, GitLabLogo, GoogleLogo, MicrosoftLogo } from "./OAuthP
 
 type Provider = "google" | "github" | "azure" | "gitlab";
 
-const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED === "true";
+const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED !== "false";
 
 const PROVIDERS: {
   id: Provider;
@@ -20,7 +20,7 @@ const PROVIDERS: {
   { id: "google", label: "Google", hint: "e-mail pessoal", Icon: GoogleLogo },
   { id: "github", label: "GitHub", hint: "importar repositórios privados", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
   { id: "azure", label: "Microsoft", hint: "conta Microsoft / Azure AD", scopes: "email", Icon: MicrosoftLogo },
-  ...(GITLAB_ENABLED ? [{ id: "gitlab" as const, label: "GitLab", hint: "importar repositórios do GitLab", scopes: "read_user", Icon: GitLabLogo }] : []),
+  ...(GITLAB_ENABLED ? [{ id: "gitlab" as const, label: "GitLab", hint: "importar repositórios públicos e privados", scopes: "read_user read_api", Icon: GitLabLogo }] : []),
 ];
 
 export function LinkedAccounts() {
@@ -28,6 +28,7 @@ export function LinkedAccounts() {
   const [busy, setBusy] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identities, setIdentities] = useState(session?.user.identities ?? []);
+  const [repositoryAccess, setRepositoryAccess] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -43,6 +44,12 @@ export function LinkedAccounts() {
       .then(({ data, error: identitiesError }) => {
         if (active && !identitiesError) setIdentities(data?.identities ?? []);
       });
+    fetch("/api/oauth/connections", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { connections: [] })
+      .then((payload) => {
+        if (active) setRepositoryAccess(new Set((payload.connections ?? []).filter((item: { repositoryAccess: boolean }) => item.repositoryAccess).map((item: { provider: string }) => item.provider)));
+      })
+      .catch(() => undefined);
 
     return () => {
       active = false;
@@ -57,7 +64,7 @@ export function LinkedAccounts() {
     setBusy(provider);
     setError(null);
     const opts: { scopes?: string; redirectTo: string } = {
-      redirectTo: `${window.location.origin}/auth/callback?next=/config`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/perfil${provider === "github" || provider === "gitlab" ? `&repository_provider=${provider}` : ""}`,
     };
     const scopes = PROVIDERS.find((p) => p.id === provider)?.scopes;
     if (scopes) opts.scopes = scopes;
@@ -87,6 +94,14 @@ export function LinkedAccounts() {
     if (err) {
       setError(err.message);
     } else {
+      if (provider === "github" || provider === "gitlab") {
+        await fetch(`/api/oauth/connections?provider=${provider}`, { method: "DELETE" }).catch(() => undefined);
+        setRepositoryAccess((current) => {
+          const next = new Set(current);
+          next.delete(provider);
+          return next;
+        });
+      }
       setIdentities((current) => current.filter((item) => item.identity_id !== identity.identity_id));
     }
   };
@@ -122,7 +137,7 @@ export function LinkedAccounts() {
                     )}
                   </div>
                   <p className="mt-0.5 font-mono text-[11px] text-slate-500">
-                    {p.hint}
+                    {p.hint}{repositoryAccess.has(p.id) ? " · repositórios autorizados" : ""}
                   </p>
                 </div>
               </div>

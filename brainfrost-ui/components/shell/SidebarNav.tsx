@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSaas } from "@/lib/saas-mock";
 import { useSession } from "@/components/saas/SessionProvider";
+import { useAccessPreview } from "@/components/admin/AccessPreviewProvider";
 
 const NAV = [
   { href: "/painel", label: "Painel", icon: Home, match: (p: string) => p.startsWith("/painel") },
@@ -54,6 +55,7 @@ interface Props {
 export function SidebarNav({ onNavigate }: Props) {
   const pathname = usePathname();
   const { session } = useSession();
+  const { preview } = useAccessPreview();
   const [canViewAdmin, setCanViewAdmin] = useState(false);
   const collapsed = useSaas((s) => s.sidebarCollapsed);
   const toggle = useSaas((s) => s.toggleSidebar);
@@ -76,7 +78,7 @@ export function SidebarNav({ onNavigate }: Props) {
     return () => controller.abort();
   }, [session]);
 
-  const navItems = canViewAdmin
+  const navItems = canViewAdmin && !preview
     ? [...NAV.slice(0, -1), OBSERVABILITY_NAV, SUBSCRIPTIONS_ADMIN_NAV, NAV[NAV.length - 1]]
     : NAV;
 

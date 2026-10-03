@@ -6,6 +6,7 @@ import {
   Ban,
   CalendarPlus,
   Gift,
+  Eye,
   Search,
   ShieldCheck,
   UserRound,
@@ -13,9 +14,11 @@ import {
   UserRoundX,
   XCircle,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { useSaas } from "@/lib/saas-mock";
 import { palette } from "@/lib/saas-theme";
+import { useAccessPreview } from "@/components/admin/AccessPreviewProvider";
 
 type ManagedUser = {
   id: string;
@@ -84,6 +87,9 @@ function providerLabel(provider: string) {
 }
 
 export default function GestaoPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { startPreview } = useAccessPreview();
   const theme = useSaas((state) => state.theme);
   const c = palette(theme);
   const [data, setData] = useState<AdminData | null>(null);
@@ -108,6 +114,13 @@ export default function GestaoPage() {
     load().catch((cause) => setError(cause instanceof Error ? cause.message : "Erro desconhecido"));
   }, [load]);
 
+  useEffect(() => {
+    const requestedUser = searchParams.get("user");
+    if (!requestedUser || !data || selected) return;
+    const user = data.users.find((candidate) => candidate.id === requestedUser);
+    if (user) openUser(user);
+  }, [data, searchParams, selected]);
+
   async function search(event: FormEvent) {
     event.preventDefault();
     setData(null);
@@ -118,6 +131,19 @@ export default function GestaoPage() {
     setSelected(user);
     setQuotaLimit(user.quota.limit);
     setNotice(null);
+  }
+
+  function previewAccess() {
+    if (!selected) return;
+    startPreview({
+      id: selected.id,
+      email: selected.email,
+      name: selected.name,
+      avatarUrl: selected.avatarUrl,
+      isPro: selected.access !== "free",
+      blocked: selected.blocked,
+    });
+    router.push("/painel");
   }
 
   async function mutate(action: "grant" | "extend" | "revoke" | "block" | "unblock" | "set_quota" | "reset_quota", lifetime = false) {
@@ -261,6 +287,7 @@ export default function GestaoPage() {
           <label className="mt-4 block text-xs" style={{ color: c.dim }}>Dias para conceder ou acrescentar</label>
           <input type="number" min={1} max={3650} value={days} onChange={(event) => setDays(Number(event.target.value))} className="mt-1 h-10 w-full rounded-lg border bg-transparent px-3 text-sm outline-none" style={{ borderColor: c.borderSoft }} />
           <div className="mt-5 flex flex-wrap gap-2">
+            <button onClick={previewAccess} disabled={busy || selected.isAnonymous} className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium disabled:opacity-50" style={{ borderColor: c.accent, color: c.accent }}><Eye className="h-3.5 w-3.5" />Ver como</button>
             <button onClick={() => mutate(selected.access === "free" ? "grant" : "extend")} disabled={busy || selected.isAnonymous} className="rounded-full px-4 py-2 text-xs font-medium disabled:opacity-50" style={{ background: c.accent, color: c.onAccent }}>{busy ? "salvando…" : selected.access === "free" ? "Conceder Pro" : "Estender Pro"}</button>
             <button onClick={() => mutate("grant", true)} disabled={busy || selected.isAnonymous} className="rounded-full border px-4 py-2 text-xs font-medium disabled:opacity-50" style={{ borderColor: c.borderSoft }}>Conceder vitalício</button>
             {selected.grant && !selected.grant.revoked_at && <button onClick={() => mutate("revoke")} disabled={busy} className="rounded-full border px-4 py-2 text-xs font-medium text-red-600 disabled:opacity-50" style={{ borderColor: "#c2415a55" }}>Revogar cortesia</button>}

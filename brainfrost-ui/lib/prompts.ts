@@ -30,7 +30,41 @@ export interface LlmSuggestion {
   evidence?: string;
 }
 
+export interface ExistingPattern {
+  slug?: string;
+  title: string;
+  body?: string | null;
+  category: string;
+}
+
 export const LOCAL_ANALYSIS_CHUNK_CHARS = 8_000;
+export const MAX_ANALYSIS_INPUT_CHARS = 120_000;
+
+/**
+ * Mantém importações grandes utilizáveis sem estourar a janela da LLM.
+ * A amostra preserva começo, meio e fim, onde normalmente ficam README,
+ * decisões e instruções finais, em vez de simplesmente truncar o arquivo.
+ */
+export function sampleAnalysisText(
+  text: string,
+  maxChars = MAX_ANALYSIS_INPUT_CHARS
+): string {
+  const clean = text.trim();
+  if (clean.length <= maxChars) return clean;
+
+  const separator = "\n\n[... trecho intermediário omitido para caber na análise ...]\n\n";
+  const available = Math.max(3, maxChars - separator.length * 2);
+  const firstSize = Math.ceil(available * 0.4);
+  const middleSize = Math.floor(available * 0.3);
+  const lastSize = available - firstSize - middleSize;
+  const middleStart = Math.max(firstSize, Math.floor((clean.length - middleSize) / 2));
+
+  return [
+    clean.slice(0, firstSize),
+    clean.slice(middleStart, middleStart + middleSize),
+    clean.slice(-lastSize),
+  ].join(separator);
+}
 
 /**
  * Divide importações grandes sem descartar conteúdo. Prioriza quebras de
@@ -67,19 +101,46 @@ export function splitAnalysisText(
   return chunks;
 }
 
+const STOP_WORDS = new Set(["a", "ao", "aos", "as", "com", "como", "da", "das", "de", "do", "dos", "e", "em", "na", "nas", "no", "nos", "o", "os", "para", "por", "que", "sem", "um", "uma"]);
+
+function semanticTokens(value: string) {
+  return new Set(value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length > 2 && !STOP_WORDS.has(token)));
+}
+
+function similarity(left: string, right: string) {
+  const a = semanticTokens(left);
+  const b = semanticTokens(right);
+  if (a.size === 0 || b.size === 0) return 0;
+  let intersection = 0;
+  for (const token of a) if (b.has(token)) intersection++;
+  return intersection / Math.min(a.size, b.size);
+}
+
+function equivalent(left: { title: string; body?: string | null }, right: { title: string; body?: string | null }) {
+  const titleScore = similarity(left.title, right.title);
+  const contentScore = similarity(`${left.title} ${left.body ?? ""}`, `${right.title} ${right.body ?? ""}`);
+  return titleScore >= 0.72 || contentScore >= 0.82;
+}
+
+export function filterNovelSuggestions(suggestions: LlmSuggestion[], existing: ExistingPattern[] = []): LlmSuggestion[] {
+  const accepted: LlmSuggestion[] = [];
+  for (const suggestion of suggestions) {
+    if (!suggestion.title?.trim() || !suggestion.body?.trim()) continue;
+    if (existing.some((pattern) => equivalent(suggestion, pattern))) continue;
+    if (accepted.some((pattern) => equivalent(suggestion, pattern))) continue;
+    accepted.push(suggestion);
+  }
+  return accepted;
+}
+
 export function dedupeSuggestions(suggestions: LlmSuggestion[]): LlmSuggestion[] {
-  const seen = new Set<string>();
-  return suggestions.filter((suggestion) => {
-    const key = `${suggestion.title}|${suggestion.body}`
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return filterNovelSuggestions(suggestions);
 }
 
 export const EXTRACTION_SYSTEM_PROMPT = `Você é um extrator de padrões TÉCNICOS de código e documentação.
@@ -94,6 +155,7 @@ REGRAS ABSOLUTAS:
 - NUNCA inclua código específico, nomes de variáveis, ou trivialidades.
 - Descarte segredos/chaves/senhas — se aparecerem, pule.
 - Retorne no máximo 5 sugestões, priorizando as mais úteis e recorrentes.
+- NÃO sugira algo equivalente a uma memória ou sugestão já existente enviada no catálogo.
 - Seja conciso: title, body, category_reason, evidence e motivos dos links devem ter uma frase curta.
 
 CATEGORIAS VÁLIDAS (use exatamente uma):
@@ -147,15 +209,15 @@ Nada de preâmbulo. Nada de markdown fence. Apenas o JSON.`;
 
 export function buildExtractionInput(
   text: string,
-  existingNotes: Array<{ slug: string; title: string; category: string }> = []
+  existingNotes: ExistingPattern[] = []
 ) {
   const catalog = existingNotes.length === 0
     ? "(nenhuma camada existente; não sugira links)"
     : existingNotes
-        .map((note) => `- ${note.slug} | ${note.title} | categoria: ${note.category}`)
+        .map((note) => `- ${note.slug ?? "sugestao-pendente"} | ${note.title} | ${note.body?.slice(0, 240) ?? ""} | categoria: ${note.category}`)
         .join("\n");
 
-  return `${text}\n\nCAMADAS EXISTENTES (use somente estes slugs em links):\n${catalog}`;
+  return `${text}\n\nMEMÓRIAS E SUGESTÕES EXISTENTES (não repita ideias equivalentes; use somente slugs reais em links):\n${catalog}`;
 }
 
 export function parseSuggestionsJson(raw: string): LlmSuggestion[] {

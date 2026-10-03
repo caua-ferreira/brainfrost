@@ -2,7 +2,9 @@ import { describe, expect, test } from "vitest";
 import {
   buildExtractionInput,
   dedupeSuggestions,
+  filterNovelSuggestions,
   parseSuggestionsJson,
+  sampleAnalysisText,
   splitAnalysisText,
 } from "./prompts";
 
@@ -13,8 +15,8 @@ describe("buildExtractionInput", () => {
     ]);
 
     expect(input).toContain("texto novo");
-    expect(input).toContain("energia | Energia | categoria: glossario");
-    expect(input).toContain("use somente estes slugs");
+    expect(input).toContain("energia | Energia |  | categoria: glossario");
+    expect(input).toContain("não repita ideias equivalentes");
   });
 
   test("bloqueia ligações quando não há camadas existentes", () => {
@@ -51,6 +53,33 @@ describe("dedupeSuggestions", () => {
     };
 
     expect(dedupeSuggestions([suggestion, { ...suggestion }])).toEqual([suggestion]);
+  });
+
+  test("remove uma sugestão semanticamente equivalente a uma memória", () => {
+    const suggestions = [{
+      title: "Commits sem coautoria",
+      body: "Não adicionar coautoria de ferramentas aos commits.",
+      category: "padroes_codigo",
+    }];
+
+    expect(filterNovelSuggestions(suggestions, [{
+      slug: "omitir-coautoria",
+      title: "Omitir coautoria em commits",
+      body: "Commits de produção não devem incluir coautoria de IA.",
+      category: "padroes_codigo",
+    }])).toEqual([]);
+  });
+});
+
+describe("sampleAnalysisText", () => {
+  test("preserva começo, meio e fim dentro do limite", () => {
+    const text = `${"A".repeat(100)}${"B".repeat(100)}${"C".repeat(100)}`;
+    const sampled = sampleAnalysisText(text, 180);
+
+    expect(sampled.length).toBeLessThanOrEqual(180);
+    expect(sampled).toContain("AAAA");
+    expect(sampled).toContain("BBBB");
+    expect(sampled).toContain("CCCC");
   });
 });
 

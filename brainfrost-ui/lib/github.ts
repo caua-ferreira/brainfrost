@@ -1,3 +1,5 @@
+import { MAX_IMPORT_FILES, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_TOTAL_BYTES } from "./import-limits";
+
 /**
  * Cliente mínimo pra GitHub REST usando o provider_token do Supabase OAuth.
  * Só read-only.
@@ -72,7 +74,7 @@ export interface ContextFile {
 }
 
 /**
- * Baixa até 20 arquivos de contexto de um repo, no máximo 200KB somados.
+ * Baixa arquivos de contexto do repositório respeitando o limite de importação.
  * Retorna o conteúdo bruto — a sanitização vem depois.
  */
 export async function fetchContextFiles(
@@ -92,13 +94,10 @@ export async function fetchContextFiles(
 
   const files: ContextFile[] = [];
   let totalBytes = 0;
-  const MAX_FILES = 20;
-  const MAX_TOTAL_BYTES = 200 * 1024;
-
   for (const item of candidates) {
-    if (files.length >= MAX_FILES) break;
-    if (item.size && item.size > 60 * 1024) continue;
-    if (totalBytes + (item.size ?? 0) > MAX_TOTAL_BYTES) continue;
+    if (files.length >= MAX_IMPORT_FILES) break;
+    if (item.size && item.size > MAX_IMPORT_FILE_BYTES) continue;
+    if (totalBytes + (item.size ?? 0) > MAX_IMPORT_TOTAL_BYTES) continue;
 
     const rawUrl = `/repos/${fullName}/contents/${encodeURIComponent(item.path)}?ref=${branch}`;
     const meta = await gh<{ download_url: string | null; content: string; encoding: string }>(
