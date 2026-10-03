@@ -13,7 +13,7 @@ import { GitHubBrandLogo, GitLabLogo, GoogleLogo, MicrosoftLogo } from "@/compon
 type OAuthProvider = "google" | "github" | "azure" | "gitlab";
 type AuthMode = "signin" | "signup";
 
-const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED !== "false";
+const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED === "true";
 
 const WELCOMES = ["Welcome", "Bem-vindo", "Bienvenido", "Benvenuto", "欢迎", "Willkommen", "स्वागत है", "Bienvenue"];
 
