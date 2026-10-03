@@ -1,12 +1,10 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { buildRawTextFromFiles, type ContextFile } from "./github";
+import { MAX_IMPORT_FILES, MAX_IMPORT_FILE_BYTES, MAX_IMPORT_TOTAL_BYTES, MAX_REMOTE_BYTES } from "./import-limits";
 
 export type RemoteImportSource = "url" | "gitlab" | "google_drive";
 
-const MAX_REMOTE_BYTES = 220 * 1024;
-const MAX_FILE_BYTES = 60 * 1024;
-const MAX_FILES = 20;
 const MAX_REDIRECTS = 4;
 
 const CONTEXT_FILE_PATTERNS = [
@@ -80,7 +78,7 @@ async function assertPublicDestination(url: URL) {
 
 async function readLimitedBody(response: Response, limit = MAX_REMOTE_BYTES) {
   const declared = Number(response.headers.get("content-length") ?? 0);
-  if (declared > limit) throw new Error("O conteúdo remoto excede o limite de 220 KB.");
+  if (declared > limit) throw new Error("O conteúdo remoto excede o limite de 1 MB de texto.");
   if (!response.body) return "";
 
   const reader = response.body.getReader();
@@ -92,7 +90,7 @@ async function readLimitedBody(response: Response, limit = MAX_REMOTE_BYTES) {
     total += value.byteLength;
     if (total > limit) {
       await reader.cancel();
-      throw new Error("O conteúdo remoto excede o limite de 220 KB.");
+      throw new Error("O conteúdo remoto excede o limite de 1 MB de texto.");
     }
     chunks.push(value);
   }
@@ -240,7 +238,7 @@ async function importGitLab(value: string): Promise<RemoteImportResult> {
   const candidates = trees.flat()
     .filter((item) => item.type === "blob" && CONTEXT_FILE_PATTERNS.some((pattern) => pattern.test(item.path)))
     .filter((item, index, all) => all.findIndex((candidate) => candidate.path === item.path) === index)
-    .slice(0, MAX_FILES);
+    .slice(0, MAX_IMPORT_FILES);
   if (candidates.length === 0) throw new Error("Nenhum README, AGENTS, CONTEXTO ou arquivo em docs/ foi encontrado.");
 
   const files: ContextFile[] = [];
@@ -251,8 +249,8 @@ async function importGitLab(value: string): Promise<RemoteImportResult> {
       { headers: { Accept: "text/plain" } }
     );
     if (!response.ok) continue;
-    const text = await readLimitedBody(response, MAX_FILE_BYTES);
-    if (!text.trim() || total + text.length > 200 * 1024) continue;
+    const text = await readLimitedBody(response, MAX_IMPORT_FILE_BYTES);
+    if (!text.trim() || total + text.length > MAX_IMPORT_TOTAL_BYTES) continue;
     files.push({ path: item.path, size: text.length, text });
     total += text.length;
   }

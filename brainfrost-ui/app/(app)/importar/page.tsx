@@ -8,7 +8,7 @@ import { palette } from "@/lib/saas-theme";
 import { getSupabase } from "@/lib/supabase/client";
 import { useSession } from "@/components/saas/SessionProvider";
 import { useBilling } from "@/components/saas/BillingProvider";
-import { buildRawTextFromFiles, fetchContextFiles, listRepos, type Repo } from "@/lib/github";
+import { buildRawTextFromFiles, type Repo } from "@/lib/github";
 import { LOCAL_FILE_ACCEPT, readLocalTextFiles, readZipTextFiles } from "@/lib/import-files";
 import { announceNavigation } from "@/components/shared/NavigationLoader";
 import { DEFAULT_WEBLLM_MODEL, WEBLLM_MODELS } from "@/lib/webllm";
@@ -324,7 +324,7 @@ function FilesPanel({ c, analysisProvider, providerControl }: ImportPanelProps) 
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <span className="font-mono text-[11px]" style={{ color: c.dim }}>
-          {files.length > 0 ? `${(totalSize / 1024).toFixed(1)} KB selecionados` : "até 50 arquivos e 200 KB de texto"}
+          {files.length > 0 ? `${formatFileSize(totalSize)} selecionados` : "até 200 arquivos e 1 MB de texto compatível"}
         </span>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {providerControl}
@@ -573,7 +573,7 @@ function ZipPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         {status && <p className="mr-auto self-center font-mono text-[11px]" style={{ color: c.dim }}>{status}</p>}
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {providerControl}
           {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
           <button
@@ -714,7 +714,7 @@ function RemoteSourcePanel({ source, c, analysisProvider, providerControl }: Imp
 
       {!locked && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <span className="font-mono text-[11px]" style={{ color: c.dim }}>{status ?? "até 220 KB de texto por fonte"}</span>
+          <span className="font-mono text-[11px]" style={{ color: c.dim }}>{status ?? "até 1 MB de texto por fonte"}</span>
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {providerControl}
             {busy && <button type="button" onClick={cancel} className="rounded-full border px-4 py-2.5 text-[13px] font-medium" style={{ borderColor: c.border, color: c.dim }}>Cancelar</button>}
@@ -744,24 +744,26 @@ function RepositoriesPanel(props: ImportPanelProps) {
         onChange={setSource}
         options={[
           { id: "github", label: "GitHub", description: "Conecte sua conta e escolha um repositório.", icon: GitHubBrandLogo },
-          { id: "gitlab", label: "GitLab", description: "Importe um projeto público pela URL.", icon: GitLabLogo },
+          { id: "gitlab", label: "GitLab", description: "Conecte sua conta e escolha um projeto.", icon: GitLabLogo },
           { id: "bitbucket", label: "Bitbucket", description: "Conexão de repositórios em preparação.", icon: GitBranch, disabled: true },
         ]}
       />
       <div className="mt-3">
-        {source === "github" && <GitHubPanel {...props} />}
-        {source === "gitlab" && <RemoteSourcePanel source="gitlab" {...props} />}
+        {source === "github" && <RepositoryProviderPanel provider="github" {...props} />}
+        {source === "gitlab" && <RepositoryProviderPanel provider="gitlab" {...props} />}
       </div>
     </div>
   );
 }
 
-function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps) {
+function RepositoryProviderPanel({ provider, c, analysisProvider, providerControl }: ImportPanelProps & { provider: "github" | "gitlab" }) {
   const router = useRouter();
   const taskRef = useRef<AbortController | null>(null);
   const { session } = useSession();
   const { isPro } = useBilling();
-  const providerToken = session?.provider_token ?? null;
+  const label = provider === "github" ? "GitHub" : "GitLab";
+  const scopes = provider === "github" ? "read:user user:email repo" : "read_user read_api";
+  const identityLinked = Boolean(session?.user.identities?.some((identity) => identity.provider === provider));
 
   const [repos, setRepos] = useState<Repo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -770,24 +772,45 @@ function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps)
   const [chosen, setChosen] = useState<Repo | null>(null);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [repositoryAccess, setRepositoryAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!providerToken) return;
+    let active = true;
+    setRepos(null);
+    setError(null);
     setLoading(true);
-    listRepos(providerToken)
-      .then((list) => setRepos(list))
-      .catch((e) => setError(e instanceof Error ? e.message : "erro ao listar repos"))
-      .finally(() => setLoading(false));
-  }, [providerToken]);
+    fetch("/api/oauth/connections", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : { connections: [] })
+      .then((payload) => {
+        if (!active) return;
+        const connected = Boolean(payload.connections?.find((item: { provider: string; repositoryAccess: boolean }) => item.provider === provider)?.repositoryAccess);
+        setRepositoryAccess(connected);
+        if (!connected) return null;
+        return fetch(`/api/repositories?provider=${provider}`, { cache: "no-store" });
+      })
+      .then(async (response) => {
+        if (!response || !active) return;
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (payload.code === "CONNECTION_REQUIRED" || payload.code === "CONNECTION_EXPIRED") {
+            setRepositoryAccess(false);
+          }
+          throw new Error(payload.error ?? `Erro ao listar repositórios do ${label}.`);
+        }
+        setRepos(payload.repositories ?? []);
+      })
+      .catch((cause) => active && setError(cause instanceof Error ? cause.message : "Erro ao listar repositórios."))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [provider, label]);
 
   const reconnect = async () => {
-    await getSupabase().auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/importar`,
-        scopes: "read:user user:email repo",
-      },
-    });
+    const options = {
+      redirectTo: `${window.location.origin}/auth/callback?next=/importar&repository_provider=${provider}`,
+      scopes,
+    };
+    if (identityLinked) await getSupabase().auth.signInWithOAuth({ provider, options });
+    else await getSupabase().auth.linkIdentity({ provider, options });
   };
 
   const filtered = useMemo(() => {
@@ -803,30 +826,21 @@ function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps)
   }, [repos, query]);
 
   const submit = async () => {
-    if (!chosen || !providerToken) return;
+    if (!chosen) return;
     const controller = new AbortController();
     taskRef.current = controller;
     setBusy(true);
     setStatus("Baixando arquivos de contexto…");
     try {
-      const { files } = await fetchContextFiles(providerToken, chosen.full_name, chosen.default_branch);
-      controller.signal.throwIfAborted();
-      if (files.length === 0) {
-        setBusy(false);
-        setStatus(null);
-        alert(
-          `Nenhum arquivo de contexto encontrado (README.md, CLAUDE.md, CONTEXTO.md, docs/*.md…). Escolha outro repo.`
-        );
-        return;
-      }
-      setStatus(`Criando import com ${files.length} arquivos…`);
-      const rawText = buildRawTextFromFiles(chosen.full_name, files);
-      const id = await createImport({
-        source: "github",
-        label: chosen.full_name,
-        file_count: files.length,
-        raw_text: rawText,
-      }, controller.signal);
+      const response = await fetch("/api/repositories/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider, id: chosen.id, fullName: chosen.full_name, branch: chosen.default_branch }),
+        signal: controller.signal,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.id) throw new Error(payload.error ?? "Não foi possível importar o repositório.");
+      const id = payload.id as string;
       setBusy(false);
       setStatus(null);
       announceNavigation();
@@ -839,7 +853,7 @@ function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps)
   };
 
   const cancel = () => {
-    if (!window.confirm("Cancelar esta importação do GitHub? Nenhuma sugestão será criada.")) return;
+    if (!window.confirm(`Cancelar esta importação do ${label}? Nenhuma sugestão será criada.`)) return;
     taskRef.current?.abort();
     setBusy(false);
     setStatus(null);
@@ -850,7 +864,7 @@ function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps)
       <div className="rounded-2xl border p-6 text-center" style={{ background: c.card, borderColor: c.border }}>
         <Lock className="mx-auto h-8 w-8" strokeWidth={1.6} style={{ color: c.accent }} />
         <p className="mt-3 text-[14px]" style={{ color: c.text }}>
-          Importação pelo GitHub é um recurso Pro.
+          Importação pelo {label} é um recurso Pro.
         </p>
         <p className="mx-auto mt-2 max-w-sm text-[12px]" style={{ color: c.dim }}>
           Faça upgrade para importar repositórios privados ou públicos diretamente para o cérebro.
@@ -866,23 +880,23 @@ function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps)
     );
   }
 
-  if (!providerToken) {
+  if (repositoryAccess === false) {
     return (
       <div className="rounded-2xl border p-6 text-center" style={{ background: c.card, borderColor: c.border }}>
         <GitBranch className="mx-auto h-8 w-8" strokeWidth={1.6} style={{ color: c.accent }} />
         <p className="mt-3 text-[14px]" style={{ color: c.text }}>
-          Precisa autorizar o GitHub para listar seus repositórios.
+          Autorize o {label} para listar seus repositórios.
         </p>
         <p className="mt-2 max-w-sm mx-auto text-[12px]" style={{ color: c.dim }}>
-          Faz login (ou reconecta) via GitHub. Vamos pedir escopo <code>repo</code> pra ler arquivos
-          de contexto — nada é escrito no seu repo.
+          Sua conta de login pode continuar a mesma. A autorização de repositórios fica criptografada
+          no BrainFrost e é usada somente para leitura.
         </p>
         <button
           onClick={reconnect}
           className="mt-4 rounded-full px-5 py-2 text-[13px] font-medium"
           style={{ background: c.accent, color: c.onAccent }}
         >
-          Conectar GitHub
+          {identityLinked ? `Autorizar repositórios do ${label}` : `Conectar ${label}`}
         </button>
       </div>
     );
@@ -965,7 +979,7 @@ function GitHubPanel({ c, analysisProvider, providerControl }: ImportPanelProps)
         <p className="text-[11px]" style={{ color: c.dim }}>
           {status ??
             (chosen
-              ? `Vamos ler README, CLAUDE.md, CONTEXTO.md, .cursor/rules, docs/*.md (até 20 arquivos, 200 KB total)`
+              ? `Vamos ler README, CLAUDE.md, CONTEXTO.md, .cursor/rules e docs/*.md (até 200 arquivos e 1 MB de texto)`
               : "Escolha um repo à esquerda.")}
         </p>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">

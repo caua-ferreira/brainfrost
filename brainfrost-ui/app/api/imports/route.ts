@@ -3,6 +3,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { hasProAccess } from "@/lib/pro-entitlement";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { sanitizeTelemetryMessage, writeErrorTelemetry } from "@/lib/error-telemetry";
+import { MAX_IMPORT_TOTAL_BYTES } from "@/lib/import-limits";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,10 @@ export async function POST(request: Request) {
 
   if (!body || !isSource(body.source) || typeof body.label !== "string" || typeof body.raw_text !== "string") {
     return NextResponse.json({ error: "source, label e conteúdo são obrigatórios" }, { status: 400 });
+  }
+  const contentBytes = new TextEncoder().encode(body.raw_text).byteLength;
+  if (contentBytes > MAX_IMPORT_TOTAL_BYTES + 64 * 1024) {
+    return NextResponse.json({ error: "O conteúdo legível pode ter no máximo 1 MB por importação." }, { status: 413 });
   }
 
   const supabase = await getSupabaseServer();

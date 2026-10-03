@@ -145,6 +145,7 @@ export type Database = {
       app_notifications: {
         Row: {
           created_at: string
+          dedupe_key: string | null
           href: string | null
           id: string
           kind: string
@@ -155,6 +156,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dedupe_key?: string | null
           href?: string | null
           id?: string
           kind: string
@@ -165,12 +167,43 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dedupe_key?: string | null
           href?: string | null
           id?: string
           kind?: string
           message?: string
           read_at?: string | null
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_connections: {
+        Row: {
+          access_token_cipher: string
+          provider: string
+          provider_account_id: string | null
+          refresh_token_cipher: string | null
+          scopes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token_cipher: string
+          provider: string
+          provider_account_id?: string | null
+          refresh_token_cipher?: string | null
+          scopes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token_cipher?: string
+          provider?: string
+          provider_account_id?: string | null
+          refresh_token_cipher?: string | null
+          scopes?: string[]
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

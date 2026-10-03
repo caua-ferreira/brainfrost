@@ -11,8 +11,11 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
+  filterNovelSuggestions,
   isCategory,
   parseSuggestionsJson,
+  sampleAnalysisText,
+  type ExistingPattern,
   type LlmSuggestion,
 } from "@/lib/prompts";
 
@@ -233,10 +236,24 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   const { data: existingNotes } = await supabase
     .from("vault_notes")
-    .select("slug, title, category")
+    .select("slug, title, body, category")
     .order("updated_at", { ascending: false })
     .limit(200);
-  const analysisInput = buildExtractionInput(sanitized.cleanText, existingNotes ?? []);
+  const { data: pendingSuggestions } = await supabase
+    .from("pattern_suggestions")
+    .select("title, body, category")
+    .eq("status", "pending")
+    .neq("import_id", importId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const existingPatterns: ExistingPattern[] = [
+    ...(existingNotes ?? []),
+    ...(pendingSuggestions ?? []),
+  ];
+  const analysisInput = buildExtractionInput(
+    sampleAnalysisText(sanitized.cleanText),
+    existingPatterns
+  );
 
   let raw: string;
   const provider = userApiKey ? chosen!.provider as Provider : managed!.provider;
@@ -294,7 +311,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
 
   let suggestions: LlmSuggestion[];
   try {
-    suggestions = parseSuggestionsJson(raw);
+    suggestions = filterNovelSuggestions(parseSuggestionsJson(raw), existingPatterns);
   } catch {
     const errorId = await reportAnalysisError(supabase, {
       stage: "parse",

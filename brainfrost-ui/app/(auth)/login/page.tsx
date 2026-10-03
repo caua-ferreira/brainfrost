@@ -13,7 +13,7 @@ import { GitHubBrandLogo, GitLabLogo, GoogleLogo, MicrosoftLogo } from "@/compon
 type OAuthProvider = "google" | "github" | "azure" | "gitlab";
 type AuthMode = "signin" | "signup";
 
-const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED === "true";
+const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED !== "false";
 
 const WELCOMES = ["Welcome", "Bem-vindo", "Bienvenido", "Benvenuto", "欢迎", "Willkommen", "स्वागत है", "Bienvenue"];
 
@@ -57,7 +57,7 @@ const PROVIDERS: {
   { id: "google", label: "Google", Icon: GoogleLogo },
   { id: "github", label: "GitHub", scopes: "read:user user:email repo", Icon: GitHubBrandLogo },
   { id: "azure", label: "Microsoft", scopes: "email", Icon: MicrosoftLogo },
-  { id: "gitlab", label: "GitLab", scopes: "read_user", soon: !GITLAB_ENABLED, Icon: GitLabLogo },
+  { id: "gitlab", label: "GitLab", scopes: "read_user read_api", soon: !GITLAB_ENABLED, Icon: GitLabLogo },
 ];
 
 export default function LoginPage() {

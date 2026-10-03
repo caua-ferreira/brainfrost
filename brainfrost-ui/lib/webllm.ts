@@ -3,9 +3,11 @@
 import {
   EXTRACTION_SYSTEM_PROMPT,
   buildExtractionInput,
-  dedupeSuggestions,
+  filterNovelSuggestions,
   parseSuggestionsJson,
+  sampleAnalysisText,
   splitAnalysisText,
+  type ExistingPattern,
   type LlmSuggestion,
 } from "./prompts";
 
@@ -57,13 +59,13 @@ const LOCAL_CONTEXT_WINDOW_SIZE = 8192;
 const MAX_EXISTING_NOTES_CHARS = 4_000;
 
 function fitExistingNotesToPrompt(
-  notes: Array<{ slug: string; title: string; category: string }>
+  notes: ExistingPattern[]
 ) {
   const selected: typeof notes = [];
   let usedChars = 0;
 
   for (const note of notes) {
-    const noteChars = note.slug.length + note.title.length + note.category.length + 24;
+    const noteChars = (note.slug?.length ?? 0) + note.title.length + (note.body?.length ?? 0) + note.category.length + 24;
     if (selected.length > 0 && usedChars + noteChars > MAX_EXISTING_NOTES_CHARS) break;
     selected.push(note);
     usedChars += noteChars;
@@ -190,7 +192,7 @@ export async function analyzeLocally(
   text: string,
   modelId: string = DEFAULT_WEBLLM_MODEL,
   onProgress?: (p: WebLlmProgress) => void,
-  existingNotes: Array<{ slug: string; title: string; category: string }> = [],
+  existingNotes: ExistingPattern[] = [],
   signal?: AbortSignal
 ): Promise<LlmSuggestion[]> {
   return runInferenceExclusive(async () => {
@@ -204,7 +206,7 @@ export async function analyzeLocally(
       // response_format json_object dá "Cannot pass non-string to std::string"
       // no WebLLM 0.2.85. O prompt já pede JSON estrito e parseSuggestionsJson
       // extrai o objeto entre { e }, então dispensa.
-      const chunks = splitAnalysisText(text);
+      const chunks = splitAnalysisText(sampleAnalysisText(text));
       const catalog = fitExistingNotesToPrompt(existingNotes);
       const suggestions: LlmSuggestion[] = [];
 
@@ -227,7 +229,7 @@ export async function analyzeLocally(
         signal?.removeEventListener("abort", interrupt);
       }
 
-      return dedupeSuggestions(suggestions);
+      return filterNovelSuggestions(suggestions, existingNotes);
     };
 
     try {
