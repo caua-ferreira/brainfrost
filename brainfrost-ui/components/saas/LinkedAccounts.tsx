@@ -8,7 +8,7 @@ import { GitHubBrandLogo, GitLabLogo, GoogleLogo, MicrosoftLogo } from "./OAuthP
 
 type Provider = "google" | "github" | "azure" | "gitlab";
 
-const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED !== "false";
+const GITLAB_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED === "true";
 
 const PROVIDERS: {
   id: Provider;

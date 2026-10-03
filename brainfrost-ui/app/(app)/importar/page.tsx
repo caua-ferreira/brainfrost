@@ -20,6 +20,8 @@ const SANITIZED = [
   "binários", "PII em seeds",
 ];
 
+const GITLAB_AUTH_ENABLED = process.env.NEXT_PUBLIC_GITLAB_AUTH_ENABLED === "true";
+
 type Tab = "text" | "files" | "repositories" | "url";
 type AnalysisProvider = "managed" | "webllm" | "claude" | "gemini";
 type ImportSource = "text" | "files" | "zip" | "github" | "url" | "gitlab" | "google_drive";
@@ -744,7 +746,7 @@ function RepositoriesPanel(props: ImportPanelProps) {
         onChange={setSource}
         options={[
           { id: "github", label: "GitHub", description: "Conecte sua conta e escolha um repositório.", icon: GitHubBrandLogo },
-          { id: "gitlab", label: "GitLab", description: "Conecte sua conta e escolha um projeto.", icon: GitLabLogo },
+          { id: "gitlab", label: "GitLab", description: "Conecte sua conta e escolha um projeto.", icon: GitLabLogo, disabled: !GITLAB_AUTH_ENABLED },
           { id: "bitbucket", label: "Bitbucket", description: "Conexão de repositórios em preparação.", icon: GitBranch, disabled: true },
         ]}
       />
