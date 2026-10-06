@@ -100,7 +100,7 @@ async function callOpenRouter(
     headers: {
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json",
-      "http-referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://brainfrost.vercel.app",
+      "http-referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://brainfrost.com.br",
       "x-title": "BrainFrost",
     },
     body: JSON.stringify({

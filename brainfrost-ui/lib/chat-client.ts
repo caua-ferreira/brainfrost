@@ -82,7 +82,7 @@ export interface ProviderPreset {
 }
 
 const OPENROUTER_HEADERS = {
-  "HTTP-Referer": "https://brainfrost.vercel.app",
+  "HTTP-Referer": "https://brainfrost.com.br",
   "X-Title": "BrainFrost",
 };
 
@@ -228,7 +228,7 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     model: "llama3.1",
     browserFriendly: true,
     warning:
-      "Rode com OLLAMA_ORIGINS=https://brainfrost.vercel.app se der CORS.",
+      "Rode com OLLAMA_ORIGINS=https://brainfrost.com.br se der CORS.",
     needs: [
       {
         key: "model",

@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       headers: {
         authorization: `Bearer ${managed.apiKey}`,
         "content-type": "application/json",
-        "http-referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://brainfrost.vercel.app",
+        "http-referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://brainfrost.com.br",
         "x-title": "BrainFrost synthetic check",
       },
       body: JSON.stringify({
